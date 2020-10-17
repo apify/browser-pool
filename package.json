@@ -1,0 +1,29 @@
+{
+	"name": "browser-pool",
+	"version": "0.0.1",
+	"description": "Rotate multiple browser using popular automation libraries",
+	"dependencies": {
+		"apify": "^0.21.0",
+		"apify-shared": "^0.5.0",
+		"lodash": "^4.17.20",
+		"proxy-chain": "^0.4.5",
+		"shortid": "^2.2.15"
+	},
+	"devDependencies": {
+		"@apify/eslint-config": "^0.1.0",
+		"eslint": "^7.10.0",
+		"puppeteer": "^5.3.1"
+	},
+	"scripts": {
+		"start": "node src/main.js",
+		"lint": "./node_modules/.bin/eslint ./src --ext .js,.jsx",
+		"lint:fix": "./node_modules/.bin/eslint ./src --ext .js,.jsx --fix",
+		"test": "echo \"Error: oops, the actor has no tests yet, sad!\" && exit 1"
+	},
+	"author": {
+		"name": "Apify",
+		"email": "support@apify.com",
+		"url": "https://apify.com"
+	},
+	"license": "Apache-2.0"
+}

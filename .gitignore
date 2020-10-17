@@ -1,0 +1,16 @@
+node_modules
+*.log
+*.pid
+*.seed
+.DS_Store
+lib
+coverage
+.nyc_output
+logs
+pids
+.idea
+.vscode
+yarn.lock
+package-lock.json
+tmp
+jsconfig.json
