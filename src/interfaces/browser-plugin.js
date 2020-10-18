@@ -22,6 +22,8 @@ class BrowserPlugin {
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(proxyUrl, launchOptions);
+
+            launchOptions.apifyInternalProxyUrl = proxyUrl; // Just an internal dirty hack to illustrate my point
         }
 
         return launchOptions;
@@ -43,6 +45,7 @@ class BrowserPlugin {
         if (this.proxyUrl) {
             return this.proxyUrl;
         }
+
         return this.createProxyUrlFunction && this.createProxyUrlFunction(this);
     }
 }

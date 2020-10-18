@@ -5,8 +5,9 @@ const PlaywrightController = require('../browser-controllers/playwright-controll
 
 class PlaywrightPlugin extends BrowserPlugin {
     async _launch(finalLaunchOptions) {
+        const { apifyInternalProxyUrl } = finalLaunchOptions;
         const browser = await this.library.launch(finalLaunchOptions);
-        return new PlaywrightController({ browser });
+        return new PlaywrightController({ browser, proxyUrl: apifyInternalProxyUrl, browserPlugin: this });
     }
 
     async _addProxyToLaunchOptions(proxyUrl, options) {

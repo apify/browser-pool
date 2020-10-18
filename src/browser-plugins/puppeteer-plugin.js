@@ -5,8 +5,9 @@ const PuppeteerController = require('../browser-controllers/puppeteer-controller
 
 class PuppeteerPlugin extends BrowserPlugin {
     async _launch(finalLaunchOptions) {
+        const { apifyInternalProxyUrl } = finalLaunchOptions;
         const browser = await this.library.launch(finalLaunchOptions);
-        return new PuppeteerController({ browser });
+        return new PuppeteerController({ browser, proxyUrl: apifyInternalProxyUrl, browserPlugin: this });
     }
 
     async _addProxyToLaunchOptions(proxyUrl, options) {

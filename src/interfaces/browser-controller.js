@@ -3,13 +3,14 @@ const { throwImplementationNeeded } = require('./utils');
 
 class BrowserController {
     constructor(options) {
-        const { browser } = options;
+        const { browser, proxyUrl, browserPlugin } = options;
         this.id = shortid.generate();
         this.browser = browser;
         this.activePages = 0;
         this.totalPages = 0;
         this.lastPageOpenedAt = Date.now(); // Maybe more like last used at.
-        this.proxyUrl = '';
+        this.proxyUrl = proxyUrl;
+        this.browserPlugin = browserPlugin;
         this.userData = {};
     }
 
