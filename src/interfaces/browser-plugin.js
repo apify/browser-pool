@@ -18,7 +18,7 @@ class BrowserPlugin {
 
     async createLaunchOptions() {
         const launchOptions = _.cloneDeep(this.launchOptions);
-        const proxyUrl = this._getProxyUrl();
+        const proxyUrl = await this._getProxyUrl();
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(proxyUrl, launchOptions);
