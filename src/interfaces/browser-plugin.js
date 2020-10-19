@@ -16,11 +16,15 @@ class BrowserPlugin {
         this.proxyUrl = proxyUrl;
     }
 
+    /**
+     * Clones and returns the launchOptions
+     * @return {Promise<object>}
+     */
     async createLaunchOptions() {
         const launchOptions = _.cloneDeep(this.launchOptions);
-        const proxyUrl = await this._getProxyUrl();
 
-        if (proxyUrl) {
+        if (this.isProxyUsed()) {
+            const proxyUrl = await this._getProxyUrl();
             await this._addProxyToLaunchOptions(proxyUrl, launchOptions);
 
             launchOptions.apifyInternalProxyUrl = proxyUrl; // Just an internal dirty hack to illustrate my point
@@ -41,12 +45,25 @@ class BrowserPlugin {
         throwImplementationNeeded('_launch');
     }
 
-    _getProxyUrl() {
+    /**
+     *
+     * @return {Promise<string>}
+     * @private
+     */
+    async _getProxyUrl() {
         if (this.proxyUrl) {
             return this.proxyUrl;
         }
 
-        return this.createProxyUrlFunction && this.createProxyUrlFunction(this);
+        return this.createProxyUrlFunction(this);
+    }
+
+    /**
+     *
+     * @return {boolean}
+     */
+    isProxyUsed() {
+        return Boolean(this.proxyUrl || this.createProxyUrlFunction);
     }
 }
 
