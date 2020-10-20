@@ -3,17 +3,17 @@ const defaultLog = require('apify-shared/log');
 const { addTimeoutToPromise } = require('./utils');
 
 const {
-    BROWSER_LAUNCHED,
-    BROWSER_CLOSED,
-    BROWSER_RETIRED,
-    PAGE_CREATED,
-    PAGE_CLOSED,
+    BROWSER_POOL_EVENTS: {
+        BROWSER_LAUNCHED,
+        BROWSER_CLOSED,
+        BROWSER_RETIRED,
+        PAGE_CREATED,
+        PAGE_CLOSED,
+    },
 } = require('./events');
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
-
-defaultLog.setLevel(defaultLog.LEVELS.DEBUG);
 
 class BrowserPool extends EventEmitter {
     constructor(options = {}) {
@@ -53,14 +53,16 @@ class BrowserPool extends EventEmitter {
         this.retiredBrowserControllers = new Map();
         this.pagesToBrowserControler = new WeakMap();
 
+        this.log = defaultLog;
+
         this.instanceKillerInterval = setInterval(
             () => this._killRetiredBrowsers(),
             instanceKillerIntervalSecs * 1000,
         );
-
+        // Temporary debug stats
         setInterval(
             () => this.log.info(
-                'STATS',
+                'Stats',
                 {
                     active: Object.values(this.activeBrowserControllers).length,
                     retiredBrowserControllers: Object.values(this.retiredBrowserControllers).length,
@@ -68,11 +70,12 @@ class BrowserPool extends EventEmitter {
             ),
             10 * 1000,
         );
-        this.log = defaultLog;
     }
 
-    // Returns existing pending page or new page. Emits `pageCreated` event. Name alternatives: retrievePage, getPage.
-    // I think that new page is rather confusing because it does not mean the page is always new.
+    /**
+     * Returns existing pending page or new page.
+     * @return {Promise<Page>}
+     */
     async newPage() {
         let browserController = this._pickBrowserWithFreeCapacity();
 
@@ -80,11 +83,20 @@ class BrowserPool extends EventEmitter {
         return this._createPageForBrowser(browserController);
     }
 
+    /**
+     *
+     * @return {Promise<Page>}
+     */
     async newPageInNewBrowser() {
         const browserController = this._launchBrowser();
         return this._createPageForBrowser(browserController);
     }
 
+    /**
+     *
+     * @param page {Page} - Browser plugin page
+     * @return {BrowserController|undefined}
+     */
     getBrowserControllerByPage(page) {
         return this.pagesToBrowserControler[page];
     }
@@ -100,7 +112,7 @@ class BrowserPool extends EventEmitter {
             this.pagesToBrowserControler[page] = browserController;
 
             if (browserController.totalPages >= this.retireBrowserAfterPageCount) {
-                this.retireBrowser(browserController);
+                this._retireBrowser(browserController);
             }
 
             this._overridePageClose(page);
@@ -108,7 +120,7 @@ class BrowserPool extends EventEmitter {
             await this._executeHooks(this.postPageCreateHooks, browserController, page); // @TODO: Not sure about the placement of this hooks
             return page;
         } catch (err) {
-            this.retireBrowser(browserController);
+            this._retireBrowser(browserController);
             const betterError = new Error(`browserController.newPage() failed: ${browserController.id}.`);
             betterError.stack = err.stack;
             throw betterError;
@@ -125,19 +137,37 @@ class BrowserPool extends EventEmitter {
         delete this.activeBrowserControllers[id];
     }
 
+    /**
+     *
+     * @param page {Page}
+     * @return {undefined}
+     */
     retireBrowserByPage(page) {
         const browserController = this.getBrowserControllerByPage(page);
         return this._retireBrowser(browserController);
     }
 
-    // Closes all browserControllers and clears all event listeners.
+    /**
+     * Closes all browserControllers
+     * @return {Promise<void>}
+     */
     async retire() {
-        Object.values(this.activeBrowserControllers);
+        const allOpenBrowsers = this._getAllOpenBrowsers();
+        // Maybe PromiseAll
+        for (const browserController of allOpenBrowsers) {
+            await browserController.close();
+        }
+
+        this.activeBrowserControllers = new Map();
+        this.retiredBrowserControllers = new Map();
     }
 
-    // Kills all browserControllers...
+    /**
+     * Kills all browserControllers
+     * @return {Promise<void>}
+     */
     async destroy() {
-        const allOpenBrowsers = Object.values(this.activeBrowserControllers).concat(Object.values(this.retiredBrowserControllers));
+        const allOpenBrowsers = this._getAllOpenBrowsers();
         // Maybe PromiseAll
         for (const browserController of allOpenBrowsers) {
             await browserController.kill();
@@ -145,6 +175,18 @@ class BrowserPool extends EventEmitter {
 
         this.activeBrowserControllers = new Map();
         this.retiredBrowserControllers = new Map();
+    }
+
+    /**
+     *
+     * @return {[]}
+     * @private
+     */
+    _getAllOpenBrowsers() {
+        const activeBrowserControllers = Object.values(this.activeBrowserControllers) || [];
+        const retiredBrowserControllers = Object.values(this.retiredBrowserControllers) || [];
+
+        return activeBrowserControllers.concat(retiredBrowserControllers);
     }
 
     async _launchBrowser() {
@@ -181,7 +223,7 @@ class BrowserPool extends EventEmitter {
         for (const retiredBrowserController of retiredBrowserControllers) {
             if (Date.now() - retiredBrowserController.lastPageOpenedAt > this.killInstanceAfterMillis) {
                 this.log.debug('killing retired browserController after period of inactivity', {
-                    id: retiredBrowser.id,
+                    id: retiredBrowserController.id,
                     killInstanceAfterSecs: this.killInstanceAfterSecs,
                 });
                 this._killBrowser(retiredBrowserController);

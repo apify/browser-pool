@@ -1,8 +1,12 @@
+const EventEmitter = require('events');
 const shortid = require('shortid');
 const { throwImplementationNeeded } = require('./utils');
+const { BROWSER_CONTROLLER_EVENTS: { BROWSER_KILLED, BROWSER_CLOSED, BROWSER_TERMINATED } } = require('../events');
 
-class BrowserController {
+class BrowserController extends EventEmitter {
     constructor(options) {
+        super();
+
         const { browser, proxyUrl, browserPlugin } = options;
         this.id = shortid.generate();
         this.browser = browser;
@@ -16,10 +20,14 @@ class BrowserController {
 
     async close() {
         await this._close();
+        this.emit(BROWSER_CLOSED, this);
+        this.emit(BROWSER_TERMINATED, this);
     }
 
     async kill() {
         await this._kill();
+        this.emit(BROWSER_KILLED, this);
+        this.emit(BROWSER_TERMINATED, this);
     }
 
     async newPage() {

@@ -1,7 +1,6 @@
-const proxyChain = require('proxy-chain');
-
 const BrowserPlugin = require('../interfaces/browser-plugin');
 const PuppeteerController = require('../browser-controllers/puppeteer-controller');
+const { BROWSER_CONTROLLER_EVENTS: { BROWSER_TERMINATED } } = require('../events');
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
@@ -18,14 +17,17 @@ class PuppeteerPlugin extends BrowserPlugin {
 
         if (this.isProxyUsed()) {
             proxyUrl = await this._parseProxyFromLaunchOptions(finalLaunchOptions);
+        }
 
-            browser.once('disconnected', () => {
-                console.log('CLOSING!!');
-                proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
+        const puppeteerController = new PuppeteerController({ browser, proxyUrl, browserPlugin: this });
+
+        if (proxyUrl) {
+            puppeteerController.once(BROWSER_TERMINATED, () => { // Maybe we can set this event inside the controller in the constructor?
+                this._closeAnonymizedProxy(proxyUrl); // Nothing to do here really.
             });
         }
 
-        return new PuppeteerController({ browser, proxyUrl, browserPlugin: this });
+        return puppeteerController;
     }
 
     /**
@@ -56,15 +58,6 @@ class PuppeteerPlugin extends BrowserPlugin {
         const proxyServerArg = finalLaunchOptions.args.find((arg) => arg.includes(PROXY_SERVER_ARG));
 
         return proxyServerArg.replace(PROXY_SERVER_ARG, '');
-    }
-
-    /**
-     * Starts proxy-chain server - https://www.npmjs.com/package/proxy-chain#anonymizeproxyproxyurl-callback
-     * @return {Promise<string>} - URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
-     */
-    _getAnonymizedProxyUrl() {
-        const proxyUrl = this._getProxyUrl();
-        return proxyChain.anonymizeProxy(proxyUrl);
     }
 }
 

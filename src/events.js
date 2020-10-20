@@ -7,4 +7,13 @@ const BROWSER_POOL_EVENTS = {
     PAGE_CLOSED: 'pageClosed',
 };
 
-module.exports = BROWSER_POOL_EVENTS;
+const BROWSER_CONTROLLER_EVENTS = {
+    BROWSER_CLOSED: 'browserClosed',
+    BROWSER_KILLED: 'browserCreated',
+    BROWSER_TERMINATED: 'browserCreated',
+};
+
+module.exports = {
+    BROWSER_POOL_EVENTS,
+    BROWSER_CONTROLLER_EVENTS,
+};

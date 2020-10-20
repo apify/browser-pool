@@ -1,7 +1,13 @@
 const _ = require('lodash');
+const proxyChain = require('proxy-chain');
 const { throwImplementationNeeded } = require('./utils');
 
 class BrowserPlugin {
+    /**
+     *
+     * @param library {object}
+     * @param options {object}
+     */
     constructor(library, options = {}) {
         const {
             launchOptions,
@@ -33,15 +39,33 @@ class BrowserPlugin {
         return launchOptions;
     }
 
+    /**
+     *
+     * @param finalLaunchOptions {Object}
+     * @return {Promise<BrowserController>}
+     */
     async launch(finalLaunchOptions) {
         return this._launch(finalLaunchOptions);
     }
 
-    async _addProxyToLaunchOptions(proxyUrl, options) {
+    /**
+     *
+     * @param proxyUrl {string}
+     * @param options {object}
+     * @return {Promise<void>}
+     * @private
+     */
+    async _addProxyToLaunchOptions(proxyUrl, options) { // eslint-disable-line
         throwImplementationNeeded('_addProxyToLaunchOptions');
     }
 
-    async _launch(finalLaunchOptions) {
+    /**
+     *
+     * @param finalLaunchOptions {object}
+     * @return {Promise<void>}
+     * @private
+     */
+    async _launch(finalLaunchOptions) { // eslint-disable-line
         throwImplementationNeeded('_launch');
     }
 
@@ -64,6 +88,25 @@ class BrowserPlugin {
      */
     isProxyUsed() {
         return Boolean(this.proxyUrl || this.createProxyUrlFunction);
+    }
+
+    /**
+     * Starts proxy-chain server - https://www.npmjs.com/package/proxy-chain#anonymizeproxyproxyurl-callback
+     * @return {Promise<string>} - URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
+     */
+    async _getAnonymizedProxyUrl() {
+        const proxyUrl = await this._getProxyUrl();
+        return proxyChain.anonymizeProxy(proxyUrl);
+    }
+
+    /**
+     *
+     * @param proxyUrl {string}
+     * @return {Promise<any>}
+     * @private
+     */
+    async _closeAnonymizedProxy(proxyUrl) {
+        return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
     }
 }
 
