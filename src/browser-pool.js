@@ -18,7 +18,7 @@ const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 class BrowserPool extends EventEmitter {
     constructor(options = {}) {
         const {
-            browserControllerPlugins,
+            browserPlugins,
             maxOpenPagesPerBrowser = 50,
             retireBrowserAfterPageCount = 100,
             operationTimeoutSecs = 15,
@@ -34,7 +34,7 @@ class BrowserPool extends EventEmitter {
         } = options;
         super();
 
-        this.browserControllerPlugins = browserControllerPlugins;
+        this.browserPlugins = browserPlugins;
         this.maxOpenPagesPerBrowser = maxOpenPagesPerBrowser;
         this.retireBrowserAfterPageCount = retireBrowserAfterPageCount;
         this.operationTimeoutSecs = operationTimeoutSecs;
@@ -207,7 +207,7 @@ class BrowserPool extends EventEmitter {
     }
 
     _pickNewBrowserPluginToLaunch() {
-        return this.browserControllerPlugins[Math.floor(Math.random() * this.browserControllerPlugins.length)];
+        return this.browserPlugins[Math.floor(Math.random() * this.browserPlugins.length)];
     }
 
     _pickBrowserWithFreeCapacity() {
