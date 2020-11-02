@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-const shortid = require('shortid');
+const { nanoid } = require('nanoid');
 const { throwImplementationNeeded } = require('./utils');
 const { BROWSER_CONTROLLER_EVENTS: { BROWSER_KILLED, BROWSER_CLOSED, BROWSER_TERMINATED } } = require('../events');
 
@@ -8,7 +8,7 @@ class BrowserController extends EventEmitter {
         super();
 
         const { browser, proxyUrl, browserPlugin } = options;
-        this.id = shortid.generate();
+        this.id = nanoid();
         this.browser = browser;
         this.activePages = 0;
         this.totalPages = 0;
