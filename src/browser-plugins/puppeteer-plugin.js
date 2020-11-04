@@ -11,7 +11,7 @@ class PuppeteerPlugin extends BrowserPlugin {
      * @return {Promise<PuppeteerController>}
      * @private
      */
-    async _launch(finalLaunchOptions) {
+    async _launch(finalLaunchOptions = {}) {
         let proxyUrl;
         const browser = await this.library.launch(finalLaunchOptions);
 

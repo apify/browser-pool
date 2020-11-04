@@ -40,6 +40,7 @@ class BrowserPool extends EventEmitter {
         this.operationTimeoutSecs = operationTimeoutSecs;
         this.killInstanceAfterSecs = killInstanceAfterSecs;
         this.keepOriginalPageClose = keepOriginalPageClose; // Not sure about the implementation of this.
+        this.instanceKillerIntervalSecs = instanceKillerIntervalSecs;
 
         // hooks
         this.preLaunchHooks = preLaunchHooks;
@@ -57,18 +58,7 @@ class BrowserPool extends EventEmitter {
 
         this.instanceKillerInterval = setInterval(
             () => this._killRetiredBrowsers(),
-            instanceKillerIntervalSecs * 1000,
-        );
-        // Temporary debug stats
-        setInterval(
-            () => this.log.info(
-                'Stats',
-                {
-                    active: Object.values(this.activeBrowserControllers).length,
-                    retiredBrowserControllers: Object.values(this.retiredBrowserControllers).length,
-                },
-            ),
-            10 * 1000,
+            this.instanceKillerIntervalSecs * 1000,
         );
     }
 
@@ -88,7 +78,7 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<Page>}
      */
     async newPageInNewBrowser() {
-        const browserController = this._launchBrowser();
+        const browserController = await this._launchBrowser();
         return this._createPageForBrowser(browserController);
     }
 
@@ -157,9 +147,7 @@ class BrowserPool extends EventEmitter {
         for (const browserController of allOpenBrowsers) {
             await browserController.close();
         }
-
-        this.activeBrowserControllers = new Map();
-        this.retiredBrowserControllers = new Map();
+        this._teardown();
     }
 
     /**
@@ -173,8 +161,15 @@ class BrowserPool extends EventEmitter {
             await browserController.kill();
         }
 
+        this._teardown();
+    }
+
+    _teardown() {
         this.activeBrowserControllers = new Map();
         this.retiredBrowserControllers = new Map();
+
+        clearInterval(this.instanceKillerInterval);
+        this.removeAllListeners();
     }
 
     /**
@@ -264,7 +259,6 @@ class BrowserPool extends EventEmitter {
         page.close = async (...args) => {
             const browserController = this.pagesToBrowserControler[page];
             const { id } = browserController;
-            console.log('Closing page', browserController.activePages);
             await this._executeHooks(this.prePageCloseHooks, browserController, page);
 
             if (browserController.activePages === 0 && this.retiredBrowserControllers[id]) {
@@ -280,7 +274,7 @@ class BrowserPool extends EventEmitter {
                     this.log.debug('Page.close() failed', { errorMessage: err.message, id });
                 });
             this.emit(PAGE_CLOSED, page);
-            await this._executeHooks(this.prePageCloseHooks, browserController, page);
+            await this._executeHooks(this.postPageCloseHooks, browserController, page);
         };
     }
 

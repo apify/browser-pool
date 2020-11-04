@@ -10,7 +10,7 @@ class BrowserPlugin {
      */
     constructor(library, options = {}) {
         const {
-            launchOptions,
+            launchOptions = {},
             createProxyUrlFunction,
             proxyUrl,
         } = options;
@@ -32,8 +32,6 @@ class BrowserPlugin {
         if (this.isProxyUsed()) {
             const proxyUrl = await this._getProxyUrl();
             await this._addProxyToLaunchOptions(proxyUrl, launchOptions);
-
-            launchOptions.apifyInternalProxyUrl = proxyUrl; // Just an internal dirty hack to illustrate my point
         }
 
         return launchOptions;
