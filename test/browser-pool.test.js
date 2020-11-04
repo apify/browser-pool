@@ -278,7 +278,7 @@ describe('BrowserPool', () => {
                 clearInterval(browserPool.instanceKillerInterval);
                 browserPool.instanceKillerInterval = setInterval(
                     () => browserPool._killRetiredBrowsers(), // eslint-disable-line
-                    100,
+                    50,
                 );
                 let calls = 0;
                 browserPool.on(BROWSER_CLOSED, () => {
