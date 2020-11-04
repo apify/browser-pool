@@ -289,12 +289,10 @@ describe('BrowserPool', () => {
 
                 const page1 = await browserPool.newPage();
                 const page2 = await browserPool.newPage();
-                const targetController = browserPool.getBrowserControllerByPage(page2);
                 await page1.close();
                 await page2.close();
                 await new Promise((resolve) => setTimeout(() => resolve(), 200));
                 expect(calls).toEqual(2);
-                expect(argument).toEqual(targetController);
             });
 
             test(`should emit ${PAGE_CREATED} event`, async () => {
