@@ -251,8 +251,9 @@ class BrowserPool extends EventEmitter {
             await browserController.close();
         } catch (e) {
             // Do nothing. If it is impossible to kill it is already dead.
+        } finally {
+            this.emit(BROWSER_CLOSED, browserController);
         }
-        this.emit(BROWSER_CLOSED, browserController);
     }
 
     _overridePageClose(page) {

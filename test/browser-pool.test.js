@@ -27,10 +27,6 @@ describe('BrowserPool', () => {
         browserPool = await browserPool.destroy();
     });
 
-    afterAll(async () => {
-        await new Promise((resolve) => setTimeout(() => resolve(), 5000));
-    });
-
     describe('Inicialization & retirement', () => {
         test('should retire pool', async () => {
             const page = await browserPool.newPage();
