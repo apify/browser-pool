@@ -294,7 +294,7 @@ describe('BrowserPool', () => {
                 const page2 = await browserPool.newPage();
                 await page1.close();
                 await page2.close();
-                await new Promise((resolve) => setTimeout(() => resolve(), 200));
+                await new Promise((resolve) => setTimeout(() => resolve(), 500));
                 expect(calls).toEqual(2);
                 expect(argument).toEqual(browserPool.getBrowserControllerByPage(page2));
             });
