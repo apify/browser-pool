@@ -4,10 +4,16 @@ const PuppeteerPlugin = require('../../src/browser-plugins/puppeteer-plugin');
 const PuppeteerController = require('../../src/browser-controllers/puppeteer-controller');
 
 describe('PuppeteerPlugin', () => {
+    let browserController;
+
+    afterEach(async () => {
+        await browserController.kill();
+    });
+
     test('should launch browser', async () => {
         const puppeteerPlugin = new PuppeteerPlugin(puppeteer, {});
 
-        const browserController = await puppeteerPlugin.launch();
+        browserController = await puppeteerPlugin.launch();
 
         expect(browserController).toBeInstanceOf(PuppeteerController);
 
@@ -19,7 +25,7 @@ describe('PuppeteerPlugin', () => {
         const puppeteerPlugin = new PuppeteerPlugin(puppeteer, { proxyUrl });
         const finalLaunchOptions = await puppeteerPlugin.createLaunchOptions();
 
-        const browserController = await puppeteerPlugin.launch(finalLaunchOptions);
+        browserController = await puppeteerPlugin.launch(finalLaunchOptions);
         const argWithProxy = finalLaunchOptions.args.find((arg) => arg.includes('--proxy-server='));
 
         expect(argWithProxy.includes('http://10.10.10.0:8080')).toBeTruthy();
@@ -31,7 +37,7 @@ describe('PuppeteerPlugin', () => {
         const puppeteerPlugin = new PuppeteerPlugin(puppeteer, { createProxyUrlFunction: async () => Promise.resolve(proxyUrl) });
         const finalLaunchOptions = await puppeteerPlugin.createLaunchOptions();
 
-        const browserController = await puppeteerPlugin.launch(finalLaunchOptions);
+        browserController = await puppeteerPlugin.launch(finalLaunchOptions);
         const argWithProxy = finalLaunchOptions.args.find((arg) => arg.includes('--proxy-server='));
 
         expect(argWithProxy.includes('http://10.10.10.0:8080')).toBeTruthy();

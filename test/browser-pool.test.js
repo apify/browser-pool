@@ -1,5 +1,4 @@
 const puppeteer = require('puppeteer');
-
 const BrowserPool = require('../src/browser-pool');
 const PuppeteerPlugin = require('../src/browser-plugins/puppeteer-plugin');
 const {
@@ -15,54 +14,52 @@ const {
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
     const puppeteerPlugin = new PuppeteerPlugin(puppeteer);
+    let browserPool;
+
+    beforeEach(async () => {
+        browserPool = new BrowserPool({
+            browserPlugins: [puppeteerPlugin],
+            instanceKillerIntervalSecs: 1,
+        });
+    });
+
+    afterEach(async () => {
+        browserPool = await browserPool.destroy();
+    });
+
+    afterAll(async () => {
+        await new Promise((resolve) => setTimeout(() => resolve(), 5000));
+    });
 
     describe('Inicialization & retirement', () => {
         test('should retire pool', async () => {
-            const pool = new BrowserPool({
-                browserPlugins: [puppeteerPlugin],
-            });
-            const page = await pool.newPage();
-            const browserController = await pool.getBrowserControllerByPage(page);
+            const page = await browserPool.newPage();
+            const browserController = await browserPool.getBrowserControllerByPage(page);
             jest.spyOn(browserController, 'close');
 
             await page.close();
-            await pool.retire();
+            await browserPool.retire();
 
             expect(browserController.close).toHaveBeenCalled();
-            expect(Object.values(pool.activeBrowserControllers)).toHaveLength(0);
-            expect(Object.values(pool.retiredBrowserControllers)).toHaveLength(0);
+            expect(Object.values(browserPool.activeBrowserControllers)).toHaveLength(0);
+            expect(Object.values(browserPool.retiredBrowserControllers)).toHaveLength(0);
         });
 
         test('should destroy pool', async () => {
-            const pool = new BrowserPool({
-                browserPlugins: [puppeteerPlugin],
-            });
-            const page = await pool.newPage();
-            const browserController = await pool.getBrowserControllerByPage(page);
+            const page = await browserPool.newPage();
+            const browserController = await browserPool.getBrowserControllerByPage(page);
             jest.spyOn(browserController, 'kill');
 
             await page.close();
-            await pool.destroy();
+            await browserPool.destroy();
 
             expect(browserController.kill).toHaveBeenCalled();
-            expect(Object.values(pool.activeBrowserControllers)).toHaveLength(0);
-            expect(Object.values(pool.retiredBrowserControllers)).toHaveLength(0);
+            expect(Object.values(browserPool.activeBrowserControllers)).toHaveLength(0);
+            expect(Object.values(browserPool.retiredBrowserControllers)).toHaveLength(0);
         });
     });
 
     describe('Basic user functionality', () => {
-        let browserPool;
-
-        beforeEach(async () => {
-            browserPool = new BrowserPool({
-                browserPlugins: [puppeteerPlugin],
-            });
-        });
-
-        afterEach(async () => {
-            await browserPool.destroy();
-        });
-
         // Basic user facing functionality
         test('should open new page', async () => {
             const page = await browserPool.newPage();
@@ -87,7 +84,7 @@ describe('BrowserPool', () => {
 
             const page = await browserPool.newPage();
 
-        expect(browserPool._overridePageClose).toBeCalled(); // eslint-disable-line
+            expect(browserPool._overridePageClose).toBeCalled(); // eslint-disable-line
 
             const controller = browserPool.getBrowserControllerByPage(page);
 
@@ -105,9 +102,11 @@ describe('BrowserPool', () => {
 
             jest.spyOn(browserPool, '_retireBrowser');
             expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(0);
+
             await browserPool.newPage();
             await browserPool.newPage();
             await browserPool.newPage();
+
             expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(0);
             expect(Object.entries(browserPool.retiredBrowserControllers)).toHaveLength(1);
 
@@ -129,11 +128,12 @@ describe('BrowserPool', () => {
         });
 
         test('should killed retired instances', async () => {
-            browserPool = new BrowserPool({
-                browserPlugins: [puppeteerPlugin],
-                instanceKillerIntervalSecs: 0.1,
-                retireBrowserAfterPageCount: 1,
-            });
+            browserPool.retireBrowserAfterPageCount = 1;
+            clearInterval(browserPool.instanceKillerInterval);
+            browserPool.instanceKillerInterval = setInterval(
+                () => browserPool._killRetiredBrowsers(), // eslint-disable-line
+                100,
+            );
             jest.spyOn(browserPool, '_killRetiredBrowsers');
             jest.spyOn(browserPool, '_killBrowser');
             expect(Object.entries(browserPool.retiredBrowserControllers)).toHaveLength(0);
@@ -279,6 +279,7 @@ describe('BrowserPool', () => {
 
             test(`should emit ${BROWSER_CLOSED} event`, async () => {
                 browserPool.retireBrowserAfterPageCount = 1;
+                clearInterval(browserPool.instanceKillerInterval);
                 browserPool.instanceKillerInterval = setInterval(
                     () => browserPool._killRetiredBrowsers(), // eslint-disable-line
                     100,

@@ -142,6 +142,7 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<void>}
      */
     async retire() {
+        this.instanceKillerInterval = clearInterval(this.instanceKillerInterval);
         const allOpenBrowsers = this._getAllOpenBrowsers();
         // Maybe PromiseAll
         for (const browserController of allOpenBrowsers) {
@@ -155,6 +156,8 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<void>}
      */
     async destroy() {
+        this.instanceKillerInterval = clearInterval(this.instanceKillerInterval);
+
         const allOpenBrowsers = this._getAllOpenBrowsers();
         // Maybe PromiseAll
         for (const browserController of allOpenBrowsers) {
@@ -168,7 +171,6 @@ class BrowserPool extends EventEmitter {
         this.activeBrowserControllers = new Map();
         this.retiredBrowserControllers = new Map();
 
-        clearInterval(this.instanceKillerInterval);
         this.removeAllListeners();
     }
 
