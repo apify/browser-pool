@@ -281,9 +281,7 @@ describe('BrowserPool', () => {
                     100,
                 );
                 let calls = 0;
-                let argument;
-                browserPool.on(BROWSER_CLOSED, (arg) => {
-                    argument = arg;
+                browserPool.on(BROWSER_CLOSED, () => {
                     calls++;
                 });
 
