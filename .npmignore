@@ -2,3 +2,6 @@ apify-integrations
 design
 node_modules
 .idea
+test
+jest.config.js
+.github
