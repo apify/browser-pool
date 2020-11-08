@@ -1,6 +1,6 @@
 {
 	"name": "browser-pool",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "Rotate multiple browser using popular automation libraries",
 	"main": "src/index.js",
 	"dependencies": {
