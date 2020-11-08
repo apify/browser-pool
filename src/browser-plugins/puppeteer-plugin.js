@@ -19,7 +19,7 @@ class PuppeteerPlugin extends BrowserPlugin {
             proxyUrl = await this._parseProxyFromLaunchOptions(finalLaunchOptions);
         }
 
-        const puppeteerController = new PuppeteerController({ browser, proxyUrl, browserPlugin: this });
+        const puppeteerController = new PuppeteerController({ browser, proxyUrl: this.anonymizedProxyToOriginal[proxyUrl], browserPlugin: this });
 
         if (proxyUrl) {
             puppeteerController.once(BROWSER_TERMINATED, () => { // Maybe we can set this event inside the controller in the constructor?
@@ -51,7 +51,7 @@ class PuppeteerPlugin extends BrowserPlugin {
     /**
      *
      * @param finalLaunchOptions {object}
-     * @return {Promise<string|StringChain|_.LodashReplace1x2|void|*>}
+     * @return {Promise<string|void>}
      * @private
      */
     async _parseProxyFromLaunchOptions(finalLaunchOptions) {

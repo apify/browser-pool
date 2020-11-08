@@ -17,7 +17,7 @@ class PlaywrightPlugin extends BrowserPlugin {
             proxyUrl = await this._parseProxyFromLaunchOptions(finalLaunchOptions);
         }
 
-        const playwrightController = new PlaywrightController({ browser, proxyUrl, browserPlugin: this });
+        const playwrightController = new PlaywrightController({ browser, proxyUrl: this.anonymizedProxyToOriginal[proxyUrl], browserPlugin: this });
 
         if (proxyUrl) {
             playwrightController.once(BROWSER_TERMINATED, () => { // Maybe we can set this event inside the controller in the constructor?

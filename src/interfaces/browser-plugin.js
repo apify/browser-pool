@@ -18,8 +18,12 @@ class BrowserPlugin {
         this.name = this.constructor.name;
         this.library = library;
         this.launchOptions = launchOptions;
+        // proxy options
         this.createProxyUrlFunction = createProxyUrlFunction;
         this.proxyUrl = proxyUrl;
+
+        // internal proxy info
+        this.anonymizedProxyToOriginal = new Map();
     }
 
     /**
@@ -94,7 +98,10 @@ class BrowserPlugin {
      */
     async _getAnonymizedProxyUrl() {
         const proxyUrl = await this._getProxyUrl();
-        return proxyChain.anonymizeProxy(proxyUrl);
+        const anonymizedProxyUrl = await proxyChain.anonymizeProxy(proxyUrl);
+        this.anonymizedProxyToOriginal[anonymizedProxyUrl] = proxyUrl;
+
+        return anonymizedProxyUrl;
     }
 
     /**
@@ -104,6 +111,7 @@ class BrowserPlugin {
      * @private
      */
     async _closeAnonymizedProxy(proxyUrl) {
+        delete this.anonymizedProxyToOriginal[proxyUrl];
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
     }
 }
