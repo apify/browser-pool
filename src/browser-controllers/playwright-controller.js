@@ -1,4 +1,4 @@
-const BrowserController = require('../interfaces/browser-controller');
+const BrowserController = require('../abstract-classes/browser-controller');
 
 class PlaywrightController extends BrowserController {
     async _newPage() {

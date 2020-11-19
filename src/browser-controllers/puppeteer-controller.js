@@ -1,4 +1,4 @@
-const BrowserController = require('../interfaces/browser-controller');
+const BrowserController = require('../abstract-classes/browser-controller');
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 

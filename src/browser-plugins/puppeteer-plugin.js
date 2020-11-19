@@ -1,4 +1,4 @@
-const BrowserPlugin = require('../interfaces/browser-plugin');
+const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PuppeteerController = require('../browser-controllers/puppeteer-controller');
 const { BROWSER_CONTROLLER_EVENTS: { BROWSER_TERMINATED } } = require('../events');
 
