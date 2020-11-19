@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const ow = require('ow');
 const defaultLog = require('apify-shared/log');
 const { addTimeoutToPromise } = require('./utils');
 
@@ -32,6 +33,7 @@ class BrowserPool extends EventEmitter {
             postPageCloseHooks = [],
         } = options;
         super();
+        this._validateOptions(options);
 
         this.browserPlugins = browserPlugins;
         this.maxOpenPagesPerBrowser = maxOpenPagesPerBrowser;
@@ -226,7 +228,6 @@ class BrowserPool extends EventEmitter {
             }
 
             // NOTE: we are killing instance when the number of pages is less or equal to 1 because there is always about:blank page.
-            // @TODO: REEVALUATE - the counting of active pages is done internally now, so the about blank should not affect this.
             if (retiredBrowserController.activePages === 0) {
                 this.log.debug('Killing retired browserController because it has no open tabs', { id: retiredBrowserController.id });
                 this._killBrowser(retiredBrowserController);
@@ -285,6 +286,24 @@ class BrowserPool extends EventEmitter {
                 await hook(...args);
             }
         }
+    }
+
+    _validateOptions(options) {
+        ow(options, ow.object.exactShape({
+            // BrowserPool options and shorthands
+            browserPlugins: ow.array.minLength(1),
+            maxOpenPagesPerBrowser: ow.optional.number,
+            retireBrowserAfterPageCount: ow.optional.number,
+            operationTimeoutSecs: ow.optional.number,
+            killBrowserAfterSecs: ow.optional.number,
+            browserKillerIntervalSecs: ow.optional.number,
+            preLaunchHooks: ow.optional.array,
+            postLaunchHooks: ow.optional.array,
+            prePageCreateHooks: ow.optional.array,
+            postPageCreateHooks: ow.optional.array,
+            prePageCloseHooks: ow.optional.array,
+            postPageCloseHooks: ow.optional.array,
+        }));
     }
 }
 

@@ -3,6 +3,10 @@ const { nanoid } = require('nanoid');
 const { throwImplementationNeeded } = require('./utils');
 const { BROWSER_CONTROLLER_EVENTS: { BROWSER_KILLED, BROWSER_CLOSED, BROWSER_TERMINATED } } = require('../events');
 
+/**
+ * BrowserController abstract class is a abstract wrapper of any browser automation library.
+ * This class defines necessary methods that needs to be implemented for browser pool rotation logic.
+ */
 class BrowserController extends EventEmitter {
     constructor(options) {
         super();
@@ -18,18 +22,32 @@ class BrowserController extends EventEmitter {
         this.userData = {};
     }
 
+    /**
+     * Closes the browser.
+     * Emits respective events.
+     * @return {Promise<void>}
+     */
     async close() {
         await this._close();
         this.emit(BROWSER_CLOSED, this);
         this.emit(BROWSER_TERMINATED, this);
     }
 
+    /**
+     * Kills the browser process.
+     * Emits respective events.
+     * @return {Promise<void>}
+     */
     async kill() {
         await this._kill();
         this.emit(BROWSER_KILLED, this);
         this.emit(BROWSER_TERMINATED, this);
     }
 
+    /**
+     * Opens new browser page.
+     * @return {Promise<void>}
+     */
     async newPage() {
         this.activePages++;
         this.totalPages++;
