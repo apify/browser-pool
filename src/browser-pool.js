@@ -22,10 +22,9 @@ class BrowserPool extends EventEmitter {
             maxOpenPagesPerBrowser = 50,
             retireBrowserAfterPageCount = 100,
             operationTimeoutSecs = 15,
-            instanceKillerIntervalSecs = 60,
-            killInstanceAfterSecs = 300,
-            keepOriginalPageClose = false, // public
-            preLaunchHooks = [], // Proxy setting
+            browserKillerIntervalSecs = 60,
+            killBrowserAfterSecs = 300,
+            preLaunchHooks = [],
             postLaunchHooks = [],
             prePageCreateHooks = [],
             postPageCreateHooks = [],
@@ -38,9 +37,8 @@ class BrowserPool extends EventEmitter {
         this.maxOpenPagesPerBrowser = maxOpenPagesPerBrowser;
         this.retireBrowserAfterPageCount = retireBrowserAfterPageCount;
         this.operationTimeoutSecs = operationTimeoutSecs;
-        this.killInstanceAfterSecs = killInstanceAfterSecs;
-        this.keepOriginalPageClose = keepOriginalPageClose; // Not sure about the implementation of this.
-        this.instanceKillerIntervalSecs = instanceKillerIntervalSecs;
+        this.killBrowserAfterSecs = killBrowserAfterSecs;
+        this.browserKillerIntervalSecs = browserKillerIntervalSecs;
 
         // hooks
         this.preLaunchHooks = preLaunchHooks;
@@ -56,9 +54,9 @@ class BrowserPool extends EventEmitter {
 
         this.log = defaultLog;
 
-        this.instanceKillerInterval = setInterval(
+        this.browserKillerInterval = setInterval(
             () => this._killRetiredBrowsers(),
-            this.instanceKillerIntervalSecs * 1000,
+            this.browserKillerIntervalSecs * 1000,
         );
     }
 
@@ -142,7 +140,7 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<void>}
      */
     async retire() {
-        this.instanceKillerInterval = clearInterval(this.instanceKillerInterval);
+        this.browserKillerInterval = clearInterval(this.browserKillerInterval);
         const allOpenBrowsers = this._getAllOpenBrowsers();
         // Maybe PromiseAll
         for (const browserController of allOpenBrowsers) {
@@ -156,7 +154,7 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<void>}
      */
     async destroy() {
-        this.instanceKillerInterval = clearInterval(this.instanceKillerInterval);
+        this.browserKillerInterval = clearInterval(this.browserKillerInterval);
 
         const allOpenBrowsers = this._getAllOpenBrowsers();
         // Maybe PromiseAll
@@ -221,7 +219,7 @@ class BrowserPool extends EventEmitter {
             if (Date.now() - retiredBrowserController.lastPageOpenedAt > this.killInstanceAfterMillis) {
                 this.log.debug('killing retired browserController after period of inactivity', {
                     id: retiredBrowserController.id,
-                    killInstanceAfterSecs: this.killInstanceAfterSecs,
+                    killBrowserAfterSecs: this.killBrowserAfterSecs,
                 });
                 this._killBrowser(retiredBrowserController);
                 return;

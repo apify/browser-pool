@@ -19,7 +19,7 @@ describe('BrowserPool', () => {
     beforeEach(async () => {
         browserPool = new BrowserPool({
             browserPlugins: [puppeteerPlugin],
-            instanceKillerIntervalSecs: 1,
+            browserKillerIntervalSecs: 1,
         });
     });
 
@@ -123,10 +123,10 @@ describe('BrowserPool', () => {
         expect(browserPool._launchBrowser).toBeCalledTimes(3); // eslint-disable-line
         });
 
-        test('should killed retired instances', async () => {
+        test('should killed retired browsers', async () => {
             browserPool.retireBrowserAfterPageCount = 1;
-            clearInterval(browserPool.instanceKillerInterval);
-            browserPool.instanceKillerInterval = setInterval(
+            clearInterval(browserPool.browserKillerInterval);
+            browserPool.browserKillerInterval = setInterval(
                 () => browserPool._killRetiredBrowsers(), // eslint-disable-line
                 100,
             );
@@ -275,8 +275,8 @@ describe('BrowserPool', () => {
 
             test(`should emit ${BROWSER_CLOSED} event`, async () => {
                 browserPool.retireBrowserAfterPageCount = 1;
-                clearInterval(browserPool.instanceKillerInterval);
-                browserPool.instanceKillerInterval = setInterval(
+                clearInterval(browserPool.browserKillerInterval);
+                browserPool.browserKillerInterval = setInterval(
                     () => browserPool._killRetiredBrowsers(), // eslint-disable-line
                     50,
                 );
