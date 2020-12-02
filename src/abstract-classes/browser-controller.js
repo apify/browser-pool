@@ -56,13 +56,23 @@ class BrowserController extends EventEmitter {
         return page;
     }
 
-    // @TODO: To page or to browser?
-    async setCookies(cookies) {
-        return this._setCookies(cookies);
+    /**
+     *
+     * @param page {Object}
+     * @param cookies {Array<object>}
+     * @return {Promise<void>}
+     */
+    async setCookies(page, cookies) {
+        return this._setCookies(page, cookies);
     }
 
-    async getCookies() {
-        return this._getCookies();
+    /**
+     *
+     * @param page {Object}
+     * @return {Promise<Array<object>>}
+     */
+    async getCookies(page) {
+        return this._getCookies(page);
     }
 
     async _close() {
@@ -77,9 +87,13 @@ class BrowserController extends EventEmitter {
         throwImplementationNeeded('_newPage');
     }
 
-    async _setCookies(cookies) {}
+    async _setCookies(page, cookies) {
+        throwImplementationNeeded('_setCookies');
+    }
 
-    async _getCookies() {}
+    async _getCookies() {
+        throwImplementationNeeded('_getCookies');
+    }
 }
 
 module.exports = BrowserController;

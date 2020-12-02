@@ -44,6 +44,14 @@ class PuppeteerController extends BrowserController {
             // TODO: LOG Browser was already killed.
         }
     }
+
+    async _getCookies(page) {
+        return page.cookies();
+    }
+
+    async _setCookies(page, cookies) {
+        return page.setCookie(...cookies);
+    }
 }
 
 module.exports = PuppeteerController;
