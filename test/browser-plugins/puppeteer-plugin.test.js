@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 
 const PuppeteerPlugin = require('../../src/browser-plugins/puppeteer-plugin');
 const PuppeteerController = require('../../src/browser-controllers/puppeteer-controller');
-const BrowserControllerContext = require('../../src/abstract-classes/browser-controlller-context');
+const BrowserControllerContext = require('../../src/browser-controlller-context');
 
 describe('PuppeteerPlugin', () => {
     let browserController;
