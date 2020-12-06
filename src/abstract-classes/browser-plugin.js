@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
+const BrowserControllerContext = require('./browser-controlller-context');
 const { throwImplementationNeeded } = require('./utils');
 
 class BrowserPlugin {
@@ -11,108 +12,97 @@ class BrowserPlugin {
     constructor(library, options = {}) {
         const {
             launchOptions = {},
-            createProxyUrlFunction,
+            // IMHO - createBrowserControllerContextFunction is a little bit too much :)
+            createContextFunction = this._defaultCreateContextFunction,
             proxyUrl,
         } = options;
 
         this.name = this.constructor.name;
         this.library = library;
         this.launchOptions = launchOptions;
-        // proxy options
-        this.createProxyUrlFunction = createProxyUrlFunction;
+        this.createContextFunction = createContextFunction;
         this.proxyUrl = proxyUrl;
-
-        // internal proxy info
-        this.anonymizedProxyToOriginal = new Map();
     }
 
     /**
      * Clones and returns the launchOptions
-     * @return {Promise<object>}
+     * @return {Promise<BrowserControllerContext>}
      */
-    async createLaunchOptions() {
-        const launchOptions = _.cloneDeep(this.launchOptions);
+    async createBrowserControllerContext() {
+        const pluginLaunchOptions = _.cloneDeep(this.launchOptions);
 
-        if (this.isProxyUsed()) {
-            const proxyUrl = await this._getProxyUrl();
-            await this._addProxyToLaunchOptions(proxyUrl, launchOptions);
+        const browserControllerContext = await this.createContextFunction(pluginLaunchOptions, this);
+
+        if (!(browserControllerContext instanceof BrowserControllerContext)) {
+            throw new Error('"createContextFunction" must return instance of "BrowserControllerContext"');
         }
 
-        return launchOptions;
+        if (browserControllerContext.isProxyUsed()) {
+            await this._addProxyToLaunchOptions(browserControllerContext);
+        }
+
+        return browserControllerContext;
     }
 
     /**
      *
-     * @param finalLaunchOptions {Object}
+     *
+     * @param browserControllerContext {BrowserControllerContext}
      * @return {Promise<BrowserController>}
      */
-    async launch(finalLaunchOptions) {
-        return this._launch(finalLaunchOptions);
+    async launch(browserControllerContext) {
+        return this._launch(browserControllerContext);
     }
 
     /**
      *
-     * @param proxyUrl {string}
-     * @param options {object}
+     * @param browserControllerContext {BrowserControllerContext}
      * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(proxyUrl, options) { // eslint-disable-line
+    async _addProxyToLaunchOptions(browserControllerContext) { // eslint-disable-line
         throwImplementationNeeded('_addProxyToLaunchOptions');
     }
 
     /**
      *
-     * @param finalLaunchOptions {object}
-     * @return {Promise<void>}
+     * @param browserControllerContext {BrowserControllerContext}
+     * @return {Promise<BrowserController>}
      * @private
      */
-    async _launch(finalLaunchOptions) { // eslint-disable-line
+    async _launch(browserControllerContext) { // eslint-disable-line
         throwImplementationNeeded('_launch');
     }
 
     /**
-     *
-     * @return {Promise<string>}
-     * @private
-     */
-    async _getProxyUrl() {
-        if (this.proxyUrl) {
-            return this.proxyUrl;
-        }
-
-        return this.createProxyUrlFunction(this);
-    }
-
-    /**
-     *
-     * @return {boolean}
-     */
-    isProxyUsed() {
-        return Boolean(this.proxyUrl || this.createProxyUrlFunction);
-    }
-
-    /**
      * Starts proxy-chain server - https://www.npmjs.com/package/proxy-chain#anonymizeproxyproxyurl-callback
+     * @param proxyUrl {String} - proxy url with username and password;
      * @return {Promise<string>} - URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
      */
-    async _getAnonymizedProxyUrl() {
-        const proxyUrl = await this._getProxyUrl();
-        const anonymizedProxyUrl = await proxyChain.anonymizeProxy(proxyUrl);
-        this.anonymizedProxyToOriginal[anonymizedProxyUrl] = proxyUrl;
+    async _getAnonymizedProxyUrl(proxyUrl) {
+        let anonymizedProxyUrl;
+
+        try {
+            anonymizedProxyUrl = await proxyChain.anonymizeProxy(proxyUrl);
+        } catch (e) {
+            throw new Error(`BrowserPool: Could not anonymize proxyUrl: ${proxyUrl}. Reason: ${e.message}.`);
+        }
 
         return anonymizedProxyUrl;
     }
 
     /**
      *
-     * @param proxyUrl {string}
+     * @param proxyUrl {string} - anonymized proxy url.
      * @return {Promise<any>}
      * @private
      */
     async _closeAnonymizedProxy(proxyUrl) {
-        delete this.anonymizedProxyToOriginal[proxyUrl];
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
+    }
+
+    async _defaultCreateContextFunction(pluginLaunchOptions, plugin) {
+        return new BrowserControllerContext({ pluginLaunchOptions, proxyUrl: this.proxyUrl });
     }
 }
 
