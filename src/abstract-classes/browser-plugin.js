@@ -31,7 +31,8 @@ class BrowserPlugin {
     async createBrowserControllerContext() {
         const pluginLaunchOptions = _.cloneDeep(this.launchOptions);
 
-        const browserControllerContext = await this.createContextFunction(pluginLaunchOptions, this);
+        const browserControllerContext = await this.createContextFunction(this);
+        browserControllerContext.pluginLaunchOptions = pluginLaunchOptions;
 
         if (!(browserControllerContext instanceof BrowserControllerContext)) {
             throw new Error('"createContextFunction" must return instance of "BrowserControllerContext"');
@@ -101,8 +102,8 @@ class BrowserPlugin {
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
     }
 
-    async _defaultCreateContextFunction(pluginLaunchOptions, plugin) {
-        return new BrowserControllerContext({ pluginLaunchOptions, proxyUrl: this.proxyUrl });
+    async _defaultCreateContextFunction(plugin) {
+        return new BrowserControllerContext({ proxyUrl: this.proxyUrl });
     }
 }
 
