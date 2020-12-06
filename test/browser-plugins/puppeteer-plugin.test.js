@@ -22,6 +22,16 @@ describe('PuppeteerPlugin', () => {
         expect(browserController.browser.newPage).toBeDefined();
     });
 
+    test('should launch  with custom context', async () => {
+        const createContextFunction = async () => new BrowserControllerContext({ customOption: 'TEST' });
+        const puppeteerPlugin = new PuppeteerPlugin(puppeteer, { createContextFunction });
+
+        const context = await puppeteerPlugin.createBrowserControllerContext();
+        browserController = await puppeteerPlugin.launch(context);
+        expect(browserController.customOption).toBeDefined();
+        expect(browserController.customOption).toBe('TEST');
+    });
+
     test('should work with proxyUrl', async () => {
         const proxyUrl = 'http://10.10.10.0:8080';
         const puppeteerPlugin = new PuppeteerPlugin(puppeteer, { proxyUrl });
