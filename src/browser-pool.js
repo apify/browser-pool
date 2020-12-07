@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-const ow = require('ow');
+const ow = require('ow').default;
 const defaultLog = require('apify-shared/log');
 const { addTimeoutToPromise } = require('./utils');
 

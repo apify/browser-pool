@@ -27,7 +27,7 @@ describe('BrowserPool', () => {
         browserPool = await browserPool.destroy();
     });
 
-    describe('Inicialization & retirement', () => {
+    describe('Initialization & retirement', () => {
         test('should retire pool', async () => {
             const page = await browserPool.newPage();
             const browserController = await browserPool.getBrowserControllerByPage(page);

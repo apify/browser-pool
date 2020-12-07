@@ -91,7 +91,7 @@ class BrowserController extends EventEmitter {
         throwImplementationNeeded('_newPage');
     }
 
-    async _setCookies(page, cookies) {
+    async _setCookies(page, cookies) { // eslint-disable-line no-unused-vars
         throwImplementationNeeded('_setCookies');
     }
 

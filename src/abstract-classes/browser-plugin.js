@@ -102,7 +102,7 @@ class BrowserPlugin {
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
     }
 
-    async _defaultCreateContextFunction(plugin) {
+    async _defaultCreateContextFunction(plugin) { // eslint-disable-line no-unused-vars
         return new BrowserControllerContext({ proxyUrl: this.proxyUrl });
     }
 }
