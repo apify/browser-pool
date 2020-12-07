@@ -34,11 +34,11 @@ describe('BrowserPool', () => {
             jest.spyOn(browserController, 'close');
 
             await page.close();
-            await browserPool.retire();
+            await browserPool.retireAllBrowsers();
 
             expect(browserController.close).toHaveBeenCalled();
-            expect(Object.values(browserPool.activeBrowserControllers)).toHaveLength(0);
-            expect(Object.values(browserPool.retiredBrowserControllers)).toHaveLength(0);
+            expect(browserPool.activeBrowserControllers.size).toBe(0);
+            expect(browserPool.retiredBrowserControllers.size).toBe(0);
         });
 
         test('should destroy pool', async () => {
@@ -50,8 +50,8 @@ describe('BrowserPool', () => {
             await browserPool.destroy();
 
             expect(browserController.kill).toHaveBeenCalled();
-            expect(Object.values(browserPool.activeBrowserControllers)).toHaveLength(0);
-            expect(Object.values(browserPool.retiredBrowserControllers)).toHaveLength(0);
+            expect(browserPool.activeBrowserControllers.size).toBe(0);
+            expect(browserPool.retiredBrowserControllers.size).toBe(0);
         });
     });
 
@@ -71,7 +71,7 @@ describe('BrowserPool', () => {
             await browserPool.newPage();
             await browserPool.newPageInNewBrowser();
 
-            expect(Object.values(browserPool.activeBrowserControllers)).toHaveLength(2);
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
             expect(puppeteerPlugin.launch).toHaveBeenCalledTimes(2);
         });
 
@@ -97,16 +97,16 @@ describe('BrowserPool', () => {
             browserPool.retireBrowserAfterPageCount = 3;
 
             jest.spyOn(browserPool, '_retireBrowser');
-            expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(0);
+            expect(browserPool.activeBrowserControllers.size).toBe(0);
 
             await browserPool.newPage();
             await browserPool.newPage();
             await browserPool.newPage();
 
-            expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(0);
-            expect(Object.entries(browserPool.retiredBrowserControllers)).toHaveLength(1);
+            expect(browserPool.activeBrowserControllers.size).toBe(0);
+            expect(browserPool.retiredBrowserControllers.size).toBe(1);
 
-        expect(browserPool._retireBrowser).toBeCalledTimes(1); // eslint-disable-line
+            expect(browserPool._retireBrowser).toBeCalledTimes(1); // eslint-disable-line
         });
 
         test('should allow max pages per browser', async () => {
@@ -114,13 +114,13 @@ describe('BrowserPool', () => {
             jest.spyOn(browserPool, '_launchBrowser');
 
             await browserPool.newPage();
-            expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(1);
+            expect(browserPool.activeBrowserControllers.size).toBe(1);
             await browserPool.newPage();
-            expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(2);
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
             await browserPool.newPage();
-            expect(Object.entries(browserPool.activeBrowserControllers)).toHaveLength(3);
+            expect(browserPool.activeBrowserControllers.size).toBe(3);
 
-        expect(browserPool._launchBrowser).toBeCalledTimes(3); // eslint-disable-line
+            expect(browserPool._launchBrowser).toBeCalledTimes(3); // eslint-disable-line
         });
 
         test('should killed retired browsers', async () => {
@@ -132,19 +132,19 @@ describe('BrowserPool', () => {
             );
             jest.spyOn(browserPool, '_killRetiredBrowsers');
             jest.spyOn(browserPool, '_killBrowser');
-            expect(Object.entries(browserPool.retiredBrowserControllers)).toHaveLength(0);
+            expect(browserPool.retiredBrowserControllers.size).toBe(0);
 
             const page = await browserPool.newPage();
-            expect(Object.entries(browserPool.retiredBrowserControllers)).toHaveLength(1);
+            expect(browserPool.retiredBrowserControllers.size).toBe(1);
             await page.close();
 
             await new Promise((resolve) => setTimeout(() => {
                 resolve();
             }, 1000));
 
-        expect(browserPool._killRetiredBrowsers).toHaveBeenCalled(); //eslint-disable-line
-        expect(browserPool._killBrowser).toHaveBeenCalled(); //eslint-disable-line
-            expect(Object.entries(browserPool.retiredBrowserControllers)).toHaveLength(0);
+            expect(browserPool._killRetiredBrowsers).toHaveBeenCalled(); //eslint-disable-line
+            expect(browserPool._killBrowser).toHaveBeenCalled(); //eslint-disable-line
+            expect(browserPool.retiredBrowserControllers.size).toBe(0);
         });
 
         describe('hooks', () => {
