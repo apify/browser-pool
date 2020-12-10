@@ -94,5 +94,22 @@ describe('Plugins', () => {
 
     runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer)
 
+    describe('Playwright specifics', () => {
+        let browserController;
+
+        afterEach(async () => {
+            await browserController.kill();
+        });
+
+        test('should work with proxyUrl', async () => {
+            const proxyUrl = 'http://10.10.10.0:8080';
+            const plugin = new PlaywrightPlugin(playwright.chromium, { proxyUrl });
+            const context = await plugin.createBrowserControllerContext();
+
+            browserController = await plugin.launch(context);
+            expect(context.pluginLaunchOptions.proxy.server).toEqual(proxyUrl)
+        });
+    })
+
     runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium)
 });
