@@ -8,13 +8,17 @@ class PlaywrightController extends BrowserController {
     }
 
     async _newPage() {
-        const context = this.browser.newContext();
+        const context = await this.browser.newContext();
         const page = await context.newPage();
 
         this.pagesToContext[page] = context;
 
-        page.once('close', () => {
-            context.close(); // .catch();
+        page.once('close', async () => {
+            try {
+                await context.close(); // does not work with .catch() for some reason
+            } catch (e) {
+
+            }
             this.activePages--;
         });
 
