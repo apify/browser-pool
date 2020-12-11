@@ -16,6 +16,7 @@ class PlaywrightController extends BrowserController {
         page.once('close', async () => {
             try {
                 await context.close(); // does not work with .catch() for some reason
+            // eslint-disable-next-line no-empty
             } catch (e) {
 
             }

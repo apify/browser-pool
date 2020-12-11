@@ -109,9 +109,8 @@ class BrowserPlugin {
     async _createContextFunction() {
         if (this.createContextFunction) return this.createContextFunction(this);
 
-        return this._defaultCreateContextFunction()
+        return this._defaultCreateContextFunction();
     }
-
 }
 
 module.exports = BrowserPlugin;
