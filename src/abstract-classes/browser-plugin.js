@@ -13,7 +13,7 @@ class BrowserPlugin {
         const {
             launchOptions = {},
             // IMHO - createBrowserControllerContextFunction is a little bit too much :)
-            createContextFunction = this._defaultCreateContextFunction,
+            createContextFunction,
             proxyUrl,
         } = options;
 
@@ -31,7 +31,7 @@ class BrowserPlugin {
     async createBrowserControllerContext() {
         const pluginLaunchOptions = _.cloneDeep(this.launchOptions);
 
-        const browserControllerContext = await this.createContextFunction(this);
+        const browserControllerContext = await this._createContextFunction();
         browserControllerContext.pluginLaunchOptions = pluginLaunchOptions;
 
         if (!(browserControllerContext instanceof BrowserControllerContext)) {
@@ -102,9 +102,16 @@ class BrowserPlugin {
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
     }
 
-    async _defaultCreateContextFunction(plugin) { // eslint-disable-line no-unused-vars
+    async _defaultCreateContextFunction() { // eslint-disable-line no-unused-vars
         return new BrowserControllerContext({ proxyUrl: this.proxyUrl });
     }
+
+    async _createContextFunction() {
+        if (this.createContextFunction) return this.createContextFunction(this);
+
+        return this._defaultCreateContextFunction()
+    }
+
 }
 
 module.exports = BrowserPlugin;
