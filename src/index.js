@@ -1,5 +1,5 @@
 const BrowserPool = require('./browser-pool');
-const BrowserControllerContext = require('./browser-controlller-context');
+const BrowserControllerContext = require('./browser-controller-context');
 
 const PuppeteerPlugin = require('./browser-plugins/puppeteer-plugin');
 const PlaywrightPlugin = require('./browser-plugins/playwright-plugin');
