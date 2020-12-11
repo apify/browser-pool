@@ -5,23 +5,25 @@ const { BROWSER_CONTROLLER_EVENTS: { BROWSER_TERMINATED } } = require('../events
 class PlaywrightPlugin extends BrowserPlugin {
     /**
      *
-     * @param finalLaunchOptions {object}
+     * @param browserControllerContext {BrowserControllerContext}
      * @return {Promise<PlaywrightController>}
      * @private
      */
-    async _launch(finalLaunchOptions) {
-        let proxyUrl;
-        const browser = await this.library.launch(finalLaunchOptions);
+    async _launch(browserControllerContext) {
+        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl, ...rest } = browserControllerContext;
+        const browser = await this.library.launch(pluginLaunchOptions);
 
-        if (this.isProxyUsed()) {
-            proxyUrl = await this._parseProxyFromLaunchOptions(finalLaunchOptions);
-        }
+        const playwrightController = new PlaywrightController({
+            browser,
+            browserPlugin: this,
+            proxyUrl,
+            anonymizedProxyUrl,
+            ...rest,
+        });
 
-        const playwrightController = new PlaywrightController({ browser, proxyUrl: this.anonymizedProxyToOriginal[proxyUrl], browserPlugin: this });
-
-        if (proxyUrl) {
+        if (anonymizedProxyUrl) {
             playwrightController.once(BROWSER_TERMINATED, () => { // Maybe we can set this event inside the controller in the constructor?
-                this._closeAnonymizedProxy(proxyUrl); // Nothing to do here really.
+                this._closeAnonymizedProxy(anonymizedProxyUrl); // Nothing to do here really.
             });
         }
 
@@ -30,23 +32,16 @@ class PlaywrightPlugin extends BrowserPlugin {
 
     /**
      *
-     * @param proxyUrl {string}
-     * @param options {object}
+     * @param browserControllerContext {BrowserControllerContext}
      * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(proxyUrl, options) {
-        options.proxy = { server: await this._getAnonymizedProxyUrl() };
-    }
+    async _addProxyToLaunchOptions(browserControllerContext) {
+        const { pluginLaunchOptions, proxyUrl } = browserControllerContext;
+        const anonymizedProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
+        browserControllerContext.anonymizedProxyUrl = anonymizedProxyUrl;
 
-    /**
-     *
-     * @param finalLaunchOptions {object}
-     * @return {Promise<string|StringChain|_.LodashReplace1x2|void|*>}
-     * @private
-     */
-    async _parseProxyFromLaunchOptions(finalLaunchOptions) {
-        return finalLaunchOptions.proxy.server;
+        pluginLaunchOptions.proxy = { server: anonymizedProxyUrl };
     }
 }
 

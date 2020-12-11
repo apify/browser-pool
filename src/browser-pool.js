@@ -1,5 +1,5 @@
 const EventEmitter = require('events');
-const ow = require('ow');
+const ow = require('ow').default;
 const defaultLog = require('apify-shared/log');
 const { addTimeoutToPromise } = require('./utils');
 
@@ -18,13 +18,28 @@ const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 
 class BrowserPool extends EventEmitter {
     constructor(options = {}) {
+        ow(options, ow.object.exactShape({
+            browserPlugins: ow.array.minLength(1),
+            maxOpenPagesPerBrowser: ow.optional.number,
+            retireBrowserAfterPageCount: ow.optional.number,
+            operationTimeoutSecs: ow.optional.number,
+            killBrowserAfterSecs: ow.optional.number,
+            browserKillerIntervalSecs: ow.optional.number,
+            preLaunchHooks: ow.optional.array,
+            postLaunchHooks: ow.optional.array,
+            prePageCreateHooks: ow.optional.array,
+            postPageCreateHooks: ow.optional.array,
+            prePageCloseHooks: ow.optional.array,
+            postPageCloseHooks: ow.optional.array,
+        }));
+
         const {
             browserPlugins,
             maxOpenPagesPerBrowser = 50,
             retireBrowserAfterPageCount = 100,
             operationTimeoutSecs = 15,
-            browserKillerIntervalSecs = 60,
             killBrowserAfterSecs = 300,
+            browserKillerIntervalSecs = 60,
             preLaunchHooks = [],
             postLaunchHooks = [],
             prePageCreateHooks = [],
@@ -32,15 +47,15 @@ class BrowserPool extends EventEmitter {
             prePageCloseHooks = [],
             postPageCloseHooks = [],
         } = options;
+
         super();
-        this._validateOptions(options);
 
         this.browserPlugins = browserPlugins;
         this.maxOpenPagesPerBrowser = maxOpenPagesPerBrowser;
         this.retireBrowserAfterPageCount = retireBrowserAfterPageCount;
-        this.operationTimeoutSecs = operationTimeoutSecs;
-        this.killBrowserAfterSecs = killBrowserAfterSecs;
-        this.browserKillerIntervalSecs = browserKillerIntervalSecs;
+        this.operationTimeoutMillis = operationTimeoutSecs * 1000;
+        this.killBrowserAfterMillis = killBrowserAfterSecs * 1000;
+        this.browserKillerIntervalMillis = browserKillerIntervalSecs * 1000;
 
         // hooks
         this.preLaunchHooks = preLaunchHooks;
@@ -50,15 +65,15 @@ class BrowserPool extends EventEmitter {
         this.prePageCloseHooks = prePageCloseHooks;
         this.postPageCloseHooks = postPageCloseHooks;
 
-        this.activeBrowserControllers = new Map();
-        this.retiredBrowserControllers = new Map();
-        this.pagesToBrowserControler = new WeakMap();
+        this.activeBrowserControllers = new Set();
+        this.retiredBrowserControllers = new Set();
+        this.pageToBrowserController = new WeakMap();
 
         this.log = defaultLog;
 
         this.browserKillerInterval = setInterval(
             () => this._killRetiredBrowsers(),
-            this.browserKillerIntervalSecs * 1000,
+            this.browserKillerIntervalMillis,
         );
     }
 
@@ -88,7 +103,7 @@ class BrowserPool extends EventEmitter {
      * @return {BrowserController|undefined}
      */
     getBrowserControllerByPage(page) {
-        return this.pagesToBrowserControler[page];
+        return this.pageToBrowserController.get(page);
     }
 
     async _createPageForBrowser(browserController) {
@@ -96,10 +111,10 @@ class BrowserPool extends EventEmitter {
             await this._executeHooks(this.prePageCreateHooks, browserController);
             const page = await addTimeoutToPromise(
                 browserController.newPage(),
-                this.operationTimeoutSecs * 1000,
+                this.operationTimeoutMillis,
                 'browserController.newPage() timed out.',
             );
-            this.pagesToBrowserControler[page] = browserController;
+            this.pageToBrowserController.set(page, browserController);
 
             if (browserController.totalPages >= this.retireBrowserAfterPageCount) {
                 this._retireBrowser(browserController);
@@ -117,20 +132,21 @@ class BrowserPool extends EventEmitter {
         }
     }
 
-    // Waits for pending jobs to finish.
+    /**
+     * @param {BrowserController} browserController
+     * @private
+     */
     _retireBrowser(browserController) {
-        const { id } = browserController;
+        const hasBeenRetiredOrKilled = !this.activeBrowserControllers.has(browserController);
+        if (hasBeenRetiredOrKilled) return;
 
-        if (!this.activeBrowserControllers[id]) return; // RETIRED ALREADY;
-        this.retiredBrowserControllers[id] = browserController;
+        this.retiredBrowserControllers.add(browserController);
         this.emit(BROWSER_RETIRED, browserController);
-        delete this.activeBrowserControllers[id];
+        this.activeBrowserControllers.delete(browserController);
     }
 
     /**
-     *
-     * @param page {Page}
-     * @return {undefined}
+     * @param {Page} page
      */
     retireBrowserByPage(page) {
         const browserController = this.getBrowserControllerByPage(page);
@@ -138,10 +154,10 @@ class BrowserPool extends EventEmitter {
     }
 
     /**
-     * Closes all browserControllers
+     * Retires all managed browsers.
      * @return {Promise<void>}
      */
-    async retire() {
+    async retireAllBrowsers() {
         this.browserKillerInterval = clearInterval(this.browserKillerInterval);
         const allOpenBrowsers = this._getAllOpenBrowsers();
         // Maybe PromiseAll
@@ -152,53 +168,54 @@ class BrowserPool extends EventEmitter {
     }
 
     /**
-     * Kills all browserControllers
+     * Kills all managed browsers and tears down the pool.
      * @return {Promise<void>}
      */
     async destroy() {
         this.browserKillerInterval = clearInterval(this.browserKillerInterval);
 
-        const allOpenBrowsers = this._getAllOpenBrowsers();
-        // Maybe PromiseAll
-        for (const browserController of allOpenBrowsers) {
-            await browserController.kill();
-        }
+        const controllers = this._getAllOpenBrowsers();
+        controllers.forEach((controller) => {
+            controller.kill().catch((err) => {
+                this.log.debug(`Could not kill browser when destroying the pool.\nCause${err.message}`);
+            });
+        });
 
         this._teardown();
     }
 
     _teardown() {
-        this.activeBrowserControllers = new Map();
-        this.retiredBrowserControllers = new Map();
+        this.activeBrowserControllers.clear();
+        this.retiredBrowserControllers.clear();
 
         this.removeAllListeners();
     }
 
     /**
-     *
-     * @return {[]}
+     * @return {Set<BrowserController>}
      * @private
      */
     _getAllOpenBrowsers() {
-        const activeBrowserControllers = Object.values(this.activeBrowserControllers) || [];
-        const retiredBrowserControllers = Object.values(this.retiredBrowserControllers) || [];
-
-        return activeBrowserControllers.concat(retiredBrowserControllers);
+        return new Set([...this.activeBrowserControllers, ...this.retiredBrowserControllers]);
     }
 
+    /**
+     * @return {Promise<BrowserController>}
+     * @private
+     */
     async _launchBrowser() {
         const browserPlugin = this._pickNewBrowserPluginToLaunch();
-        const launchOptions = await browserPlugin.createLaunchOptions();
+        const browserControllerContext = await browserPlugin.createBrowserControllerContext();
 
-        await this._executeHooks(this.preLaunchHooks, browserPlugin, launchOptions);
+        await this._executeHooks(this.preLaunchHooks, browserPlugin, browserControllerContext);
 
-        const browserController = await browserPlugin.launch(launchOptions);
+        const browserController = await browserPlugin.launch(browserControllerContext);
         this.log.debug('Launched new browserController', { id: browserController.id, name: browserController.name });
 
         this.emit(BROWSER_LAUNCHED, browserController);
         await this._executeHooks(this.postLaunchHooks, browserController);
 
-        this.activeBrowserControllers[browserController.id] = browserController;
+        this.activeBrowserControllers.add(browserController);
 
         return browserController;
     }
@@ -208,102 +225,100 @@ class BrowserPool extends EventEmitter {
     }
 
     _pickBrowserWithFreeCapacity() {
-        return Object
-            .values(this.activeBrowserControllers)
+        return Array.from(this.activeBrowserControllers.values())
             .find((inst) => inst.activePages < this.maxOpenPagesPerBrowser);
     }
 
     async _killRetiredBrowsers() {
-        const retiredBrowserControllers = Object.values(this.retiredBrowserControllers);
-        this.log.debug('Retired browserControllers count', { count: retiredBrowserControllers.length });
+        this.log.debug('Retired browserControllers count', { count: this.retiredBrowserControllers.size });
 
-        for (const retiredBrowserController of retiredBrowserControllers) {
-            if (Date.now() - retiredBrowserController.lastPageOpenedAt > this.killInstanceAfterMillis) {
-                this.log.debug('killing retired browserController after period of inactivity', {
+        for (const retiredBrowserController of this.retiredBrowserControllers.values()) {
+            const millisSinceLastPageOpened = Date.now() - retiredBrowserController.lastPageOpenedAt;
+            if (millisSinceLastPageOpened >= this.killBrowserAfterMillis) {
+                this.log.debug(`Killing retired browserController after ${this.killBrowserAfterMillis}ms of inactivity.`, {
                     id: retiredBrowserController.id,
-                    killBrowserAfterSecs: this.killBrowserAfterSecs,
                 });
                 this._killBrowser(retiredBrowserController);
-                return;
-            }
-
-            // NOTE: we are killing instance when the number of pages is less or equal to 1 because there is always about:blank page.
-            if (retiredBrowserController.activePages === 0) {
+            } else if (retiredBrowserController.activePages === 0) {
                 this.log.debug('Killing retired browserController because it has no open tabs', { id: retiredBrowserController.id });
                 this._killBrowser(retiredBrowserController);
             }
         }
     }
 
-    async _killBrowser(browserController) {
-        try {
-            const { id } = browserController;
+    // TODO shouldn't the below be a method of the BrowserController?
+    // Or at least the part where it closes and then kills?
+    /**
+     * @param {BrowserController} browserController
+     * @private
+     */
+    _killBrowser(browserController) {
+        const { id } = browserController;
 
-            setTimeout(() => {
-                // This is here because users reported that it happened
-                // that error `TypeError: Cannot read property 'kill' of null` was thrown.
-                // Likely Chrome process wasn't started due to some error ...
-                browserController.kill();
-            }, PROCESS_KILL_TIMEOUT_MILLIS);
+        browserController.close()
+            .catch((err) => {
+                this.log.debug(`Could not close browser.\nCause${err.message}`, { id });
+            })
+            .finally(() => {
+                this.emit(BROWSER_CLOSED, browserController);
+            });
 
-            delete this.retiredBrowserControllers[id];
-            await browserController.close();
-        } catch (e) {
-            // Do nothing. If it is impossible to kill it is already dead.
-        } finally {
-            this.emit(BROWSER_CLOSED, browserController);
-        }
+        // Make sure the browser really dies. Let's keep the debug logging for now
+        // to see how it behaves in production.
+        setTimeout(() => {
+            browserController.kill().catch((err) => {
+                this.log.debug(`Could not kill browser.\nCause${err.message}`, { id });
+            });
+        }, PROCESS_KILL_TIMEOUT_MILLIS);
+        this.retiredBrowserControllers.delete(browserController);
     }
 
+    /**
+     * @param {Page} page
+     * @return {Promise<void>}
+     * @private
+     */
     _overridePageClose(page) {
         const originalPageClose = page.close;
+        const browserController = this.pageToBrowserController.get(page);
 
         page.close = async (...args) => {
-            const browserController = this.pagesToBrowserControler[page];
-            const { id } = browserController;
             await this._executeHooks(this.prePageCloseHooks, browserController, page);
-
-            if (browserController.activePages === 0 && this.retiredBrowserControllers[id]) {
-                // Run this with a delay, otherwise page.close()
-                // might fail with "Protocol error (Target.closeTarget): Target closed."
-                setTimeout(() => {
-                    this.log.debug('Killing retired browserController because it has no active pages', { id });
-                    this._killBrowser(browserController);
-                }, PAGE_CLOSE_KILL_TIMEOUT_MILLIS);
-            }
             await originalPageClose.apply(page, args)
                 .catch((err) => {
-                    this.log.debug('Page.close() failed', { errorMessage: err.message, id });
+                    this.log.debug(`Could not close page.\nCause:${err.message}`, { id: browserController.id });
                 });
-            this.emit(PAGE_CLOSED, page);
             await this._executeHooks(this.postPageCloseHooks, browserController, page);
+            this.emit(PAGE_CLOSED, page);
+            this._killRetiredBrowserWithNoPages(browserController);
         };
     }
 
+    /**
+     * @param {function[]} hooks
+     * @param {Array} args
+     * @return {Promise<void>}
+     * @private
+     */
     async _executeHooks(hooks, ...args) {
-        if (Array.isArray(hooks) && hooks.length) {
-            for (const hook of hooks) {
-                await hook(...args);
-            }
+        for (const hook of hooks) {
+            await hook(...args);
         }
     }
 
-    _validateOptions(options) {
-        ow(options, ow.object.exactShape({
-            // BrowserPool options and shorthands
-            browserPlugins: ow.array.minLength(1),
-            maxOpenPagesPerBrowser: ow.optional.number,
-            retireBrowserAfterPageCount: ow.optional.number,
-            operationTimeoutSecs: ow.optional.number,
-            killBrowserAfterSecs: ow.optional.number,
-            browserKillerIntervalSecs: ow.optional.number,
-            preLaunchHooks: ow.optional.array,
-            postLaunchHooks: ow.optional.array,
-            prePageCreateHooks: ow.optional.array,
-            postPageCreateHooks: ow.optional.array,
-            prePageCloseHooks: ow.optional.array,
-            postPageCloseHooks: ow.optional.array,
-        }));
+    /**
+     * @param {BrowserController} browserController
+     * @private
+     */
+    _killRetiredBrowserWithNoPages(browserController) {
+        if (browserController.activePages === 0 && this.retiredBrowserControllers.has(browserController)) {
+            // Run this with a delay, otherwise page.close()
+            // might fail with "Protocol error (Target.closeTarget): Target closed."
+            setTimeout(() => {
+                this.log.debug('Killing retired browser because it has no active pages', { id: browserController.id });
+                this._killBrowser(browserController);
+            }, PAGE_CLOSE_KILL_TIMEOUT_MILLIS);
+        }
     }
 }
 

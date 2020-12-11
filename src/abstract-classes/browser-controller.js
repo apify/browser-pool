@@ -11,15 +11,19 @@ class BrowserController extends EventEmitter {
     constructor(options) {
         super();
 
-        const { browser, proxyUrl, browserPlugin } = options;
+        const { browser, proxyUrl, anonymizedProxy, browserPlugin, ...rest } = options;
         this.id = nanoid();
+        this.browserPlugin = browserPlugin;
         this.browser = browser;
         this.activePages = 0;
         this.totalPages = 0;
         this.lastPageOpenedAt = Date.now(); // Maybe more like last used at.
         this.proxyUrl = proxyUrl;
-        this.browserPlugin = browserPlugin;
+        this.anonymizedProxy = anonymizedProxy;
+
         this.userData = {};
+
+        Object.assign(this, rest);
     }
 
     /**
@@ -87,7 +91,7 @@ class BrowserController extends EventEmitter {
         throwImplementationNeeded('_newPage');
     }
 
-    async _setCookies(page, cookies) {
+    async _setCookies(page, cookies) { // eslint-disable-line no-unused-vars
         throwImplementationNeeded('_setCookies');
     }
 

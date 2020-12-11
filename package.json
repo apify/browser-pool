@@ -1,21 +1,21 @@
 {
 	"name": "browser-pool",
-	"version": "0.0.6",
+	"version": "0.1.0",
 	"description": "Rotate multiple browser using popular automation libraries",
 	"main": "src/index.js",
 	"dependencies": {
-		"apify": "^0.21.0",
 		"apify-shared": "^0.5.0",
 		"lodash": "^4.17.20",
 		"nanoid": "^3.1.16",
-		"ow": "^0.19.0",
+		"ow": "^0.20.0",
 		"proxy-chain": "^0.4.5"
 	},
 	"devDependencies": {
 		"@apify/eslint-config": "^0.1.0",
+		"@types/jest": "^26.0.16",
 		"eslint": "^7.10.0",
 		"jest": "^26.6.3",
-		"playwright": "1.5.1",
+		"playwright": "^1.6.2",
 		"puppeteer": "^5.3.1"
 	},
 	"scripts": {
