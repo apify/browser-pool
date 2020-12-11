@@ -2,4 +2,4 @@
 
 Rotate any browsers using popular javascript automation libraries.
 
-`playwright` and `puppeteer` ready.
+`playwright` and `puppeteer` ready. `SecretAgent` support comming soon.
