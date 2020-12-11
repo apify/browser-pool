@@ -10,7 +10,7 @@ const PlaywrightController = require('../../src/browser-controllers/playwright-c
 const BrowserControllerContext = require('../../src/browser-controller-context');
 
 const runPluginTest = (Plugin, Controller, library) => {
-    const plg = new Plugin(library)
+    const plg = new Plugin(library);
 
     describe(`${plg.constructor.name} general `, () => {
         let browserController;
@@ -69,9 +69,8 @@ const runPluginTest = (Plugin, Controller, library) => {
             expect(cookies[0].value).toBe('TESTER-COOKIE');
         });
     });
-}
+};
 describe('Plugins', () => {
-
     describe('Puppeteer specifics', () => {
         let browserController;
 
@@ -90,9 +89,9 @@ describe('Plugins', () => {
             expect(argWithProxy.includes('http://10.10.10.0:8080')).toBeTruthy();
             expect(browserController.proxyUrl).toEqual(proxyUrl);
         });
-    })
+    });
 
-    runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer)
+    runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer);
 
     describe('Playwright specifics', () => {
         let browserController;
@@ -107,9 +106,9 @@ describe('Plugins', () => {
             const context = await plugin.createBrowserControllerContext();
 
             browserController = await plugin.launch(context);
-            expect(context.pluginLaunchOptions.proxy.server).toEqual(proxyUrl)
+            expect(context.pluginLaunchOptions.proxy.server).toEqual(proxyUrl);
         });
-    })
+    });
 
-    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium)
+    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium);
 });
