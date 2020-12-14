@@ -275,7 +275,6 @@ class BrowserPool extends EventEmitter {
 
     /**
      * @param {Page} page
-     * @return {Promise<void>}
      * @private
      */
     _overridePageClose(page) {
