@@ -1,7 +1,10 @@
 const EventEmitter = require('events');
 const { nanoid } = require('nanoid');
+const log = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
-const { BROWSER_CONTROLLER_EVENTS: { BROWSER_KILLED, BROWSER_CLOSED, BROWSER_TERMINATED } } = require('../events');
+const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events');
+
+const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 /**
  * BrowserController abstract class is a abstract wrapper of any browser automation library.
@@ -21,31 +24,37 @@ class BrowserController extends EventEmitter {
         this.proxyUrl = proxyUrl;
         this.anonymizedProxy = anonymizedProxy;
 
-        this.userData = {};
-
         Object.assign(this, rest);
     }
 
     /**
-     * Closes the browser.
-     * Emits respective events.
+     * Gracefully closes the browser and makes sure
+     * there will be no lingering browser processes.
+     *
+     * Emits 'browserClosed' event.
      * @return {Promise<void>}
      */
     async close() {
-        await this._close();
+        await this._close().catch((err) => {
+            log.debug(`Could not close browser.\nCause: ${err.message}`, { id: this.id });
+        });
         this.emit(BROWSER_CLOSED, this);
-        this.emit(BROWSER_TERMINATED, this);
+        setTimeout(() => {
+            this._kill().catch((err) => {
+                log.debug(`Could not kill browser.\nCause: ${err.message}`, { id: this.id });
+            });
+        }, PROCESS_KILL_TIMEOUT_MILLIS);
     }
 
     /**
-     * Kills the browser process.
-     * Emits respective events.
+     * Immediately kills the browser process.
+     *
+     * Emits 'browserClosed' event.
      * @return {Promise<void>}
      */
     async kill() {
         await this._kill();
-        this.emit(BROWSER_KILLED, this);
-        this.emit(BROWSER_TERMINATED, this);
+        this.emit(BROWSER_CLOSED, this);
     }
 
     /**

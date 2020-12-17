@@ -16,7 +16,7 @@ const runPluginTest = (Plugin, Controller, library) => {
         let browserController;
 
         afterEach(async () => {
-            await browserController.kill();
+            await browserController.close();
         });
 
         test('should launch browser', async () => {
