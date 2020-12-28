@@ -8,9 +8,9 @@ class PlaywrightController extends BrowserController {
         this.pageToContext = new WeakMap();
     }
 
-    async _newPage() {
+    async _newPage(pageOptions) {
         const context = await this.browser.newContext();
-        const page = await context.newPage();
+        const page = await context.newPage(pageOptions);
 
         this.pageToContext.set(page, context);
 

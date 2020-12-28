@@ -3,8 +3,8 @@ const BrowserController = require('../abstract-classes/browser-controller');
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 class PuppeteerController extends BrowserController {
-    async _newPage() {
-        const page = await this.browser.newPage();
+    async _newPage(pageOptions) {
+        const page = await this.browser.newPage(pageOptions);
 
         page.once('close', () => {
             this.activePages--;

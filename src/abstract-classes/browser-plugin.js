@@ -8,51 +8,46 @@ class BrowserPlugin {
      *
      * @param library {object}
      * @param options {object}
+     * @param options.launchOptions {object}
      */
     constructor(library, options = {}) {
         const {
             launchOptions = {},
-            // IMHO - createBrowserControllerContextFunction is a little bit too much :)
-            createContextFunction,
-            proxyUrl,
         } = options;
 
         this.name = this.constructor.name;
         this.library = library;
         this.launchOptions = launchOptions;
-        this.createContextFunction = createContextFunction;
-        this.proxyUrl = proxyUrl;
     }
 
     /**
-     * Clones and returns the launchOptions
-     * @return {Promise<BrowserControllerContext>}
+     * Clones and returns the launchOptions with context.
+     * @param options {object} user provided options to include in the context.
+     * @return {object}
      */
-    async createBrowserControllerContext() {
+    createLaunchContext(options) {
         const pluginLaunchOptions = _.cloneDeep(this.launchOptions);
 
-        const browserControllerContext = await this._createContextFunction();
-        browserControllerContext.pluginLaunchOptions = pluginLaunchOptions;
+        const launchContext = {
+            pluginLaunchOptions,
+            ...options,
+        };
 
-        if (!(browserControllerContext instanceof BrowserControllerContext)) {
-            throw new Error('"createContextFunction" must return instance of "BrowserControllerContext"');
-        }
-
-        if (browserControllerContext.isProxyUsed()) {
-            await this._addProxyToLaunchOptions(browserControllerContext);
-        }
-
-        return browserControllerContext;
+        return launchContext;
     }
 
     /**
      *
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<BrowserController>}
      */
-    async launch(browserControllerContext) {
-        return this._launch(browserControllerContext);
+    async launch(launchContext) {
+        if (launchContext.proxyUrl) {
+            this._addProxyToLaunchOptions(launchContext);
+        }
+
+        return this._launch(launchContext);
     }
 
     /**
@@ -67,11 +62,11 @@ class BrowserPlugin {
 
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {launchContext}
      * @return {Promise<BrowserController>}
      * @private
      */
-    async _launch(browserControllerContext) { // eslint-disable-line
+    async _launch(launchContext) { // eslint-disable-line
         throwImplementationNeeded('_launch');
     }
 
@@ -104,12 +99,6 @@ class BrowserPlugin {
 
     async _defaultCreateContextFunction() { // eslint-disable-line no-unused-vars
         return new BrowserControllerContext({ proxyUrl: this.proxyUrl });
-    }
-
-    async _createContextFunction() {
-        if (this.createContextFunction) return this.createContextFunction(this);
-
-        return this._defaultCreateContextFunction();
     }
 }
 

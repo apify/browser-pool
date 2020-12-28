@@ -75,20 +75,23 @@ class BrowserPool extends EventEmitter {
      * Returns existing pending page or new page.
      * @return {Promise<Page>}
      */
-    async newPage() {
+    async newPage(options = {}) {
+        const { pageOptions, ...others } = options;
         let browserController = this._pickBrowserWithFreeCapacity();
 
-        if (!browserController) browserController = await this._launchBrowser();
-        return this._createPageForBrowser(browserController);
+        if (!browserController) browserController = await this._launchBrowser({ ...others });
+        return this._createPageForBrowser(browserController, pageOptions);
     }
 
     /**
-     *
+     * @param options
      * @return {Promise<Page>}
      */
-    async newPageInNewBrowser() {
-        const browserController = await this._launchBrowser();
-        return this._createPageForBrowser(browserController);
+    async newPageInNewBrowser(options = {}) {
+        const { pageOptions, ...others } = options;
+
+        const browserController = await this._launchBrowser({ ...others });
+        return this._createPageForBrowser(browserController, pageOptions);
     }
 
     /**
@@ -100,11 +103,11 @@ class BrowserPool extends EventEmitter {
         return this.pageToBrowserController.get(page);
     }
 
-    async _createPageForBrowser(browserController) {
+    async _createPageForBrowser(browserController, pageOptions) {
         try {
             await this._executeHooks(this.prePageCreateHooks, browserController);
             const page = await addTimeoutToPromise(
-                browserController.newPage(),
+                browserController.newPage(pageOptions),
                 this.operationTimeoutMillis,
                 'browserController.newPage() timed out.',
             );
@@ -202,16 +205,17 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<BrowserController>}
      * @private
      */
-    async _launchBrowser() {
+    async _launchBrowser(options) {
         const browserPlugin = this._pickNewBrowserPluginToLaunch();
-        const browserControllerContext = await browserPlugin.createBrowserControllerContext();
+        const launchContext = browserPlugin.createLaunchContext(options);
+        launchContext.browserPlugin = browserPlugin;
 
-        await this._executeHooks(this.preLaunchHooks, browserPlugin, browserControllerContext);
+        await this._executeHooks(this.preLaunchHooks, launchContext);
 
-        const browserController = await browserPlugin.launch(browserControllerContext);
+        const browserController = await browserPlugin.launch(launchContext);
         log.debug('Launched new browser.', { id: browserController.id });
 
-        this.emit(BROWSER_LAUNCHED, browserController);
+        this.emit(BROWSER_LAUNCHED, browserController); // @TODO: also launch context?
         await this._executeHooks(this.postLaunchHooks, browserController);
 
         this.activeBrowserControllers.add(browserController);

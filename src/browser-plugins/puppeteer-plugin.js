@@ -7,20 +7,19 @@ const PROXY_SERVER_ARG = '--proxy-server=';
 class PuppeteerPlugin extends BrowserPlugin {
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<PuppeteerController>}
      * @private
      */
-    async _launch(browserControllerContext) {
-        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl, ...rest } = browserControllerContext;
+    async _launch(launchContext) {
+        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl } = launchContext;
         const browser = await this.library.launch(pluginLaunchOptions);
 
         const puppeteerController = new PuppeteerController({
             browser,
-            browserPlugin: this,
             proxyUrl,
             anonymizedProxyUrl,
-            ...rest,
+            launchContext,
         });
 
         if (anonymizedProxyUrl) {
@@ -34,14 +33,14 @@ class PuppeteerPlugin extends BrowserPlugin {
 
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(browserControllerContext) {
-        const { pluginLaunchOptions, proxyUrl } = browserControllerContext;
+    async _addProxyToLaunchOptions(launchContext) {
+        const { pluginLaunchOptions, proxyUrl } = launchContext;
         const newProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-        browserControllerContext.anonymizedProxyUrl = newProxyUrl;
+        launchContext.anonymizedProxyUrl = newProxyUrl;
 
         const proxyArg = `${PROXY_SERVER_ARG}${newProxyUrl}`;
 

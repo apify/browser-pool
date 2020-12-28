@@ -14,17 +14,21 @@ class BrowserController extends EventEmitter {
     constructor(options) {
         super();
 
-        const { browser, proxyUrl, anonymizedProxy, browserPlugin, ...rest } = options;
+        const {
+            browser,
+            proxyUrl,
+            anonymizedProxy,
+            launchContext,
+        } = options;
+
         this.id = nanoid();
-        this.browserPlugin = browserPlugin;
         this.browser = browser;
         this.activePages = 0;
         this.totalPages = 0;
         this.lastPageOpenedAt = Date.now(); // Maybe more like last used at.
         this.proxyUrl = proxyUrl;
         this.anonymizedProxy = anonymizedProxy;
-
-        Object.assign(this, rest);
+        this.launchContext = launchContext;
     }
 
     /**
@@ -59,12 +63,13 @@ class BrowserController extends EventEmitter {
 
     /**
      * Opens new browser page.
+     * @param pageOptions {object}
      * @return {Promise<void>}
      */
-    async newPage() {
+    async newPage(pageOptions) {
         this.activePages++;
         this.totalPages++;
-        const page = await this._newPage();
+        const page = await this._newPage(pageOptions);
         this.lastPageOpenedAt = Date.now();
         return page;
     }

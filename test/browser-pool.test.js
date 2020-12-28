@@ -19,7 +19,7 @@ describe('BrowserPool', () => {
     beforeEach(async () => {
         browserPool = new BrowserPool({
             browserPlugins: [puppeteerPlugin],
-            browserKillerIntervalSecs: 1,
+            killInactiveBrowserAfterSecs: 1,
         });
     });
 
