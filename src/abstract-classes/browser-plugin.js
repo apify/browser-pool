@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
-const BrowserControllerContext = require('../browser-controller-context');
 const { throwImplementationNeeded } = require('./utils');
 
 class BrowserPlugin {
