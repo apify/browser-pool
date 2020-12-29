@@ -6,19 +6,21 @@ const { throwImplementationNeeded } = require('./utils');
 
 class BrowserPlugin {
     /**
-     *
-     * @param library {object}
-     * @param options {object}
-     * @param options.launchOptions {object}
+     * @param {object} library
+     * @param {object} [options]
+     * @param {object} [options.launchOptions]
+     * @param {string} [options.proxyUrl]
      */
     constructor(library, options = {}) {
         const {
             launchOptions = {},
+            proxyUrl,
         } = options;
 
         this.name = this.constructor.name;
         this.library = library;
         this.launchOptions = launchOptions;
+        this.proxyUrl = proxyUrl && new URL(proxyUrl).href;
     }
 
     /**
@@ -37,7 +39,7 @@ class BrowserPlugin {
         const {
             id,
             launchOptions = {},
-            proxyUrl,
+            proxyUrl = this.proxyUrl,
         } = options;
 
         return new LaunchContext({
