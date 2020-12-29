@@ -198,7 +198,7 @@ class BrowserPool extends EventEmitter {
      * @private
      */
     _getAllBrowserControllers() {
-        return new Set([...this.activeBrowserControllers, ...this.retiredBrowserControllers]);
+        return Array.from(new Set([...this.activeBrowserControllers, ...this.retiredBrowserControllers]));
     }
 
     /**
@@ -244,6 +244,7 @@ class BrowserPool extends EventEmitter {
                 const { id } = controller;
                 log.debug('Closing retired browser.', { id });
                 controller.close();
+                this.retiredBrowserControllers.delete(controller);
                 closedBrowserIds.push(id);
             }
         });
@@ -298,7 +299,8 @@ class BrowserPool extends EventEmitter {
             // might fail with "Protocol error (Target.closeTarget): Target closed."
             setTimeout(() => {
                 log.debug('Killing retired browser because it has no active pages', { id: browserController.id });
-                this._killBrowser(browserController);
+                browserController.kill();
+                this.retiredBrowserControllers.delete(browserController);
             }, PAGE_CLOSE_KILL_TIMEOUT_MILLIS);
         }
     }

@@ -4,7 +4,6 @@ const PuppeteerPlugin = require('../src/browser-plugins/puppeteer-plugin');
 const {
     BROWSER_POOL_EVENTS: {
         BROWSER_LAUNCHED,
-        BROWSER_CLOSED,
         BROWSER_RETIRED,
         PAGE_CREATED,
         PAGE_CLOSED,
@@ -28,30 +27,25 @@ describe('BrowserPool', () => {
     });
 
     describe('Initialization & retirement', () => {
-        test('should retire pool', async () => {
-            const page = await browserPool.newPage();
-            const browserController = await browserPool.getBrowserControllerByPage(page);
-            jest.spyOn(browserController, 'close');
+        test('should retire browsers', async () => {
+            await browserPool.newPage();
 
-            await page.close();
             await browserPool.retireAllBrowsers();
-
-            expect(browserController.close).toHaveBeenCalled();
             expect(browserPool.activeBrowserControllers.size).toBe(0);
-            expect(browserPool.retiredBrowserControllers.size).toBe(0);
+            expect(browserPool.retiredBrowserControllers.size).toBe(1);
         });
 
         test('should destroy pool', async () => {
             const page = await browserPool.newPage();
             const browserController = await browserPool.getBrowserControllerByPage(page);
-            jest.spyOn(browserController, 'kill');
+            jest.spyOn(browserController, 'close');
 
-            await page.close();
             await browserPool.destroy();
 
-            expect(browserController.kill).toHaveBeenCalled();
+            expect(browserController.close).toHaveBeenCalled();
             expect(browserPool.activeBrowserControllers.size).toBe(0);
             expect(browserPool.retiredBrowserControllers.size).toBe(0);
+            expect(browserPool.browserKillerInterval).toBeUndefined();
         });
     });
 
@@ -127,14 +121,16 @@ describe('BrowserPool', () => {
             browserPool.retireBrowserAfterPageCount = 1;
             clearInterval(browserPool.browserKillerInterval);
             browserPool.browserKillerInterval = setInterval(
-                () => browserPool._killRetiredBrowsers(), // eslint-disable-line
+                () => browserPool._closeInactiveRetiredBrowsers(), // eslint-disable-line
                 100,
             );
-            jest.spyOn(browserPool, '_killRetiredBrowsers');
-            jest.spyOn(browserPool, '_killBrowser');
+            jest.spyOn(browserPool, '_closeRetiredBrowserWithNoPages');
             expect(browserPool.retiredBrowserControllers.size).toBe(0);
 
             const page = await browserPool.newPage();
+            const controller = await browserPool.getBrowserControllerByPage(page);
+            jest.spyOn(controller, 'kill');
+
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
             await page.close();
 
@@ -142,8 +138,8 @@ describe('BrowserPool', () => {
                 resolve();
             }, 1000));
 
-            expect(browserPool._killRetiredBrowsers).toHaveBeenCalled(); //eslint-disable-line
-            expect(browserPool._killBrowser).toHaveBeenCalled(); //eslint-disable-line
+            expect(browserPool._closeRetiredBrowserWithNoPages).toHaveBeenCalled(); //eslint-disable-line
+            expect(controller.kill).toHaveBeenCalled(); //eslint-disable-line
             expect(browserPool.retiredBrowserControllers.size).toBe(0);
         });
 
@@ -170,8 +166,8 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
-                    const { browserPlugin } = browserPool.getBrowserControllerByPage(page);
-                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, browserPlugin, expect.anything()); // eslint-disable-line
+                    const { launchContext } = browserPool.getBrowserControllerByPage(page);
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, launchContext); // eslint-disable-line
                 });
             });
 
@@ -271,26 +267,6 @@ describe('BrowserPool', () => {
 
                 expect(calls).toEqual(2);
                 expect(argument).toEqual(browserPool.getBrowserControllerByPage(page));
-            });
-
-            test(`should emit ${BROWSER_CLOSED} event`, async () => {
-                browserPool.retireBrowserAfterPageCount = 1;
-                clearInterval(browserPool.browserKillerInterval);
-                browserPool.browserKillerInterval = setInterval(
-                    () => browserPool._killRetiredBrowsers(), // eslint-disable-line
-                    50,
-                );
-                let calls = 0;
-                browserPool.on(BROWSER_CLOSED, () => {
-                    calls++;
-                });
-
-                const page1 = await browserPool.newPage();
-                const page2 = await browserPool.newPage();
-                await page1.close();
-                await page2.close();
-                await new Promise((resolve) => setTimeout(() => resolve(), 400));
-                expect(calls).toEqual(2);
             });
 
             test(`should emit ${PAGE_CREATED} event`, async () => {
