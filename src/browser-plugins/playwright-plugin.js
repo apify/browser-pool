@@ -5,20 +5,17 @@ const { BROWSER_CONTROLLER_EVENTS: { BROWSER_TERMINATED } } = require('../events
 class PlaywrightPlugin extends BrowserPlugin {
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<PlaywrightController>}
      * @private
      */
-    async _launch(browserControllerContext) {
-        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl, ...rest } = browserControllerContext;
-        const browser = await this.library.launch(pluginLaunchOptions);
+    async _launch(launchContext) {
+        const { launchOptions, anonymizedProxyUrl } = launchContext;
+        const browser = await this.library.launch(launchOptions);
 
         const playwrightController = new PlaywrightController({
             browser,
-            browserPlugin: this,
-            proxyUrl,
-            anonymizedProxyUrl,
-            ...rest,
+            launchContext,
         });
 
         if (anonymizedProxyUrl) {
@@ -32,16 +29,16 @@ class PlaywrightPlugin extends BrowserPlugin {
 
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(browserControllerContext) {
-        const { pluginLaunchOptions, proxyUrl } = browserControllerContext;
+    async _addProxyToLaunchOptions(launchContext) {
+        const { launchOptions, proxyUrl } = launchContext;
         const anonymizedProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-        browserControllerContext.anonymizedProxyUrl = anonymizedProxyUrl;
+        launchContext.anonymizedProxyUrl = anonymizedProxyUrl;
 
-        pluginLaunchOptions.proxy = { server: anonymizedProxyUrl };
+        launchOptions.proxy = { server: anonymizedProxyUrl };
     }
 }
 

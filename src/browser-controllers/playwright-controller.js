@@ -1,25 +1,21 @@
+const _ = require('lodash');
 const BrowserController = require('../abstract-classes/browser-controller');
 
 class PlaywrightController extends BrowserController {
     constructor(options) {
         super(options);
 
-        this.pagesToContext = new WeakMap();
+        this.pageToContext = new WeakMap();
     }
 
-    async _newPage() {
+    async _newPage(pageOptions) {
         const context = await this.browser.newContext();
-        const page = await context.newPage();
+        const page = await context.newPage(pageOptions);
 
-        this.pagesToContext[page] = context;
+        this.pageToContext.set(page, context);
 
         page.once('close', async () => {
-            try {
-                await context.close(); // does not work with .catch() for some reason
-            // eslint-disable-next-line no-empty
-            } catch (e) {
-
-            }
+            await context.close().catch(_.noop);
             this.activePages--;
         });
 
@@ -31,15 +27,18 @@ class PlaywrightController extends BrowserController {
     }
 
     async _kill() {
-        await this._close(); // Puppeteer does not have the browser child process attached to normal browser server
+        // TODO We need to be absolutely sure the browser dies.
+        await this.browser.close(); // Playwright does not have the browser child process attached to normal browser server
     }
 
     async getCookies(page) {
-        return this.pagesToContext[page].cookies();
+        const context = this.pageToContext.get(page);
+        return context.cookies();
     }
 
     async setCookies(page, cookies) {
-        return this.pagesToContext[page].addCookies(cookies);
+        const context = this.pageToContext.get(page);
+        return context.addCookies(cookies);
     }
 }
 

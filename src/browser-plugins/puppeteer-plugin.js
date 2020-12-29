@@ -7,20 +7,17 @@ const PROXY_SERVER_ARG = '--proxy-server=';
 class PuppeteerPlugin extends BrowserPlugin {
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<PuppeteerController>}
      * @private
      */
-    async _launch(browserControllerContext) {
-        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl, ...rest } = browserControllerContext;
-        const browser = await this.library.launch(pluginLaunchOptions);
+    async _launch(launchContext) {
+        const { launchOptions, anonymizedProxyUrl } = launchContext;
+        const browser = await this.library.launch(launchOptions);
 
         const puppeteerController = new PuppeteerController({
             browser,
-            browserPlugin: this,
-            proxyUrl,
-            anonymizedProxyUrl,
-            ...rest,
+            launchContext,
         });
 
         if (anonymizedProxyUrl) {
@@ -34,21 +31,21 @@ class PuppeteerPlugin extends BrowserPlugin {
 
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {object}
      * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(browserControllerContext) {
-        const { pluginLaunchOptions, proxyUrl } = browserControllerContext;
+    async _addProxyToLaunchOptions(launchContext) {
+        const { launchOptions, proxyUrl } = launchContext;
         const newProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-        browserControllerContext.anonymizedProxyUrl = newProxyUrl;
+        launchContext.anonymizedProxyUrl = newProxyUrl;
 
         const proxyArg = `${PROXY_SERVER_ARG}${newProxyUrl}`;
 
-        if (Array.isArray(pluginLaunchOptions.args)) {
-            pluginLaunchOptions.args.push(proxyArg);
+        if (Array.isArray(launchOptions.args)) {
+            launchOptions.args.push(proxyArg);
         } else {
-            pluginLaunchOptions.args = [proxyArg];
+            launchOptions.args = [proxyArg];
         }
     }
 }
