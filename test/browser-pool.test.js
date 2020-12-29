@@ -167,8 +167,9 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = await browserPool.getPageId(page);
                     const { launchContext } = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, launchContext); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, pageId, launchContext); // eslint-disable-line
                 });
             });
 
@@ -179,8 +180,9 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = await browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, browserController); // eslint-disable-line
+                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, pageId, browserController); // eslint-disable-line
                 });
             });
 

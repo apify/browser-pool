@@ -309,12 +309,12 @@ class BrowserPool extends EventEmitter {
             launchOptions,
         });
 
-        await this._executeHooks(this.preLaunchHooks, launchContext);
+        await this._executeHooks(this.preLaunchHooks, pageId, launchContext);
 
         const browserController = await browserPlugin.launch(launchContext);
         log.debug('Launched new browser.', { id: browserController.id });
 
-        await this._executeHooks(this.postLaunchHooks, browserController);
+        await this._executeHooks(this.postLaunchHooks, pageId, browserController);
         this.emit(BROWSER_LAUNCHED, browserController);
 
         this.activeBrowserControllers.add(browserController);
