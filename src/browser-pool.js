@@ -93,6 +93,11 @@ class BrowserPool extends EventEmitter {
             id = nanoid(),
             pageOptions,
         } = options;
+
+        if (this.pages.has(id)) {
+            throw new Error(`Page with ID: ${id} already exists.`);
+        }
+
         let browserController = this._pickBrowserWithFreeCapacity();
 
         if (!browserController) browserController = await this._launchBrowser(id);
@@ -132,6 +137,10 @@ class BrowserPool extends EventEmitter {
             launchOptions,
             browserPlugin,
         } = options;
+
+        if (this.pages.has(id)) {
+            throw new Error(`Page with ID: ${id} already exists.`);
+        }
 
         const browserController = await this._launchBrowser(id, { launchOptions, browserPlugin });
         const page = await this._createPageForBrowser(id, browserController, pageOptions);
