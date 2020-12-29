@@ -180,7 +180,10 @@ class BrowserPool extends EventEmitter {
         this.browserKillerInterval = clearInterval(this.browserKillerInterval);
 
         const controllers = this._getAllBrowserControllers();
-        const promises = controllers.map((controller) => controller.close());
+        const promises = [];
+        controllers.forEach((controller) => {
+            promises.push(controller.close());
+        });
         await Promise.all(promises);
 
         this._teardown();
@@ -198,7 +201,7 @@ class BrowserPool extends EventEmitter {
      * @private
      */
     _getAllBrowserControllers() {
-        return Array.from(new Set([...this.activeBrowserControllers, ...this.retiredBrowserControllers]));
+        return new Set([...this.activeBrowserControllers, ...this.retiredBrowserControllers]);
     }
 
     /**
@@ -298,8 +301,8 @@ class BrowserPool extends EventEmitter {
             // Run this with a delay, otherwise page.close()
             // might fail with "Protocol error (Target.closeTarget): Target closed."
             setTimeout(() => {
-                log.debug('Killing retired browser because it has no active pages', { id: browserController.id });
-                browserController.kill();
+                log.debug('Closing retired browser because it has no active pages', { id: browserController.id });
+                browserController.close();
                 this.retiredBrowserControllers.delete(browserController);
             }, PAGE_CLOSE_KILL_TIMEOUT_MILLIS);
         }

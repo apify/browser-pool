@@ -57,7 +57,7 @@ describe('Plugins', () => {
         let browserController;
 
         afterEach(async () => {
-            await browserController.kill();
+            await browserController.close();
         });
 
         test('should work with proxyUrl', async () => {
@@ -79,7 +79,7 @@ describe('Plugins', () => {
         let browserController;
 
         afterEach(async () => {
-            await browserController.kill();
+            await browserController.close();
         });
 
         test('should work with proxyUrl', async () => {

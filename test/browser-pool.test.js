@@ -129,7 +129,7 @@ describe('BrowserPool', () => {
 
             const page = await browserPool.newPage();
             const controller = await browserPool.getBrowserControllerByPage(page);
-            jest.spyOn(controller, 'kill');
+            jest.spyOn(controller, 'close');
 
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
             await page.close();
@@ -139,7 +139,7 @@ describe('BrowserPool', () => {
             }, 1000));
 
             expect(browserPool._closeRetiredBrowserWithNoPages).toHaveBeenCalled(); //eslint-disable-line
-            expect(controller.kill).toHaveBeenCalled(); //eslint-disable-line
+            expect(controller.close).toHaveBeenCalled();
             expect(browserPool.retiredBrowserControllers.size).toBe(0);
         });
 
