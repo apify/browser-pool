@@ -51,11 +51,11 @@ class BrowserPlugin {
 
     /**
      *
-     * @param browserControllerContext {BrowserControllerContext}
+     * @param launchContext {launchContext}
      * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(browserControllerContext) { // eslint-disable-line
+    async _addProxyToLaunchOptions(launchContext) { // eslint-disable-line
         throwImplementationNeeded('_addProxyToLaunchOptions');
     }
 
@@ -94,10 +94,6 @@ class BrowserPlugin {
      */
     async _closeAnonymizedProxy(proxyUrl) {
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
-    }
-
-    async _defaultCreateContextFunction() { // eslint-disable-line no-unused-vars
-        return new BrowserControllerContext({ proxyUrl: this.proxyUrl });
     }
 }
 
