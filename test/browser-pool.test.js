@@ -16,6 +16,7 @@ describe('BrowserPool', () => {
     let browserPool;
 
     beforeEach(async () => {
+        jest.clearAllMocks();
         browserPool = new BrowserPool({
             browserPlugins: [puppeteerPlugin],
             killInactiveBrowserAfterSecs: 1,
@@ -166,8 +167,9 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = await browserPool.getPageId(page);
                     const { launchContext } = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, launchContext); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, pageId, launchContext); // eslint-disable-line
                 });
             });
 
@@ -178,8 +180,9 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = await browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, browserController); // eslint-disable-line
+                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, pageId, browserController); // eslint-disable-line
                 });
             });
 
@@ -190,8 +193,9 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, browserController ); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, pageId, browserController); // eslint-disable-line
                 });
             });
 
@@ -203,7 +207,7 @@ describe('BrowserPool', () => {
 
                     const page = await browserPool.newPage();
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(4, browserPool.postPageCreateHooks, browserController, page ); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(4, browserPool.postPageCreateHooks, page, browserController); // eslint-disable-line
                 });
             });
 
@@ -217,7 +221,7 @@ describe('BrowserPool', () => {
                     await page.close();
 
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(5, browserPool.prePageCloseHooks, browserController, page ); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(5, browserPool.prePageCloseHooks, page, browserController); // eslint-disable-line
                 });
             });
 
@@ -231,7 +235,7 @@ describe('BrowserPool', () => {
                     await page.close();
 
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, browserController, page ); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, page, browserController); // eslint-disable-line
                 });
             });
         });

@@ -1,57 +1,71 @@
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
+const LaunchContext = require('../launch_context');
+const log = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
 
 class BrowserPlugin {
     /**
-     *
-     * @param library {object}
-     * @param options {object}
-     * @param options.launchOptions {object}
+     * @param {object} library
+     * @param {object} [options]
+     * @param {object} [options.launchOptions]
+     * @param {string} [options.proxyUrl]
      */
     constructor(library, options = {}) {
         const {
             launchOptions = {},
+            proxyUrl,
         } = options;
 
         this.name = this.constructor.name;
         this.library = library;
         this.launchOptions = launchOptions;
+        this.proxyUrl = proxyUrl && new URL(proxyUrl).href;
     }
 
     /**
-     * Clones and returns the launchOptions with context.
-     * @param options {object} user provided options to include in the context.
-     * @return {object}
+     * Creates a `LaunchContext` with all the information needed
+     * to launch a browser. Aside from library specific launch options,
+     * it also includes internal properties used by `BrowserPool` for
+     * management of the pool and extra features.
+     *
+     * @param {object} [options]
+     * @param {string} [options.id]
+     * @param {object} [options.launchOptions]
+     * @param {string} [options.proxyUrl]
+     * @return {LaunchContext}
      */
-    createLaunchContext(options) {
-        const launchOptions = _.cloneDeep(this.launchOptions);
+    createLaunchContext(options = {}) {
+        const {
+            id,
+            launchOptions = {},
+            proxyUrl = this.proxyUrl,
+        } = options;
 
-        const launchContext = {
-            launchOptions,
-            ...options,
-        };
-
-        return launchContext;
+        return new LaunchContext({
+            id,
+            launchOptions: _.merge({}, this.launchOptions, launchOptions),
+            browserPlugin: this,
+            proxyUrl,
+        });
     }
 
     /**
+     * Launches the browser using provided launch context.
      *
-     *
-     * @param launchContext {object}
+     * @param {LaunchContext} launchContext
      * @return {Promise<BrowserController>}
      */
     async launch(launchContext) {
         if (launchContext.proxyUrl) {
-            this._addProxyToLaunchOptions(launchContext);
+            await this._addProxyToLaunchOptions(launchContext);
         }
 
         return this._launch(launchContext);
     }
 
     /**
-     *
-     * @param launchContext {launchContext}
+     * @param {LaunchContext} launchContext
      * @return {Promise<void>}
      * @private
      */
@@ -60,8 +74,7 @@ class BrowserPlugin {
     }
 
     /**
-     *
-     * @param launchContext {launchContext}
+     * @param {LaunchContext} launchContext
      * @return {Promise<BrowserController>}
      * @private
      */
@@ -71,8 +84,10 @@ class BrowserPlugin {
 
     /**
      * Starts proxy-chain server - https://www.npmjs.com/package/proxy-chain#anonymizeproxyproxyurl-callback
-     * @param proxyUrl {String} - proxy url with username and password;
-     * @return {Promise<string>} - URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
+     * @param {string} proxyUrl
+     *  Proxy URL with username and password.
+     * @return {Promise<string>}
+     *  URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
      */
     async _getAnonymizedProxyUrl(proxyUrl) {
         let anonymizedProxyUrl;
@@ -88,12 +103,15 @@ class BrowserPlugin {
 
     /**
      *
-     * @param proxyUrl {string} - anonymized proxy url.
+     * @param {string} proxyUrl
+     *  Anonymized proxy URL of a running proxy server.
      * @return {Promise<any>}
      * @private
      */
     async _closeAnonymizedProxy(proxyUrl) {
-        return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch(); // Nothing to do here really.
+        return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch((err) => {
+            log.debug(`Could not close anonymized proxy server.\nCause:${err.message}`);
+        });
     }
 }
 

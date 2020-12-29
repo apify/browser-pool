@@ -1,5 +1,6 @@
 const EventEmitter = require('events');
 const ow = require('ow').default;
+const { nanoid } = require('nanoid');
 const log = require('./logger');
 const { addTimeoutToPromise } = require('./utils');
 
@@ -61,6 +62,8 @@ class BrowserPool extends EventEmitter {
         this.prePageCloseHooks = prePageCloseHooks;
         this.postPageCloseHooks = postPageCloseHooks;
 
+        this.pages = new Map();
+        this.pageIds = new WeakMap();
         this.activeBrowserControllers = new Set();
         this.retiredBrowserControllers = new Set();
         this.pageToBrowserController = new WeakMap();
@@ -72,41 +75,135 @@ class BrowserPool extends EventEmitter {
     }
 
     /**
-     * Returns existing pending page or new page.
+     * Opens a new page in one of the running browsers or launches
+     * a new browser and opens a page there, if no browsers are active,
+     * or their page limits have been exceeded.
+     *
+     * @param {object} options
+     * @param {string} [options.id]
+     *  Assign a custom ID to the page. If you don't a random string ID
+     *  will be generated.
+     * @param {object} [options.pageOptions]
+     *  Some libraries (Playwright) allow you to open new pages with specific
+     *  options. Use this property to set those options.
      * @return {Promise<Page>}
      */
     async newPage(options = {}) {
-        const { pageOptions, ...others } = options;
+        const {
+            id = nanoid(),
+            pageOptions,
+        } = options;
+
+        if (this.pages.has(id)) {
+            throw new Error(`Page with ID: ${id} already exists.`);
+        }
+
         let browserController = this._pickBrowserWithFreeCapacity();
 
-        if (!browserController) browserController = await this._launchBrowser({ ...others });
-        return this._createPageForBrowser(browserController, pageOptions);
+        if (!browserController) browserController = await this._launchBrowser(id);
+        const page = await this._createPageForBrowser(id, browserController, pageOptions);
+        this.pages.set(id, page);
+        this.pageIds.set(page, id);
+        return page;
     }
 
     /**
-     * @param options
+     * Unlike {@link newPage}, `newPageInNewBrowser` always launches a new
+     * browser to open the page in. Use the `launchOptions` option to
+     * configure the new browser.
+     *
+     * @param {object} options
+     * @param {string} [options.id]
+     *  Assign a custom ID to the page. If you don't a random string ID
+     *  will be generated.
+     * @param {object} [options.pageOptions]
+     *  Some libraries (Playwright) allow you to open new pages with specific
+     *  options. Use this property to set those options.
+     * @param {object} [options.launchOptions]
+     *  Options that will be used to launch the new browser.
+     * @param {BrowserPlugin} [options.browserPlugin]
+     *  Provide a plugin to launch the browser. If none is provided,
+     *  one of the pool's available plugins will be used.
+     *
+     *  If you configured `BrowserPool` to rotate multiple libraries,
+     *  such as both Puppeteer and Playwright, you should always set
+     *  the `browserPlugin` when using the `launchOptions` option.
      * @return {Promise<Page>}
      */
     async newPageInNewBrowser(options = {}) {
-        const { pageOptions, ...others } = options;
+        const {
+            id = nanoid(),
+            pageOptions,
+            launchOptions,
+            browserPlugin,
+        } = options;
 
-        const browserController = await this._launchBrowser({ ...others });
-        return this._createPageForBrowser(browserController, pageOptions);
+        if (this.pages.has(id)) {
+            throw new Error(`Page with ID: ${id} already exists.`);
+        }
+
+        const browserController = await this._launchBrowser(id, { launchOptions, browserPlugin });
+        const page = await this._createPageForBrowser(id, browserController, pageOptions);
+        this.pages.set(id, page);
+        return page;
     }
 
     /**
+     * Retrieves a {@link BrowserController} for a given page. This is useful
+     * when you're working only with pages and need to access the browser
+     * manipulation functionality.
+     *
+     * You could access the browser directly from the page,
+     * but that would circumvent `BrowserPool` and most likely
+     * cause weird things to happen, so please always use `BrowserController`
+     * to control your browsers. The function returns `undefined` if the
+     * browser is closed.
      *
      * @param page {Page} - Browser plugin page
-     * @return {BrowserController|undefined}
+     * @return {?BrowserController}
      */
     getBrowserControllerByPage(page) {
         return this.pageToBrowserController.get(page);
     }
 
-    async _createPageForBrowser(browserController, pageOptions) {
+    /**
+     * If you provided a custom ID to one of your pages or saved the
+     * randomly generated one, you can use this function to retrieve
+     * the page. If the page is no longer open, the function will
+     * return `undefined`.
+     *
+     * @param {string} id
+     * @return {?Page}
+     */
+    getPage(id) {
+        return this.pages.get(id);
+    }
+
+    /**
+     * Page IDs are used throughout `BrowserPool` as a method of linking
+     * events. You can use a page ID to track the full lifecycle of the page.
+     * It is created even before a browser is launched and stays with the page
+     * until it's closed.
+     *
+     * @param {Page} page
+     * @return {string}
+     */
+    getPageId(page) {
+        return this.pageIds.get(page);
+    }
+
+    /**
+     * @param {string} pageId
+     * @param {BrowserController} browserController
+     * @param {object} pageOptions
+     * @return {Promise<Page>}
+     * @private
+     */
+    async _createPageForBrowser(pageId, browserController, pageOptions) {
+        await this._executeHooks(this.prePageCreateHooks, pageId, browserController);
+        let page;
         try {
-            await this._executeHooks(this.prePageCreateHooks, browserController);
-            const page = await addTimeoutToPromise(
+            page = await addTimeoutToPromise(
                 browserController.newPage(pageOptions),
                 this.operationTimeoutMillis,
                 'browserController.newPage() timed out.',
@@ -118,15 +215,13 @@ class BrowserPool extends EventEmitter {
             }
 
             this._overridePageClose(page);
-            this.emit(PAGE_CREATED, page); // @TODO: CONSIDER renaming this event.
-            await this._executeHooks(this.postPageCreateHooks, browserController, page); // @TODO: Not sure about the placement of this hooks
-            return page;
         } catch (err) {
             this._retireBrowser(browserController);
-            const betterError = new Error(`browserController.newPage() failed: ${browserController.id}.`);
-            betterError.stack = err.stack;
-            throw betterError;
+            throw new Error(`browserController.newPage() failed: ${browserController.id}\nCause:${err.message}.`);
         }
+        await this._executeHooks(this.postPageCreateHooks, page, browserController);
+        this.emit(PAGE_CREATED, page); // @TODO: CONSIDER renaming this event.
+        return page;
     }
 
     /**
@@ -205,21 +300,31 @@ class BrowserPool extends EventEmitter {
     }
 
     /**
+     * @param {string} pageId
+     * @param {object} [options]
+     * @param {object} [options.launchOptions]
+     * @param {object} [options.browserPlugin]
      * @return {Promise<BrowserController>}
      * @private
      */
-    async _launchBrowser(options) {
-        const browserPlugin = this._pickNewBrowserPluginToLaunch();
-        const launchContext = browserPlugin.createLaunchContext(options);
-        launchContext.browserPlugin = browserPlugin;
+    async _launchBrowser(pageId, options = {}) {
+        const {
+            launchOptions,
+            browserPlugin = this._pickNewBrowserPluginToLaunch(),
+        } = options;
 
-        await this._executeHooks(this.preLaunchHooks, launchContext);
+        const launchContext = browserPlugin.createLaunchContext({
+            id: pageId,
+            launchOptions,
+        });
+
+        await this._executeHooks(this.preLaunchHooks, pageId, launchContext);
 
         const browserController = await browserPlugin.launch(launchContext);
         log.debug('Launched new browser.', { id: browserController.id });
 
+        await this._executeHooks(this.postLaunchHooks, pageId, browserController);
         this.emit(BROWSER_LAUNCHED, browserController);
-        await this._executeHooks(this.postLaunchHooks, browserController);
 
         this.activeBrowserControllers.add(browserController);
 
@@ -269,20 +374,21 @@ class BrowserPool extends EventEmitter {
         const browserController = this.pageToBrowserController.get(page);
 
         page.close = async (...args) => {
-            await this._executeHooks(this.prePageCloseHooks, browserController, page);
+            await this._executeHooks(this.prePageCloseHooks, page, browserController);
             await originalPageClose.apply(page, args)
                 .catch((err) => {
                     log.debug(`Could not close page.\nCause:${err.message}`, { id: browserController.id });
                 });
-            await this._executeHooks(this.postPageCloseHooks, browserController, page);
-            this.emit(PAGE_CLOSED, page);
+            await this._executeHooks(this.postPageCloseHooks, page, browserController);
+            this.pages.delete(this.getPageId(page));
             this._closeRetiredBrowserWithNoPages(browserController);
+            this.emit(PAGE_CLOSED, page);
         };
     }
 
     /**
      * @param {function[]} hooks
-     * @param {Array} args
+     * @param {...*} args
      * @return {Promise<void>}
      * @private
      */
