@@ -2,12 +2,12 @@ class BrowserControllerContext {
     constructor(options) {
         const {
             proxyUrl,
-            pluginLaunchOptions = {},
+            launchOptions = {},
             ...rest
         } = options;
 
         this.proxyUrl = proxyUrl;
-        this.pluginLaunchOptions = pluginLaunchOptions;
+        this.launchOptions = launchOptions;
         this.anonymizedProxyUrl = null;
 
         Object.assign(this, rest);

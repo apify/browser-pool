@@ -26,10 +26,10 @@ class BrowserPlugin {
      * @return {object}
      */
     createLaunchContext(options) {
-        const pluginLaunchOptions = _.cloneDeep(this.launchOptions);
+        const launchOptions = _.cloneDeep(this.launchOptions);
 
         const launchContext = {
-            pluginLaunchOptions,
+            launchOptions,
             ...options,
         };
 

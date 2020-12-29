@@ -10,13 +10,11 @@ class PlaywrightPlugin extends BrowserPlugin {
      * @private
      */
     async _launch(launchContext) {
-        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl } = launchContext;
-        const browser = await this.library.launch(pluginLaunchOptions);
+        const { launchOptions, anonymizedProxyUrl } = launchContext;
+        const browser = await this.library.launch(launchOptions);
 
         const playwrightController = new PlaywrightController({
             browser,
-            proxyUrl,
-            anonymizedProxyUrl,
             launchContext,
         });
 
@@ -36,11 +34,11 @@ class PlaywrightPlugin extends BrowserPlugin {
      * @private
      */
     async _addProxyToLaunchOptions(launchContext) {
-        const { pluginLaunchOptions, proxyUrl } = launchContext;
+        const { launchOptions, proxyUrl } = launchContext;
         const anonymizedProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
         launchContext.anonymizedProxyUrl = anonymizedProxyUrl;
 
-        pluginLaunchOptions.proxy = { server: anonymizedProxyUrl };
+        launchOptions.proxy = { server: anonymizedProxyUrl };
     }
 }
 

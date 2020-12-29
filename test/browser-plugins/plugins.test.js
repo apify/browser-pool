@@ -66,10 +66,10 @@ describe('Plugins', () => {
             const context = await plugin.createLaunchContext({ proxyUrl });
 
             browserController = await plugin.launch(context);
-            const argWithProxy = context.pluginLaunchOptions.args.find((arg) => arg.includes('--proxy-server='));
+            const argWithProxy = context.launchOptions.args.find((arg) => arg.includes('--proxy-server='));
 
             expect(argWithProxy.includes('http://10.10.10.0:8080')).toBeTruthy();
-            expect(browserController.proxyUrl).toEqual(proxyUrl);
+            expect(browserController.launchContext.proxyUrl).toEqual(proxyUrl);
         });
     });
 
@@ -88,7 +88,7 @@ describe('Plugins', () => {
             const context = await plugin.createLaunchContext({ proxyUrl });
 
             browserController = await plugin.launch(context);
-            expect(context.pluginLaunchOptions.proxy.server).toEqual(proxyUrl);
+            expect(context.launchOptions.proxy.server).toEqual(proxyUrl);
         });
     });
 

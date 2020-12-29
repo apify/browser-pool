@@ -16,19 +16,16 @@ class BrowserController extends EventEmitter {
 
         const {
             browser,
-            proxyUrl,
-            anonymizedProxy,
             launchContext,
         } = options;
 
         this.id = nanoid();
         this.browser = browser;
+        this.launchContext = launchContext;
+
         this.activePages = 0;
         this.totalPages = 0;
         this.lastPageOpenedAt = Date.now(); // Maybe more like last used at.
-        this.proxyUrl = proxyUrl;
-        this.anonymizedProxy = anonymizedProxy;
-        this.launchContext = launchContext;
     }
 
     /**

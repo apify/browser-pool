@@ -12,13 +12,11 @@ class PuppeteerPlugin extends BrowserPlugin {
      * @private
      */
     async _launch(launchContext) {
-        const { pluginLaunchOptions, proxyUrl, anonymizedProxyUrl } = launchContext;
-        const browser = await this.library.launch(pluginLaunchOptions);
+        const { launchOptions, anonymizedProxyUrl } = launchContext;
+        const browser = await this.library.launch(launchOptions);
 
         const puppeteerController = new PuppeteerController({
             browser,
-            proxyUrl,
-            anonymizedProxyUrl,
             launchContext,
         });
 
@@ -38,16 +36,16 @@ class PuppeteerPlugin extends BrowserPlugin {
      * @private
      */
     async _addProxyToLaunchOptions(launchContext) {
-        const { pluginLaunchOptions, proxyUrl } = launchContext;
+        const { launchOptions, proxyUrl } = launchContext;
         const newProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
         launchContext.anonymizedProxyUrl = newProxyUrl;
 
         const proxyArg = `${PROXY_SERVER_ARG}${newProxyUrl}`;
 
-        if (Array.isArray(pluginLaunchOptions.args)) {
-            pluginLaunchOptions.args.push(proxyArg);
+        if (Array.isArray(launchOptions.args)) {
+            launchOptions.args.push(proxyArg);
         } else {
-            pluginLaunchOptions.args = [proxyArg];
+            launchOptions.args = [proxyArg];
         }
     }
 }
