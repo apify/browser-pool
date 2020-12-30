@@ -22,7 +22,7 @@
 		"start": "node src/main.js",
 		"lint": "./node_modules/.bin/eslint ./src --ext .js,.jsx",
 		"lint:fix": "./node_modules/.bin/eslint ./src --ext .js,.jsx --fix",
-		"test": "jest --testTimeout=20000 --runInBand --detectOpenHandles --forceExit"
+		"test": "jest --maxWorkers=3 --forceExit"
 	},
 	"author": {
 		"name": "Apify",

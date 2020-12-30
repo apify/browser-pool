@@ -51,12 +51,19 @@ class BrowserPlugin {
     }
 
     /**
+     * @return {BrowserController}
+     */
+    createController() {
+        return this._createController();
+    }
+
+    /**
      * Launches the browser using provided launch context.
      *
-     * @param {LaunchContext} launchContext
-     * @return {Promise<BrowserController>}
+     * @param {LaunchContext} [launchContext]
+     * @return {Promise<Browser>}
      */
-    async launch(launchContext) {
+    async launch(launchContext = this.createLaunchContext()) {
         if (launchContext.proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
         }
@@ -75,11 +82,19 @@ class BrowserPlugin {
 
     /**
      * @param {LaunchContext} launchContext
-     * @return {Promise<BrowserController>}
+     * @return {Promise<Browser>}
      * @private
      */
     async _launch(launchContext) { // eslint-disable-line
         throwImplementationNeeded('_launch');
+    }
+
+    /**
+     * @return {BrowserController}
+     * @private
+     */
+    _createController() {
+        throwImplementationNeeded('_createController');
     }
 
     /**

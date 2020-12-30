@@ -9,8 +9,6 @@ const BROWSER_POOL_EVENTS = {
 
 const BROWSER_CONTROLLER_EVENTS = {
     BROWSER_CLOSED: 'browserClosed',
-    BROWSER_KILLED: 'browserCreated',
-    BROWSER_TERMINATED: 'browserCreated',
 };
 
 module.exports = {

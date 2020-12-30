@@ -2,8 +2,8 @@ const _ = require('lodash');
 const BrowserController = require('../abstract-classes/browser-controller');
 
 class PlaywrightController extends BrowserController {
-    constructor(options) {
-        super(options);
+    constructor(browserPlugin) {
+        super(browserPlugin);
 
         this.pageToContext = new WeakMap();
     }
@@ -31,12 +31,12 @@ class PlaywrightController extends BrowserController {
         await this.browser.close(); // Playwright does not have the browser child process attached to normal browser server
     }
 
-    async getCookies(page) {
+    async _getCookies(page) {
         const context = this.pageToContext.get(page);
         return context.cookies();
     }
 
-    async setCookies(page, cookies) {
+    async _setCookies(page, cookies) {
         const context = this.pageToContext.get(page);
         return context.addCookies(cookies);
     }
