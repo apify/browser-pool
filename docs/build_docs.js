@@ -2,7 +2,7 @@ const fs = require('fs-extra');
 const jsdoc2md = require('jsdoc-to-markdown'); // eslint-disable-line
 const path = require('path');
 
-const TEMPLATE_PATH = path.join(__dirname, 'README.hbs');
+const TEMPLATE_PATH = path.join(__dirname, 'README.md');
 const README_PATH = path.resolve(__dirname, '..', 'README.md');
 const SRC_DIR = path.resolve(__dirname, '..', 'src');
 
@@ -23,16 +23,7 @@ const generateFinalMarkdown = (text) => {
 
 const main = async () => {
     const indexData = await jsdoc2md.getTemplateData({
-        files: [
-            path.join(SRC_DIR, 'index.js'),
-            path.join(SRC_DIR, 'apify_api_error.js'),
-        ],
-    });
-
-    const resourceClientData = await jsdoc2md.getTemplateData({
-        files: [
-            path.join(SRC_DIR, 'resource_clients/*'),
-        ],
+        files: [`${SRC_DIR}/*`],
     });
 
     const sortAlphabetically = (a, b) => {
@@ -42,9 +33,8 @@ const main = async () => {
         if (nameA > nameB) return 1;
         return 0;
     };
-    resourceClientData.sort(sortAlphabetically);
 
-    let templateData = indexData.concat(resourceClientData);
+    let templateData = indexData.sort(sortAlphabetically);
 
     const EMPTY = Symbol('empty');
     /* reduce templateData to an array of class names */
