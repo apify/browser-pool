@@ -19,9 +19,11 @@ to hear about your use cases in the [Discussions](https://github.com/apify/brows
 - [Usage](#usage)
 - [Launching multiple browsers](#launching-multiple-browsers)
 - [Features](#features)
+  * [Simple configuration](#simple-configuration)
   * [Proxy management](#proxy-management)
   * [Lifecycle management with hooks](#lifecycle-management-with-hooks)
   * [Single API for common operations](#single-api-for-common-operations)
+  * [Graceful browser closing](#graceful-browser-closing)
   * [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
 - [API Reference](#api-reference)
 
@@ -58,11 +60,12 @@ const browserPool = new BrowserPool({
     const page1 = await browserPool.newPage();
     // You can interact with the page as you're used to.
     await page1.goto('https://example.com');
+    // When you're done, close the page.
+    await page1.close();
 
     // Opens a second page in the same browser.
     const page2 = await browserPool.newPage();
-
-    // When you're done, clean up the browser pool.
+    // When everything's finished, tear down the pool.
     await browserPool.destroy();
 })();
 ```
@@ -73,7 +76,7 @@ extensive use of Promises and the `async` / `await` pattern. [Visit MDN to learn
 ## Launching multiple browsers
 The basic example shows how to launch a single browser, but the purpose
 of Browser Pool is to launch many browsers. This is done automatically
-in the background simply by providing the relevant plugins and calling
+in the background. You only need to provide the relevant plugins and call
 `browserPool.newPage()`.
 
 ```js
@@ -96,7 +99,7 @@ const browserPool = new BrowserPool({
     const webkitPage = await browserPool.newPage();
     const chromiumPage2 = await browserPool.newPage();
 
-    await browserPool.destroy();
+    // Don't forget to close pages / destroy pool when you're done.
 })();
 ```
 
@@ -118,13 +121,15 @@ const browserPool = new BrowserPool({
 
 (async () => {
     const pages = await browserPool.newPageWithEachPlugin();
-    pages.forEach(page => {
-        // run some task with each page
-        // pages are in order of plugins
+    const promises = pages.map(async page => {
+        // Run some task with each page
+        // pages are in order of plugins:
         // [playwrightPage, puppeteerPage]
+        await page.close();
     });
+    await Promise.all(promises);
 
-    await browserPool.destroy();
+    // Continue with some more work.
 })();
 ```
 
@@ -132,23 +137,65 @@ const browserPool = new BrowserPool({
 Besides a simple interface for launching browsers, Browser Pool includes
 other helpful features that make browser management more convenient.
 
+### Simple configuration
+You can easily set the maximum number of pages that can be open in a given
+browser and also the maximum number of pages to process before a browser
+[is retired](#graceful-browser-closing).
+
+```js
+const browserPool = new BrowserPool({
+    maxOpenPagesPerBrowser: 20,
+    retireBrowserAfterPageCount: 100,
+});
+```
+
+You can configure the browser launch options either right in the plugins:
+
+```js
+const playwrightPlugin = new PlaywrightPlugin(playwright.chromium, {
+    launchOptions: {
+        headless: true,
+    }
+})
+```
+
+Or dynamically in [pre-launch hooks](#lifecycle-management-with-hooks):
+
+```js
+const browserPool = new BrowserPool({
+    preLaunchHooks: [(pageId, launchContext) => {
+        if (pageId === 'headful') {
+            launchContext.launchOptions.headless = false;
+        }
+    }]
+});
+```
+
 ### Proxy management
 When scraping at scale or testing websites from multiple geolocations,
 one often needs to use proxy servers. Setting up an authenticated proxy
-in Playwright or Puppeteer can be cumbersome, so we created a helper
-that does all the heavy lifting for you. Simply provide a proxy URL
-with authentication credentials, and you're done.
+in Puppeteer can be cumbersome, so we created a helper that does all
+the heavy lifting for you. Simply provide a proxy URL with authentication
+credentials, and you're done. It works the same for Playwright too.
 
 ```js
-const browserPool = new BrowserPool(puppeteer, {
+const puppeteerPlugin = new PuppeteerPlugin(puppeteer, {
     proxyUrl: 'http://<username>:<password>@proxy.com:8000'
-})
+});
 ```
+
+> We plan to extend this by adding a proxy-per-page functionality,
+> allowing you to rotate proxies per page, rather than per browser.
 
 ### Lifecycle management with hooks
 Browser Pool allows you to manage the full browser / page lifecycle
 by attaching hooks to the most important events. Asynchronous hooks
 are supported, and their execution order is guaranteed.
+
+The first parameter of each hook is either a `pageId` for the hooks
+executed before a `page` is created or a `page` afterwards. This is
+useful to keep track of which hook was triggered by which `newPage()`
+call.
 
 ```js
 const browserPool = new BrowserPool({
@@ -159,13 +206,19 @@ const browserPool = new BrowserPool({
         // You can use pre-launch hooks to make dynamic changes
         // to the launchContext, such as changing a proxyUrl
         // or updating the browser launchOptions
+
+        pageId === 'my-page' // true
     }],
     postPageCreateHooks: [(page, browserController) => {
         // It makes sense to make global changes to pages
         // in post-page-create hooks. For example, you can
         // inject some JavaScript library, such as jQuery.
+
+        browserPool.getPageId(page) === 'my-page' // true
     }]
 });
+
+await browserPool.newPage({ id: 'my-page' });
 ```
 
 > See the API Documentation for all hooks and their arguments.
@@ -187,6 +240,12 @@ await page.setCookie(...cookies);
 const cookies = await browserController.getCookies(page);
 await browserController.setCookies(page, cookies);
 ```
+
+### Graceful browser closing
+With Browser Pool, browsers are not closed, but retired. A retired browser
+will no longer open new pages, but it will wait until the open pages are closed,
+allowing your running tasks to finish. If a browser gets stuck in limbo,
+it will be killed after a timeout to prevent hanging browser processes.
 
 ### (UNSTABLE) Extensibility with plugins
 A new super cool browser automation library appears? No problem, we add
