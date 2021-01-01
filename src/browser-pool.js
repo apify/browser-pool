@@ -88,11 +88,11 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *  Pre-launch hooks are executed just before a browser is launched and provide
  *  a good opportunity to dynamically change the launch options.
  *  The hooks are called with two arguments:
- *  `pageId`:`string` and `launchContext`:{@link LaunchContext}
+ *  `pageId`: `string` and `launchContext`: {@link LaunchContext}
  * @param {function[]} [options.postLaunchHooks]
  *  Post-launch hooks are executed as soon as a browser is launched.
  *  The hooks are called with two arguments:
- *  `pageId`:`string` and `browserController`:{@link BrowserController}
+ *  `pageId`: `string` and `browserController`: {@link BrowserController}
  *  To guarantee order of execution before other hooks in the same browser,
  *  the {@link BrowserController} methods cannot be used until the post-launch
  *  hooks complete. If you attempt to call `await browserController.close()` from
@@ -101,24 +101,24 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *  Pre-page-create hooks are executed just before a new page is created. They
  *  are useful to make dynamic changes to the browser before opening a page.
  *  The hooks are called with two arguments:
- *  `pageId`:`string` and `browserController`:{@link BrowserController}
+ *  `pageId`: `string` and `browserController`: {@link BrowserController}
  * @param {function[]} [options.postPageCreateHooks]
  *  Post-page-create hooks are called right after a new page is created
  *  and all internal actions of Browser Pool are completed. This is the
  *  place to make changes to a page that you would like to apply to all
  *  pages. Such as injecting a JavaScript library into all pages.
  *  The hooks are called with two arguments:
- *  `page`:`Page` and `browserController`:{@link BrowserController}
+ *  `page`: `Page` and `browserController`: {@link BrowserController}
  * @param {function[]} [options.prePageCloseHooks]
  *  Pre-page-close hooks give you the opportunity to make last second changes
  *  in a page that's about to be closed, such as saving a snapshot or updating
  *  state.
  *  The hooks are called with two arguments:
- *  `page`:`Page` and `browserController`:{@link BrowserController}
+ *  `page`: `Page` and `browserController`: {@link BrowserController}
  * @param {function[]} [options.postPageCloseHooks]
  *  Post-page-close hooks allow you to do page related clean up.
  *  The hooks are called with two arguments:
- *  `pageId`:`string` and `browserController`:{@link BrowserController}
+ *  `pageId`: `string` and `browserController`: {@link BrowserController}
  */
 class BrowserPool extends EventEmitter {
     constructor(options = {}) {
