@@ -351,6 +351,9 @@ class BrowserPool extends EventEmitter {
      * @private
      */
     async _createPageForBrowser(pageId, browserController, pageOptions) {
+        // TODO This is needed for concurrent newPage calls to wait for the browser launch.
+        // It's not ideal though, we need to come up with a better API.
+        await browserController.isActivePromise;
         await this._executeHooks(this.prePageCreateHooks, pageId, browserController);
         let page;
         try {
@@ -363,6 +366,8 @@ class BrowserPool extends EventEmitter {
             this.pageIds.set(page, pageId);
             this.pageToBrowserController.set(page, browserController);
 
+            // TODO if you synchronously trigger a lot of page launches, browser
+            // will not get retired soon enough. Not sure if it's a problem, let's monitor it.
             if (browserController.totalPages >= this.retireBrowserAfterPageCount) {
                 this._retireBrowser(browserController);
             }
@@ -502,6 +507,9 @@ class BrowserPool extends EventEmitter {
     _pickBrowserWithFreeCapacity(browserPlugin) {
         return Array.from(this.activeBrowserControllers.values())
             .find((controller) => {
+                // TODO if you synchronously trigger a lot of page launches, controller.activePages
+                // will not get updated because the picks are done before the newPage launches.
+                // Not sure if it's a problem, let's monitor it.
                 const hasCapacity = controller.activePages < this.maxOpenPagesPerBrowser;
                 const isCorrectPlugin = controller.browserPlugin === browserPlugin;
                 return hasCapacity && isCorrectPlugin;
