@@ -45,7 +45,7 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *             // make changes right before a specific page is created
  *         }
  *     }],
- *     postPageCreatehooks: [async (page, browserController) => {
+ *     postPageCreateHooks: [async (page, browserController) => {
  *         // update some or all new pages
  *         await page.evaluate(() => {
  *             // now all pages will have 'foo'
@@ -56,9 +56,9 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *         // collect information just before a page closes
  *         await page.screenshot();
  *     }],
- *     postPageCreateHooks: [(pageId, browserController) => {
+ *     postPageCloseHooks: [(pageId, browserController) => {
  *         // clean up or log after a job is done
- *         console.log('Page closed:', pageId)
+ *         console.log('Page closed: ', pageId)
  *     }]
  * });
  * ```
