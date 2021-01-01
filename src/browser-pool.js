@@ -16,6 +16,68 @@ const {
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
 
+/**
+ * The `BrowserPool` class is the most important class of the `browser-pool` module.
+ * It manages opening and closing of browsers and their pages and its constructor
+ * options allow easy configuration of the browsers' and pages' lifecycle.
+ *
+ * @param {object} options
+ * @param {BrowserPlugin[]} options.browserPlugins
+ *  Browser plugins are wrappers of browser automation libraries that
+ *  allow `BrowserPool` to control browsers with those libraries.
+ *  `browser-pool` comes with a `PuppeteerPlugin` and a `PlaywrightPlugin`.
+ * @param {number} [options.maxOpenPagesPerBrowser=20]
+ *  Sets the maximum number of pages that can be open in a browser at the
+ *  same time. Once reached, a new browser will be launched to handle the excess.
+ * @param {number} [options.retireBrowserAfterPageCount=100]
+ *  Browsers tend to get bloated after processing a lot of pages. This option
+ *  configures the number of processed pages after which the browser will
+ *  automatically retire and close. A new browser will launch in its place.
+ * @param {number} [options.operationTimeoutSecs=15]
+ *  As we know from experience, async operations of the underlying libraries,
+ *  such as launching a browser or opening a new page, can get stuck.
+ *  To prevent `BrowserPool` from getting stuck, we add a timeout
+ *  to those operations and you can configure it with this option.
+ * @param {number} [options.closeInactiveBrowserAfterSecs=300]
+ *  Browsers normally close immediately after their last page is processed.
+ *  However, there could be situations where this does not happen. Browser Pool
+ *  makes sure all inactive browsers are closed regularly, to free resources.
+ * @param {function[]} [options.preLaunchHooks]
+ *  Pre-launch hooks are executed just before a browser is launched and provide
+ *  a good opportunity to dynamically change the launch options.
+ *  The hooks are called with two arguments:
+ *  `pageId`:`string` and `launchContext`:{@link LaunchContext}
+ * @param {function[]} [options.postLaunchHooks]
+ *  Post-launch hooks are executed as soon as a browser is launched.
+ *  The hooks are called with two arguments:
+ *  `pageId`:`string` and `browserController`:{@link BrowserController}
+ *  To guarantee order of execution before other hooks in the same browser,
+ *  the {@link BrowserController} methods cannot be used until the post-launch
+ *  hooks complete. If you attempt to call `await browserController.close()` from
+ *  a post-launch hook, it will deadlock the process. This API is subject to change.
+ * @param {function[]} [options.prePageCreateHooks]
+ *  Pre-page-create hooks are executed just before a new page is created. They
+ *  are useful to make dynamic changes to the browser before opening a page.
+ *  The hooks are called with two arguments:
+ *  `pageId`:`string` and `browserController`:{@link BrowserController}
+ * @param {function[]} [options.postPageCreateHooks]
+ *  Post-page-create hooks are called right after a new page is created
+ *  and all internal actions of Browser Pool are completed. This is the
+ *  place to make changes to a page that you would like to apply to all
+ *  pages. Such as injecting a JavaScript library into all pages.
+ *  The hooks are called with two arguments:
+ *  `page`:`Page` and `browserController`:{@link BrowserController}
+ * @param {function[]} [options.prePageCloseHooks]
+ *  Pre-page-close hooks give you the opportunity to make last second changes
+ *  in a page that's about to be closed, such as saving a snapshot or updating
+ *  state.
+ *  The hooks are called with two arguments:
+ *  `page`:`Page` and `browserController`:{@link BrowserController}
+ * @param {function[]} [options.postPageCloseHooks]
+ *  Post-page-close hooks allow you to do page related clean up.
+ *  The hooks are called with two arguments:
+ *  `pageId`:`string` and `browserController`:{@link BrowserController}
+ */
 class BrowserPool extends EventEmitter {
     constructor(options = {}) {
         ow(options, ow.object.exactShape({
@@ -93,7 +155,7 @@ class BrowserPool extends EventEmitter {
      *
      *  It must be one of the plugins browser pool was created with.
      *  If you wish to start a browser with a different configuration,
-     *  see {@link newPageInNewBrowser}
+     *  see the `newPageInNewBrowser` function.
      * @return {Promise<Page>}
      */
     async newPage(options = {}) {
@@ -114,10 +176,7 @@ class BrowserPool extends EventEmitter {
         let browserController = this._pickBrowserWithFreeCapacity(browserPlugin);
 
         if (!browserController) browserController = await this._launchBrowser(id, { browserPlugin });
-        const page = await this._createPageForBrowser(id, browserController, pageOptions);
-        this.pages.set(id, page);
-        this.pageIds.set(page, id);
-        return page;
+        return this._createPageForBrowser(id, browserController, pageOptions);
     }
 
     /**
@@ -160,9 +219,7 @@ class BrowserPool extends EventEmitter {
         }
 
         const browserController = await this._launchBrowser(id, { launchOptions, browserPlugin });
-        const page = await this._createPageForBrowser(id, browserController, pageOptions);
-        this.pages.set(id, page);
-        return page;
+        return this._createPageForBrowser(id, browserController, pageOptions);
     }
 
     /**
@@ -260,6 +317,8 @@ class BrowserPool extends EventEmitter {
                 this.operationTimeoutMillis,
                 'browserController.newPage() timed out.',
             );
+            this.pages.set(pageId, page);
+            this.pageIds.set(page, pageId);
             this.pageToBrowserController.set(page, browserController);
 
             if (browserController.totalPages >= this.retireBrowserAfterPageCount) {
@@ -314,8 +373,11 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<void>}
      */
     async closeAllBrowsers() {
-        const browserControllers = this._getAllBrowserControllers();
-        const promises = browserControllers.map((controller) => controller.close());
+        const controllers = this._getAllBrowserControllers();
+        const promises = [];
+        controllers.forEach((controller) => {
+            promises.push(controller.close());
+        });
         await Promise.all(promises);
     }
 
@@ -325,14 +387,7 @@ class BrowserPool extends EventEmitter {
      */
     async destroy() {
         this.browserKillerInterval = clearInterval(this.browserKillerInterval);
-
-        const controllers = this._getAllBrowserControllers();
-        const promises = [];
-        controllers.forEach((controller) => {
-            promises.push(controller.close());
-        });
-        await Promise.all(promises);
-
+        await this.closeAllBrowsers();
         this._teardown();
     }
 
@@ -443,6 +498,7 @@ class BrowserPool extends EventEmitter {
     _overridePageClose(page) {
         const originalPageClose = page.close;
         const browserController = this.pageToBrowserController.get(page);
+        const pageId = this.getPageId(page);
 
         page.close = async (...args) => {
             await this._executeHooks(this.prePageCloseHooks, page, browserController);
@@ -450,7 +506,7 @@ class BrowserPool extends EventEmitter {
                 .catch((err) => {
                     log.debug(`Could not close page.\nCause:${err.message}`, { id: browserController.id });
                 });
-            await this._executeHooks(this.postPageCloseHooks, page, browserController);
+            await this._executeHooks(this.postPageCloseHooks, pageId, browserController);
             this.pages.delete(this.getPageId(page));
             this._closeRetiredBrowserWithNoPages(browserController);
             this.emit(PAGE_CLOSED, page);

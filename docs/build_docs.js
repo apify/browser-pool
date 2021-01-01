@@ -11,8 +11,8 @@ const getRenderOptions = (template, data) => ({
     data,
     'name-format': true,
     separators: true,
-    'param-list-format': 'table',
-    'property-list-format': 'table',
+    'param-list-format': 'list',
+    'property-list-format': 'list',
     'heading-depth': 3,
 });
 
@@ -23,18 +23,17 @@ const generateFinalMarkdown = (text) => {
 
 const main = async () => {
     const indexData = await jsdoc2md.getTemplateData({
-        files: [`${SRC_DIR}/*`],
+        files: [path.join(SRC_DIR, 'index.js')],
+    });
+    const classData = await jsdoc2md.getTemplateData({
+        files: [
+            path.join(SRC_DIR, 'browser-pool.js'),
+            path.join(SRC_DIR, 'abstract-classes/browser-*'),
+            path.join(SRC_DIR, 'launch_context.js'),
+        ],
     });
 
-    const sortAlphabetically = (a, b) => {
-        const nameA = a.id.toLowerCase();
-        const nameB = b.id.toLowerCase();
-        if (nameA < nameB) return -1;
-        if (nameA > nameB) return 1;
-        return 0;
-    };
-
-    let templateData = indexData.sort(sortAlphabetically);
+    let templateData = indexData.concat(classData);
 
     const EMPTY = Symbol('empty');
     /* reduce templateData to an array of class names */

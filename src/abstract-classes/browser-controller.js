@@ -7,10 +7,24 @@ const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events');
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 /**
- * BrowserController abstract class is an abstract wrapper of any browser automation library.
- * This class defines necessary methods that need to be implemented for browser pool rotation logic.
+ * The `BrowserController` serves two purposes. First, it is the base class that
+ * specialized controllers like `PuppeteerController` or `PlaywrightController`
+ * extend. Second, it defines the public interface of the specialized classes
+ * which provide only private methods. Therefore, we do not keep documentation
+ * for the specialized classes, because it's the same for all of them.
+ * @property {string} id
+ * @property {BrowserPlugin} browserPlugin
+ *  The `BrowserPlugin` instance used to launch the browser.
+ * @property {Browser} browser
+ *  Browser representation of the underlying automation library.
+ * @property {LaunchContext} launchContext
+ *  The configuration the browser was launched with.
+ * @hideconstructor
  */
 class BrowserController extends EventEmitter {
+    /**
+     * @param {BrowserPlugin} browserPlugin
+     */
     constructor(browserPlugin) {
         super();
 
@@ -36,6 +50,7 @@ class BrowserController extends EventEmitter {
      * Activates the BrowserController. If you try to open new pages before
      * activation, the pages will get queued and will only be opened after
      * activate is called.
+     * @ignore
      */
     activate() {
         if (!this.browser) {
@@ -48,6 +63,7 @@ class BrowserController extends EventEmitter {
     /**
      * @param {Browser} browser
      * @param {LaunchContext} launchContext
+     * @ignore
      */
     assignBrowser(browser, launchContext) {
         if (this.browser) {
@@ -92,8 +108,9 @@ class BrowserController extends EventEmitter {
 
     /**
      * Opens new browser page.
-     * @param pageOptions {object}
-     * @return {Promise<void>}
+     * @param {object} pageOptions
+     * @return {Promise<Page>}
+     * @ignore
      */
     async newPage(pageOptions) {
         this.activePages++;
@@ -122,22 +139,46 @@ class BrowserController extends EventEmitter {
         return this._getCookies(page);
     }
 
+    /**
+     * @return {Promise<void>}
+     * @private
+     */
     async _close() {
         throwImplementationNeeded('_close');
     }
 
+    /**
+     * @return {Promise<void>}
+     * @private
+     */
     async _kill() {
         throwImplementationNeeded('_kill');
     }
 
-    async _newPage() {
+    /**
+     * @param {object} pageOptions
+     * @return {Promise<Page>}
+     * @private
+     */
+    async _newPage(pageOptions) { // eslint-disable-line no-unused-vars
         throwImplementationNeeded('_newPage');
     }
 
+    /**
+     * @param {Page} page
+     * @param {object[]} cookies
+     * @return {Promise<void>}
+     * @private
+     */
     async _setCookies(page, cookies) { // eslint-disable-line no-unused-vars
         throwImplementationNeeded('_setCookies');
     }
 
+    /**
+     * @param {Page} page
+     * @return {Promise<Array<object>>}
+     * @private
+     */
     async _getCookies(page) { // eslint-disable-line no-unused-vars
         throwImplementationNeeded('_getCookies');
     }

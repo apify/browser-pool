@@ -3,6 +3,9 @@ const PuppeteerController = require('../browser-controllers/puppeteer-controller
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
+/**
+ * puppeteer
+ */
 class PuppeteerPlugin extends BrowserPlugin {
     /**
      * @param {LaunchContext} launchContext

@@ -301,10 +301,11 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = browserPool.getPageId(page);
                     await page.close();
 
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, page, browserController); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, pageId, browserController); // eslint-disable-line
                 });
             });
         });

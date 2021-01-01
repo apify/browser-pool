@@ -1,6 +1,9 @@
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PlaywrightController = require('../browser-controllers/playwright-controller');
 
+/**
+ * playwright
+ */
 class PlaywrightPlugin extends BrowserPlugin {
     /**
      * @param {LaunchContext} launchContext
