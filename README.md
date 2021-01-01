@@ -283,9 +283,11 @@ const browserPool = new BrowserPool({
 
 **Properties**
 
-- BrowserPool [<code>BrowserPool</code>](#BrowserPool)  
-- PuppeteerPlugin <code>PuppeteerPlugin</code>  
-- PlaywrightPlugin <code>PlaywrightPlugin</code>  
+| Name | Type |
+| --- | --- |
+| BrowserPool | [<code>BrowserPool</code>](#BrowserPool) | 
+| PuppeteerPlugin | <code>PuppeteerPlugin</code> | 
+| PlaywrightPlugin | <code>PlaywrightPlugin</code> | 
 
 
 * * *
@@ -296,6 +298,48 @@ const browserPool = new BrowserPool({
 The `BrowserPool` class is the most important class of the `browser-pool` module.
 It manages opening and closing of browsers and their pages and its constructor
 options allow easy configuration of the browsers' and pages' lifecycle.
+
+The most important and useful constructor options are the various lifecycle hooks.
+Those allow you to sequentially call a list of (asynchronous) functions at each
+stage of the browser / page lifecycle.
+
+**Example:**
+```js
+const { BrowserPool, PlaywrightPlugin } = require('browser-pool');
+const playwright = require('playwright');
+
+const browserPool = new BrowserPool({
+    browserPlugins: [ new PlaywrightPlugin(playwright.chromium)],
+    preLaunchHooks: [(pageId, launchContext) => {
+        // do something before a browser gets launched
+        launchContext.launchOptions.headless = false;
+    }],
+    postLaunchHooks: [(pageId, browserController) => {
+        // manipulate the browser right after launch
+        console.dir(browserController.browser.contexts());
+    }],
+    prePageCreateHooks: [(pageId, browserController) => {
+        if (pageId === 'my-page') {
+            // make changes right before a specific page is created
+        }
+    }],
+    postPageCreatehooks: [async (page, browserController) => {
+        // update some or all new pages
+        await page.evaluate(() => {
+            // now all pages will have 'foo'
+            window.foo = 'bar'
+        })
+    }],
+    prePageCloseHooks: [async (page, browserController) => {
+        // collect information just before a page closes
+        await page.screenshot();
+    }],
+    postPageCreateHooks: [(pageId, browserController) => {
+        // clean up or log after a job is done
+        console.log('Page closed:', pageId)
+    }]
+});
+```
 
 
 * [BrowserPool](#BrowserPool)
@@ -317,53 +361,21 @@ options allow easy configuration of the browsers' and pages' lifecycle.
 <a name="new_BrowserPool_new"></a>
 
 #### `new BrowserPool(options)`
-**Params**
 
-- options <code>object</code>
-    - .browserPlugins [<code>Array.&lt;BrowserPlugin&gt;</code>](#BrowserPlugin) - Browser plugins are wrappers of browser automation libraries that
- allow `BrowserPool` to control browsers with those libraries.
- `browser-pool` comes with a `PuppeteerPlugin` and a `PlaywrightPlugin`.
-    - [.maxOpenPagesPerBrowser] <code>number</code> <code> = 20</code> - Sets the maximum number of pages that can be open in a browser at the
- same time. Once reached, a new browser will be launched to handle the excess.
-    - [.retireBrowserAfterPageCount] <code>number</code> <code> = 100</code> - Browsers tend to get bloated after processing a lot of pages. This option
- configures the number of processed pages after which the browser will
- automatically retire and close. A new browser will launch in its place.
-    - [.operationTimeoutSecs] <code>number</code> <code> = 15</code> - As we know from experience, async operations of the underlying libraries,
- such as launching a browser or opening a new page, can get stuck.
- To prevent `BrowserPool` from getting stuck, we add a timeout
- to those operations and you can configure it with this option.
-    - [.closeInactiveBrowserAfterSecs] <code>number</code> <code> = 300</code> - Browsers normally close immediately after their last page is processed.
- However, there could be situations where this does not happen. Browser Pool
- makes sure all inactive browsers are closed regularly, to free resources.
-    - [.preLaunchHooks] <code>Array.&lt;function()&gt;</code> - Pre-launch hooks are executed just before a browser is launched and provide
- a good opportunity to dynamically change the launch options.
- The hooks are called with two arguments:
- `pageId`:`string` and `launchContext`:[LaunchContext](#LaunchContext)
-    - [.postLaunchHooks] <code>Array.&lt;function()&gt;</code> - Post-launch hooks are executed as soon as a browser is launched.
- The hooks are called with two arguments:
- `pageId`:`string` and `browserController`:[BrowserController](#BrowserController)
- To guarantee order of execution before other hooks in the same browser,
- the [BrowserController](#BrowserController) methods cannot be used until the post-launch
- hooks complete. If you attempt to call `await browserController.close()` from
- a post-launch hook, it will deadlock the process. This API is subject to change.
-    - [.prePageCreateHooks] <code>Array.&lt;function()&gt;</code> - Pre-page-create hooks are executed just before a new page is created. They
- are useful to make dynamic changes to the browser before opening a page.
- The hooks are called with two arguments:
- `pageId`:`string` and `browserController`:[BrowserController](#BrowserController)
-    - [.postPageCreateHooks] <code>Array.&lt;function()&gt;</code> - Post-page-create hooks are called right after a new page is created
- and all internal actions of Browser Pool are completed. This is the
- place to make changes to a page that you would like to apply to all
- pages. Such as injecting a JavaScript library into all pages.
- The hooks are called with two arguments:
- `page`:`Page` and `browserController`:[BrowserController](#BrowserController)
-    - [.prePageCloseHooks] <code>Array.&lt;function()&gt;</code> - Pre-page-close hooks give you the opportunity to make last second changes
- in a page that's about to be closed, such as saving a snapshot or updating
- state.
- The hooks are called with two arguments:
- `page`:`Page` and `browserController`:[BrowserController](#BrowserController)
-    - [.postPageCloseHooks] <code>Array.&lt;function()&gt;</code> - Post-page-close hooks allow you to do page related clean up.
- The hooks are called with two arguments:
- `pageId`:`string` and `browserController`:[BrowserController](#BrowserController)
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| options | <code>object</code> |  |  |
+| options.browserPlugins | [<code>Array.&lt;BrowserPlugin&gt;</code>](#BrowserPlugin) |  | Browser plugins are wrappers of browser automation libraries that  allow `BrowserPool` to control browsers with those libraries.  `browser-pool` comes with a `PuppeteerPlugin` and a `PlaywrightPlugin`. |
+| [options.maxOpenPagesPerBrowser] | <code>number</code> | <code>20</code> | Sets the maximum number of pages that can be open in a browser at the  same time. Once reached, a new browser will be launched to handle the excess. |
+| [options.retireBrowserAfterPageCount] | <code>number</code> | <code>100</code> | Browsers tend to get bloated after processing a lot of pages. This option  configures the number of processed pages after which the browser will  automatically retire and close. A new browser will launch in its place. |
+| [options.operationTimeoutSecs] | <code>number</code> | <code>15</code> | As we know from experience, async operations of the underlying libraries,  such as launching a browser or opening a new page, can get stuck.  To prevent `BrowserPool` from getting stuck, we add a timeout  to those operations and you can configure it with this option. |
+| [options.closeInactiveBrowserAfterSecs] | <code>number</code> | <code>300</code> | Browsers normally close immediately after their last page is processed.  However, there could be situations where this does not happen. Browser Pool  makes sure all inactive browsers are closed regularly, to free resources. |
+| [options.preLaunchHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-launch hooks are executed just before a browser is launched and provide  a good opportunity to dynamically change the launch options.  The hooks are called with two arguments:  `pageId`:`string` and `launchContext`:[LaunchContext](#LaunchContext) |
+| [options.postLaunchHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-launch hooks are executed as soon as a browser is launched.  The hooks are called with two arguments:  `pageId`:`string` and `browserController`:[BrowserController](#BrowserController)  To guarantee order of execution before other hooks in the same browser,  the [BrowserController](#BrowserController) methods cannot be used until the post-launch  hooks complete. If you attempt to call `await browserController.close()` from  a post-launch hook, it will deadlock the process. This API is subject to change. |
+| [options.prePageCreateHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-page-create hooks are executed just before a new page is created. They  are useful to make dynamic changes to the browser before opening a page.  The hooks are called with two arguments:  `pageId`:`string` and `browserController`:[BrowserController](#BrowserController) |
+| [options.postPageCreateHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-page-create hooks are called right after a new page is created  and all internal actions of Browser Pool are completed. This is the  place to make changes to a page that you would like to apply to all  pages. Such as injecting a JavaScript library into all pages.  The hooks are called with two arguments:  `page`:`Page` and `browserController`:[BrowserController](#BrowserController) |
+| [options.prePageCloseHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-page-close hooks give you the opportunity to make last second changes  in a page that's about to be closed, such as saving a snapshot or updating  state.  The hooks are called with two arguments:  `page`:`Page` and `browserController`:[BrowserController](#BrowserController) |
+| [options.postPageCloseHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-page-close hooks allow you to do page related clean up.  The hooks are called with two arguments:  `pageId`:`string` and `browserController`:[BrowserController](#BrowserController) |
 
 
 * * *
@@ -375,19 +387,13 @@ Opens a new page in one of the running browsers or launches
 a new browser and opens a page there, if no browsers are active,
 or their page limits have been exceeded.
 
-**Params**
 
-- options <code>object</code>
-    - [.id] <code>string</code> - Assign a custom ID to the page. If you don't a random string ID
- will be generated.
-    - [.pageOptions] <code>object</code> - Some libraries (Playwright) allow you to open new pages with specific
- options. Use this property to set those options.
-    - [.browserPlugin] [<code>BrowserPlugin</code>](#BrowserPlugin) - Choose a plugin to open the page with. If none is provided,
- one of the pool's available plugins will be used.
-
- It must be one of the plugins browser pool was created with.
- If you wish to start a browser with a different configuration,
- see the `newPageInNewBrowser` function.
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>object</code> |  |
+| [options.id] | <code>string</code> | Assign a custom ID to the page. If you don't a random string ID  will be generated. |
+| [options.pageOptions] | <code>object</code> | Some libraries (Playwright) allow you to open new pages with specific  options. Use this property to set those options. |
+| [options.browserPlugin] | [<code>BrowserPlugin</code>](#BrowserPlugin) | Choose a plugin to open the page with. If none is provided,  one of the pool's available plugins will be used.  It must be one of the plugins browser pool was created with.  If you wish to start a browser with a different configuration,  see the `newPageInNewBrowser` function. |
 
 
 * * *
@@ -399,24 +405,14 @@ Unlike [newPage](newPage), `newPageInNewBrowser` always launches a new
 browser to open the page in. Use the `launchOptions` option to
 configure the new browser.
 
-**Params**
 
-- options <code>object</code>
-    - [.id] <code>string</code> - Assign a custom ID to the page. If you don't a random string ID
- will be generated.
-    - [.pageOptions] <code>object</code> - Some libraries (Playwright) allow you to open new pages with specific
- options. Use this property to set those options.
-    - [.launchOptions] <code>object</code> - Options that will be used to launch the new browser.
-    - [.browserPlugin] [<code>BrowserPlugin</code>](#BrowserPlugin) - Provide a plugin to launch the browser. If none is provided,
- one of the pool's available plugins will be used.
-
- If you configured `BrowserPool` to rotate multiple libraries,
- such as both Puppeteer and Playwright, you should always set
- the `browserPlugin` when using the `launchOptions` option.
-
- The plugin will not be added to the list of plugins used by
- the pool. You can either use one of those, to launch a specific
- browser, or provide a completely new configuration.
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>object</code> |  |
+| [options.id] | <code>string</code> | Assign a custom ID to the page. If you don't a random string ID  will be generated. |
+| [options.pageOptions] | <code>object</code> | Some libraries (Playwright) allow you to open new pages with specific  options. Use this property to set those options. |
+| [options.launchOptions] | <code>object</code> | Options that will be used to launch the new browser. |
+| [options.browserPlugin] | [<code>BrowserPlugin</code>](#BrowserPlugin) | Provide a plugin to launch the browser. If none is provided,  one of the pool's available plugins will be used.  If you configured `BrowserPool` to rotate multiple libraries,  such as both Puppeteer and Playwright, you should always set  the `browserPlugin` when using the `launchOptions` option.  The plugin will not be added to the list of plugins used by  the pool. You can either use one of those, to launch a specific  browser, or provide a completely new configuration. |
 
 
 * * *
@@ -444,9 +440,10 @@ const pages = await browserPool.newPageWithEachPlugin();
 const [chromiumPage, firefoxPage, webkitPage, puppeteerPage] = pages;
 ```
 
-**Params**
 
-- optionsList <code>Array.&lt;object&gt;</code>
+| Param | Type |
+| --- | --- |
+| optionsList | <code>Array.&lt;object&gt;</code> | 
 
 
 * * *
@@ -464,9 +461,10 @@ cause weird things to happen, so please always use `BrowserController`
 to control your browsers. The function returns `undefined` if the
 browser is closed.
 
-**Params**
 
-- page <code>Page</code> - Browser plugin page
+| Param | Type | Description |
+| --- | --- | --- |
+| page | <code>Page</code> | Browser plugin page |
 
 
 * * *
@@ -479,9 +477,10 @@ randomly generated one, you can use this function to retrieve
 the page. If the page is no longer open, the function will
 return `undefined`.
 
-**Params**
 
-- id <code>string</code>
+| Param | Type |
+| --- | --- |
+| id | <code>string</code> | 
 
 
 * * *
@@ -494,9 +493,10 @@ events. You can use a page ID to track the full lifecycle of the page.
 It is created even before a browser is launched and stays with the page
 until it's closed.
 
-**Params**
 
-- page <code>Page</code>
+| Param | Type |
+| --- | --- |
+| page | <code>Page</code> | 
 
 
 * * *
@@ -507,9 +507,10 @@ until it's closed.
 Removes a browser from the pool. It will be
 closed after all its pages are closed.
 
-**Params**
 
-- page <code>Page</code>
+| Param | Type |
+| --- | --- |
+| page | <code>Page</code> | 
 
 
 * * *
@@ -550,10 +551,12 @@ for the specialized classes, because it's the same for all of them.
 
 **Properties**
 
-- id <code>string</code>  
-- browserPlugin [<code>BrowserPlugin</code>](#BrowserPlugin) - The `BrowserPlugin` instance used to launch the browser.  
-- browser <code>Browser</code> - Browser representation of the underlying automation library.  
-- launchContext [<code>LaunchContext</code>](#LaunchContext) - The configuration the browser was launched with.  
+| Name | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> |  |
+| browserPlugin | [<code>BrowserPlugin</code>](#BrowserPlugin) | The `BrowserPlugin` instance used to launch the browser. |
+| browser | <code>Browser</code> | Browser representation of the underlying automation library. |
+| launchContext | [<code>LaunchContext</code>](#LaunchContext) | The configuration the browser was launched with. |
 
 
 * [BrowserController](#BrowserController)
@@ -589,10 +592,11 @@ Emits 'browserClosed' event.
 <a name="BrowserController+setCookies"></a>
 
 #### `browserController.setCookies(page, cookies)` ⇒ <code>Promise.&lt;void&gt;</code>
-**Params**
 
-- page <code>Object</code>
-- cookies <code>Array.&lt;object&gt;</code>
+| Param | Type |
+| --- | --- |
+| page | <code>Object</code> | 
+| cookies | <code>Array.&lt;object&gt;</code> | 
 
 
 * * *
@@ -600,9 +604,10 @@ Emits 'browserClosed' event.
 <a name="BrowserController+getCookies"></a>
 
 #### `browserController.getCookies(page)` ⇒ <code>Promise.&lt;Array.&lt;object&gt;&gt;</code>
-**Params**
 
-- page <code>Object</code>
+| Param | Type |
+| --- | --- |
+| page | <code>Object</code> | 
 
 
 * * *
@@ -621,21 +626,13 @@ feed them to [BrowserPool](#BrowserPool) for use.
 <a name="new_BrowserPlugin_new"></a>
 
 #### `new BrowserPlugin(library, [options])`
-**Params**
 
-- library <code>object</code> - Each plugin expects an instance of the object with the `.launch()` property.
- For Puppeteer, it is the `puppeteer` module itself, whereas for Playwright
- it is one of the browser types, such as `puppeteer.chromium`.
- `BrowserPlugin` does not include the library. You can choose any version
- or fork of the library. It also keeps `browser-pool` installation small.
-- [options] <code>object</code>
-    - [.launchOptions] <code>object</code> - Options that will be passed down to the automation library. E.g.
- `puppeteer.launch(launchOptions);`. This is a good place to set
- options that you want to apply as defaults. To dynamically override
- those options per-browser, see the `preLaunchHooks` of [BrowserPool](#BrowserPool).
-    - [.proxyUrl] <code>string</code> - Automation libraries configure proxies differently. This helper allows you
- to set a proxy URL without worrying about specific implementations.
- It also allows you use an authenticated proxy without extra code.
+| Param | Type | Description |
+| --- | --- | --- |
+| library | <code>object</code> | Each plugin expects an instance of the object with the `.launch()` property.  For Puppeteer, it is the `puppeteer` module itself, whereas for Playwright  it is one of the browser types, such as `puppeteer.chromium`.  `BrowserPlugin` does not include the library. You can choose any version  or fork of the library. It also keeps `browser-pool` installation small. |
+| [options] | <code>object</code> |  |
+| [options.launchOptions] | <code>object</code> | Options that will be passed down to the automation library. E.g.  `puppeteer.launch(launchOptions);`. This is a good place to set  options that you want to apply as defaults. To dynamically override  those options per-browser, see the `preLaunchHooks` of [BrowserPool](#BrowserPool). |
+| [options.proxyUrl] | <code>string</code> | Automation libraries configure proxies differently. This helper allows you  to set a proxy URL without worrying about specific implementations.  It also allows you use an authenticated proxy without extra code. |
 
 
 * * *
@@ -651,13 +648,11 @@ values, such as session IDs.
 
 **Properties**
 
-- id <code>string</code> - To make identification of `LaunchContext` easier, `BrowserPool` assigns
- the `LaunchContext` an `id` that's equal to the `id` of the page that
- triggered the browser launch. This is useful, because many pages share
- a single launch context (single browser).  
-- browserPlugin [<code>BrowserPlugin</code>](#BrowserPlugin) - The `BrowserPlugin` instance used to launch the browser.  
-- launchOptions <code>object</code> - The actual options the browser was launched with, after changes.
- Those changes would be typically made in pre-launch hooks.  
+| Name | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | To make identification of `LaunchContext` easier, `BrowserPool` assigns  the `LaunchContext` an `id` that's equal to the `id` of the page that  triggered the browser launch. This is useful, because many pages share  a single launch context (single browser). |
+| browserPlugin | [<code>BrowserPlugin</code>](#BrowserPlugin) | The `BrowserPlugin` instance used to launch the browser. |
+| launchOptions | <code>object</code> | The actual options the browser was launched with, after changes.  Those changes would be typically made in pre-launch hooks. |
 
 
 * [LaunchContext](#LaunchContext)
@@ -674,9 +669,10 @@ values, such as session IDs.
 Sets a proxy URL for the browser.
 Use `undefined` to unset existing proxy URL.
 
-**Params**
 
-- url <code>string</code>
+| Param | Type |
+| --- | --- |
+| url | <code>string</code> | 
 
 
 * * *
@@ -698,9 +694,10 @@ to the browser being launched. It ensures that
 no internal fields are overridden and should be
 used instead of property assignment.
 
-**Params**
 
-- fields <code>object</code>
+| Param | Type |
+| --- | --- |
+| fields | <code>object</code> | 
 
 
 * * *

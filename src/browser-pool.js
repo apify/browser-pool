@@ -21,6 +21,48 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  * It manages opening and closing of browsers and their pages and its constructor
  * options allow easy configuration of the browsers' and pages' lifecycle.
  *
+ * The most important and useful constructor options are the various lifecycle hooks.
+ * Those allow you to sequentially call a list of (asynchronous) functions at each
+ * stage of the browser / page lifecycle.
+ *
+ * **Example:**
+ * ```js
+ * const { BrowserPool, PlaywrightPlugin } = require('browser-pool');
+ * const playwright = require('playwright');
+ *
+ * const browserPool = new BrowserPool({
+ *     browserPlugins: [ new PlaywrightPlugin(playwright.chromium)],
+ *     preLaunchHooks: [(pageId, launchContext) => {
+ *         // do something before a browser gets launched
+ *         launchContext.launchOptions.headless = false;
+ *     }],
+ *     postLaunchHooks: [(pageId, browserController) => {
+ *         // manipulate the browser right after launch
+ *         console.dir(browserController.browser.contexts());
+ *     }],
+ *     prePageCreateHooks: [(pageId, browserController) => {
+ *         if (pageId === 'my-page') {
+ *             // make changes right before a specific page is created
+ *         }
+ *     }],
+ *     postPageCreatehooks: [async (page, browserController) => {
+ *         // update some or all new pages
+ *         await page.evaluate(() => {
+ *             // now all pages will have 'foo'
+ *             window.foo = 'bar'
+ *         })
+ *     }],
+ *     prePageCloseHooks: [async (page, browserController) => {
+ *         // collect information just before a page closes
+ *         await page.screenshot();
+ *     }],
+ *     postPageCreateHooks: [(pageId, browserController) => {
+ *         // clean up or log after a job is done
+ *         console.log('Page closed:', pageId)
+ *     }]
+ * });
+ * ```
+ *
  * @param {object} options
  * @param {BrowserPlugin[]} options.browserPlugins
  *  Browser plugins are wrappers of browser automation libraries that

@@ -11,8 +11,8 @@ const getRenderOptions = (template, data) => ({
     data,
     'name-format': true,
     separators: true,
-    'param-list-format': 'list',
-    'property-list-format': 'list',
+    'param-list-format': 'table',
+    'property-list-format': 'table',
     'heading-depth': 3,
 });
 
