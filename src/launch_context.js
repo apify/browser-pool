@@ -1,3 +1,21 @@
+/**
+ * `LaunchContext` holds information about the launched browser. It's useful
+ * to retrieve the `launchOptions`, the proxy the browser was launched with
+ * or any other information user chose to add to the `LaunchContext` by calling
+ * its `extend` function. This is very useful to keep track of browser-scoped
+ * values, such as session IDs.
+ * @property {string} id
+ *  To make identification of `LaunchContext` easier, `BrowserPool` assigns
+ *  the `LaunchContext` an `id` that's equal to the `id` of the page that
+ *  triggered the browser launch. This is useful, because many pages share
+ *  a single launch context (single browser).
+ * @property {BrowserPlugin} browserPlugin
+ *  The `BrowserPlugin` instance used to launch the browser.
+ * @property {object} launchOptions
+ *  The actual options the browser was launched with, after changes.
+ *  Those changes would be typically made in pre-launch hooks.
+ * @hideconstructor
+ */
 class LaunchContext {
     /**
      * @param {object} options
@@ -25,7 +43,9 @@ class LaunchContext {
     /**
      * Extend the launch context with any extra fields.
      * This is useful to keep state information relevant
-     * to the browser being launched.
+     * to the browser being launched. It ensures that
+     * no internal fields are overridden and should be
+     * used instead of property assignment.
      *
      * @param {object} fields
      */

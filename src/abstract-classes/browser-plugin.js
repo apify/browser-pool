@@ -4,12 +4,30 @@ const LaunchContext = require('../launch_context');
 const log = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
 
+/**
+ * The `BrowserPlugin` serves two purposes. First, it is the base class that
+ * specialized controllers like `PuppeteerPlugin` or `PlaywrightPlugin` extend.
+ * Second, it allows the user to configure the automation libraries and
+ * feed them to {@link BrowserPool} for use.
+ */
 class BrowserPlugin {
     /**
      * @param {object} library
+     *  Each plugin expects an instance of the object with the `.launch()` property.
+     *  For Puppeteer, it is the `puppeteer` module itself, whereas for Playwright
+     *  it is one of the browser types, such as `puppeteer.chromium`.
+     *  `BrowserPlugin` does not include the library. You can choose any version
+     *  or fork of the library. It also keeps `browser-pool` installation small.
      * @param {object} [options]
      * @param {object} [options.launchOptions]
+     *  Options that will be passed down to the automation library. E.g.
+     *  `puppeteer.launch(launchOptions);`. This is a good place to set
+     *  options that you want to apply as defaults. To dynamically override
+     *  those options per-browser, see the `preLaunchHooks` of {@link BrowserPool}.
      * @param {string} [options.proxyUrl]
+     *  Automation libraries configure proxies differently. This helper allows you
+     *  to set a proxy URL without worrying about specific implementations.
+     *  It also allows you use an authenticated proxy without extra code.
      */
     constructor(library, options = {}) {
         const {
@@ -34,6 +52,7 @@ class BrowserPlugin {
      * @param {object} [options.launchOptions]
      * @param {string} [options.proxyUrl]
      * @return {LaunchContext}
+     * @ignore
      */
     createLaunchContext(options = {}) {
         const {
@@ -51,12 +70,21 @@ class BrowserPlugin {
     }
 
     /**
+     * @return {BrowserController}
+     * @ignore
+     */
+    createController() {
+        return this._createController();
+    }
+
+    /**
      * Launches the browser using provided launch context.
      *
-     * @param {LaunchContext} launchContext
-     * @return {Promise<BrowserController>}
+     * @param {LaunchContext} [launchContext]
+     * @return {Promise<Browser>}
+     * @ignore
      */
-    async launch(launchContext) {
+    async launch(launchContext = this.createLaunchContext()) {
         if (launchContext.proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
         }
@@ -75,11 +103,19 @@ class BrowserPlugin {
 
     /**
      * @param {LaunchContext} launchContext
-     * @return {Promise<BrowserController>}
+     * @return {Promise<Browser>}
      * @private
      */
     async _launch(launchContext) { // eslint-disable-line
         throwImplementationNeeded('_launch');
+    }
+
+    /**
+     * @return {BrowserController}
+     * @private
+     */
+    _createController() {
+        throwImplementationNeeded('_createController');
     }
 
     /**
@@ -88,6 +124,7 @@ class BrowserPlugin {
      *  Proxy URL with username and password.
      * @return {Promise<string>}
      *  URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
+     * @private
      */
     async _getAnonymizedProxyUrl(proxyUrl) {
         let anonymizedProxyUrl;

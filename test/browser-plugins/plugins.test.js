@@ -8,40 +8,66 @@ const PlaywrightPlugin = require('../../src/browser-plugins/playwright-plugin.js
 const PlaywrightController = require('../../src/browser-controllers/playwright-controller');
 
 const runPluginTest = (Plugin, Controller, library) => {
-    const plg = new Plugin(library);
+    const plugin = new Plugin(library);
 
-    describe(`${plg.constructor.name} general `, () => {
-        let browserController;
+    describe(`${plugin.constructor.name} general `, () => {
+        let browser;
 
         afterEach(async () => {
-            await browserController.close();
+            if (browser) {
+                await browser.close();
+            }
         });
 
         test('should launch browser', async () => {
-            const plugin = new Plugin(library, {});
+            browser = await plugin.launch();
+            expect(typeof browser.newPage).toBe('function');
+            expect(typeof browser.close).toBe('function');
+        });
 
-            const context = await plugin.createLaunchContext();
-            browserController = await plugin.launch(context);
+        test('should create launch context', () => {
+            const id = 'abc';
+            const launchOptions = { foo: 'bar' };
+            const proxyUrl = 'http://proxy.com/';
+            const context = plugin.createLaunchContext({
+                id,
+                launchOptions,
+            });
 
+            context.proxyUrl = proxyUrl;
+            context.extend({
+                one: 1,
+            });
+            expect(context).toMatchObject({
+                id,
+                launchOptions,
+                browserPlugin: plugin,
+                _proxyUrl: proxyUrl,
+                one: 1,
+            });
+        });
+
+        test('should create browser controller', () => {
+            const browserController = plugin.createController();
             expect(browserController).toBeInstanceOf(Controller);
-
-            expect(browserController.browser.newPage).toBeDefined();
         });
 
-        test('should launch  with custom context', async () => {
-            const plugin = new Plugin(puppeteer);
-
-            const context = await plugin.createLaunchContext();
-            context.customOption = 'TEST';
-            browserController = await plugin.launch(context);
-            expect(browserController.launchContext).toBeDefined();
-            expect(browserController.launchContext.customOption).toBe('TEST');
+        test('should pass launch options to browser', async () => {
+            jest.spyOn(plugin.library, 'launch');
+            const launchOptions = {
+                foo: 'bar',
+            };
+            browser = await plugin.launch({ launchOptions });
+            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
         });
+
         test('should work with cookies', async () => {
-            const plugin = new Plugin(library);
+            const browserController = plugin.createController();
             const context = await plugin.createLaunchContext();
+            browser = await plugin.launch(context);
+            browserController.assignBrowser(browser, context);
+            browserController.activate();
 
-            browserController = await plugin.launch(context);
             const page = await browserController.newPage();
             await browserController.setCookies(page, [{ name: 'TEST', value: 'TESTER-COOKIE', url: 'https://example.com' }]);
             await page.goto('https://example.com', { waitUntil: 'domcontentloaded' });
@@ -54,10 +80,10 @@ const runPluginTest = (Plugin, Controller, library) => {
 };
 describe('Plugins', () => {
     describe('Puppeteer specifics', () => {
-        let browserController;
+        let browser;
 
         afterEach(async () => {
-            await browserController.close();
+            await browser.close();
         });
 
         test('should work with proxyUrl', async () => {
@@ -65,11 +91,10 @@ describe('Plugins', () => {
             const plugin = new PuppeteerPlugin(puppeteer);
             const context = await plugin.createLaunchContext({ proxyUrl });
 
-            browserController = await plugin.launch(context);
+            browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions.args.find((arg) => arg.includes('--proxy-server='));
 
             expect(argWithProxy.includes('http://10.10.10.0:8080')).toBeTruthy();
-            expect(browserController.launchContext.proxyUrl).toEqual(proxyUrl);
         });
     });
 

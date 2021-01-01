@@ -1,6 +1,8 @@
 const puppeteer = require('puppeteer');
+const playwright = require('playwright');
 const BrowserPool = require('../src/browser-pool');
 const PuppeteerPlugin = require('../src/browser-plugins/puppeteer-plugin');
+const PlaywrightPlugin = require('../src/browser-plugins/playwright-plugin');
 const {
     BROWSER_POOL_EVENTS: {
         BROWSER_LAUNCHED,
@@ -13,13 +15,14 @@ const {
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
     const puppeteerPlugin = new PuppeteerPlugin(puppeteer);
+    const playwrightPlugin = new PlaywrightPlugin(playwright.chromium); // chromium is faster than firefox and webkit
     let browserPool;
 
     beforeEach(async () => {
         jest.clearAllMocks();
         browserPool = new BrowserPool({
-            browserPlugins: [puppeteerPlugin],
-            killInactiveBrowserAfterSecs: 1,
+            browserPlugins: [puppeteerPlugin, playwrightPlugin],
+            closeInactiveBrowserAfterSecs: 2,
         });
     });
 
@@ -54,20 +57,86 @@ describe('BrowserPool', () => {
         // Basic user facing functionality
         test('should open new page', async () => {
             const page = await browserPool.newPage();
+            const page2 = await browserPool.newPage();
 
             expect(page.goto).toBeDefined();
             expect(page.close).toBeDefined();
         });
 
+        test('should open page in correct browser plugin', async () => {
+            let page = await browserPool.newPage({
+                browserPlugin: playwrightPlugin,
+            });
+            let controller = browserPool.getBrowserControllerByPage(page);
+            expect(controller.launchContext.browserPlugin).toBe(playwrightPlugin);
+
+            page = await browserPool.newPage({
+                browserPlugin: puppeteerPlugin,
+            });
+            controller = browserPool.getBrowserControllerByPage(page);
+            expect(controller.launchContext.browserPlugin).toBe(puppeteerPlugin);
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
+        });
+
+        test('should loop through plugins round-robin', async () => {
+            const correctPluginOrder = [
+                puppeteerPlugin,
+                playwrightPlugin,
+                puppeteerPlugin,
+            ];
+
+            const pagePromises = correctPluginOrder.map(() => {
+                return browserPool.newPage();
+            });
+            const pages = await Promise.all(pagePromises);
+
+            expect(pages).toHaveLength(correctPluginOrder.length);
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
+            pages.forEach((page, idx) => {
+                const controller = browserPool.getBrowserControllerByPage(page);
+                const { browserPlugin } = controller.launchContext;
+                const correctPlugin = correctPluginOrder[idx];
+                expect(browserPlugin).toBe(correctPlugin);
+            });
+        });
+
         test('should open new page in new browser', async () => {
             jest.spyOn(puppeteerPlugin, 'launch');
+            jest.spyOn(playwrightPlugin, 'launch');
 
-            await browserPool.newPage();
             await browserPool.newPage();
             await browserPool.newPageInNewBrowser();
+            await browserPool.newPageInNewBrowser();
 
-            expect(browserPool.activeBrowserControllers.size).toBe(2);
+            expect(browserPool.activeBrowserControllers.size).toBe(3);
             expect(puppeteerPlugin.launch).toHaveBeenCalledTimes(2);
+            expect(playwrightPlugin.launch).toHaveBeenCalledTimes(1);
+        });
+
+        test('newPageWithEachPlugin should open all pages', async () => {
+            const [puppeteerPage, playwrightPage] = await browserPool.newPageWithEachPlugin();
+            const puppeteerController = browserPool.getBrowserControllerByPage(puppeteerPage);
+            const playwrightController = browserPool.getBrowserControllerByPage(playwrightPage);
+            expect(puppeteerController.launchContext.browserPlugin).toBe(puppeteerPlugin);
+            expect(playwrightController.launchContext.browserPlugin).toBe(playwrightPlugin);
+        });
+
+        test('newPageWithEachPlugin should open in existing browsers', async () => {
+            jest.spyOn(puppeteerPlugin, 'launch');
+            jest.spyOn(playwrightPlugin, 'launch');
+
+            // launch 2 browsers
+            await browserPool.newPage();
+            await browserPool.newPage();
+            expect(puppeteerPlugin.launch).toHaveBeenCalledTimes(1);
+            expect(playwrightPlugin.launch).toHaveBeenCalledTimes(1);
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
+
+            // Open more pages
+            await browserPool.newPageWithEachPlugin();
+            expect(puppeteerPlugin.launch).toHaveBeenCalledTimes(1);
+            expect(playwrightPlugin.launch).toHaveBeenCalledTimes(1);
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
         });
 
         test('should correctly override page close', async () => {
@@ -88,8 +157,8 @@ describe('BrowserPool', () => {
             expect(controller.totalPages).toEqual(1);
         });
 
-        test('should retire browser after request count', async () => {
-            browserPool.retireBrowserAfterPageCount = 3;
+        test('should retire browser after page count', async () => {
+            browserPool.retireBrowserAfterPageCount = 2;
 
             jest.spyOn(browserPool, '_retireBrowser');
             expect(browserPool.activeBrowserControllers.size).toBe(0);
@@ -98,7 +167,7 @@ describe('BrowserPool', () => {
             await browserPool.newPage();
             await browserPool.newPage();
 
-            expect(browserPool.activeBrowserControllers.size).toBe(0);
+            expect(browserPool.activeBrowserControllers.size).toBe(1);
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
 
             expect(browserPool._retireBrowser).toBeCalledTimes(1); // eslint-disable-line
@@ -118,7 +187,7 @@ describe('BrowserPool', () => {
             expect(browserPool._launchBrowser).toBeCalledTimes(3); // eslint-disable-line
         });
 
-        test('should killed retired browsers', async () => {
+        test('should close retired browsers', async () => {
             browserPool.retireBrowserAfterPageCount = 1;
             clearInterval(browserPool.browserKillerInterval);
             browserPool.browserKillerInterval = setInterval(
@@ -232,10 +301,11 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
+                    const pageId = browserPool.getPageId(page);
                     await page.close();
 
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, page, browserController); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, pageId, browserController); // eslint-disable-line
                 });
             });
         });

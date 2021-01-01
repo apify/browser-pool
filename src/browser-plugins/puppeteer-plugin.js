@@ -1,32 +1,36 @@
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PuppeteerController = require('../browser-controllers/puppeteer-controller');
-const { BROWSER_CONTROLLER_EVENTS: { BROWSER_TERMINATED } } = require('../events');
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
+/**
+ * puppeteer
+ */
 class PuppeteerPlugin extends BrowserPlugin {
     /**
-     *
-     * @param launchContext {object}
-     * @return {Promise<PuppeteerController>}
+     * @param {LaunchContext} launchContext
+     * @return {Promise<Browser>}
      * @private
      */
     async _launch(launchContext) {
         const { launchOptions, anonymizedProxyUrl } = launchContext;
         const browser = await this.library.launch(launchOptions);
 
-        const puppeteerController = new PuppeteerController({
-            browser,
-            launchContext,
-        });
-
         if (anonymizedProxyUrl) {
-            puppeteerController.once(BROWSER_TERMINATED, () => { // Maybe we can set this event inside the controller in the constructor?
-                this._closeAnonymizedProxy(anonymizedProxyUrl); // Nothing to do here really.
+            browser.once('disconnected', () => {
+                this._closeAnonymizedProxy(anonymizedProxyUrl);
             });
         }
 
-        return puppeteerController;
+        return browser;
+    }
+
+    /**
+     * @return {PuppeteerController}
+     * @private
+     */
+    _createController() {
+        return new PuppeteerController(this);
     }
 
     /**

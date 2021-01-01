@@ -1,35 +1,39 @@
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PlaywrightController = require('../browser-controllers/playwright-controller');
-const { BROWSER_CONTROLLER_EVENTS: { BROWSER_TERMINATED } } = require('../events');
 
+/**
+ * playwright
+ */
 class PlaywrightPlugin extends BrowserPlugin {
     /**
-     *
-     * @param launchContext {object}
-     * @return {Promise<PlaywrightController>}
+     * @param {LaunchContext} launchContext
+     * @return {Promise<Browser>}
      * @private
      */
     async _launch(launchContext) {
         const { launchOptions, anonymizedProxyUrl } = launchContext;
         const browser = await this.library.launch(launchOptions);
 
-        const playwrightController = new PlaywrightController({
-            browser,
-            launchContext,
-        });
-
         if (anonymizedProxyUrl) {
-            playwrightController.once(BROWSER_TERMINATED, () => { // Maybe we can set this event inside the controller in the constructor?
-                this._closeAnonymizedProxy(anonymizedProxyUrl); // Nothing to do here really.
+            browser.once('disconnected', () => {
+                this._closeAnonymizedProxy(anonymizedProxyUrl);
             });
         }
 
-        return playwrightController;
+        return browser;
+    }
+
+    /**
+     * @return {PlaywrightController}
+     * @private
+     */
+    _createController() {
+        return new PlaywrightController(this);
     }
 
     /**
      *
-     * @param launchContext {object}
+     * @param {LaunchContext} launchContext
      * @return {Promise<void>}
      * @private
      */
