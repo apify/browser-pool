@@ -41,10 +41,14 @@ class PuppeteerPlugin extends BrowserPlugin {
      */
     async _addProxyToLaunchOptions(launchContext) {
         const { launchOptions, proxyUrl } = launchContext;
-        const newProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-        launchContext.anonymizedProxyUrl = newProxyUrl;
+        let finalProxyUrl = proxyUrl;
 
-        const proxyArg = `${PROXY_SERVER_ARG}${newProxyUrl}`;
+        if (this._shouldAnonymizeProxy(proxyUrl)) {
+            finalProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
+            launchContext.anonymizedProxyUrl = finalProxyUrl;
+        }
+
+        const proxyArg = `${PROXY_SERVER_ARG}${finalProxyUrl}`;
 
         if (Array.isArray(launchOptions.args)) {
             launchOptions.args.push(proxyArg);
