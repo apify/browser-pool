@@ -160,7 +160,7 @@ describe('BrowserPool', () => {
         test('should retire browser after page count', async () => {
             browserPool.retireBrowserAfterPageCount = 2;
 
-            jest.spyOn(browserPool, '_retireBrowser');
+            jest.spyOn(browserPool, 'retireBrowserController');
             expect(browserPool.activeBrowserControllers.size).toBe(0);
 
             await browserPool.newPage();
@@ -170,7 +170,7 @@ describe('BrowserPool', () => {
             expect(browserPool.activeBrowserControllers.size).toBe(1);
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
 
-            expect(browserPool._retireBrowser).toBeCalledTimes(1); // eslint-disable-line
+            expect(browserPool.retireBrowserController).toBeCalledTimes(1); // eslint-disable-line
         });
 
         test('should allow max pages per browser', async () => {
