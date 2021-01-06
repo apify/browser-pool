@@ -369,12 +369,12 @@ class BrowserPool extends EventEmitter {
             // TODO if you synchronously trigger a lot of page launches, browser
             // will not get retired soon enough. Not sure if it's a problem, let's monitor it.
             if (browserController.totalPages >= this.retireBrowserAfterPageCount) {
-                this._retireBrowser(browserController);
+                this.retireBrowserController(browserController);
             }
 
             this._overridePageClose(page);
         } catch (err) {
-            this._retireBrowser(browserController);
+            this.retireBrowserController(browserController);
             throw new Error(`browserController.newPage() failed: ${browserController.id}\nCause:${err.message}.`);
         }
         await this._executeHooks(this.postPageCreateHooks, page, browserController);
@@ -383,10 +383,12 @@ class BrowserPool extends EventEmitter {
     }
 
     /**
+     * Removes a browser controller from the pool. The underlying
+     * browser will be closed after all its pages are closed.
      * @param {BrowserController} browserController
-     * @private
+     *
      */
-    _retireBrowser(browserController) {
+    retireBrowserController(browserController) {
         const hasBeenRetiredOrKilled = !this.activeBrowserControllers.has(browserController);
         if (hasBeenRetiredOrKilled) return;
 
@@ -402,7 +404,7 @@ class BrowserPool extends EventEmitter {
      */
     retireBrowserByPage(page) {
         const browserController = this.getBrowserControllerByPage(page);
-        this._retireBrowser(browserController);
+        this.retireBrowserController(browserController);
     }
 
     /**
@@ -411,7 +413,7 @@ class BrowserPool extends EventEmitter {
      */
     retireAllBrowsers() {
         this.activeBrowserControllers.forEach((controller) => {
-            this._retireBrowser(controller);
+            this.retireBrowserController(controller);
         });
     }
 

@@ -39,10 +39,15 @@ class PlaywrightPlugin extends BrowserPlugin {
      */
     async _addProxyToLaunchOptions(launchContext) {
         const { launchOptions, proxyUrl } = launchContext;
-        const anonymizedProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-        launchContext.anonymizedProxyUrl = anonymizedProxyUrl;
 
-        launchOptions.proxy = { server: anonymizedProxyUrl };
+        if (this._shouldAnonymizeProxy(proxyUrl)) {
+            const anonymizedProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
+            launchContext.anonymizedProxyUrl = anonymizedProxyUrl;
+            launchOptions.proxy = { server: anonymizedProxyUrl };
+            return;
+        }
+
+        launchOptions.proxy = { server: proxyUrl };
     }
 }
 

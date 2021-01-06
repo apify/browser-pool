@@ -86,15 +86,30 @@ describe('Plugins', () => {
             await browser.close();
         });
 
-        test('should work with proxyUrl', async () => {
+        test('should work with non authenticated proxyUrl', async () => {
             const proxyUrl = 'http://10.10.10.0:8080';
             const plugin = new PuppeteerPlugin(puppeteer);
+            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
             const context = await plugin.createLaunchContext({ proxyUrl });
 
             browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions.args.find((arg) => arg.includes('--proxy-server='));
 
-            expect(argWithProxy.includes('http://10.10.10.0:8080')).toBeTruthy();
+            expect(argWithProxy.includes(proxyUrl)).toBeTruthy();
+            expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
+        });
+
+        test('should work with authenticated proxyUrl', async () => {
+            const proxyUrl = 'http://apify1234@10.10.10.0:8080';
+            const plugin = new PuppeteerPlugin(puppeteer);
+            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+            const context = await plugin.createLaunchContext({ proxyUrl });
+
+            browser = await plugin.launch(context);
+            const argWithProxy = context.launchOptions.args.find((arg) => arg.includes('--proxy-server='));
+
+            expect(argWithProxy.includes(context.anonymizedProxyUrl)).toBeTruthy();
+            expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
         });
     });
 
@@ -106,14 +121,25 @@ describe('Plugins', () => {
         afterEach(async () => {
             await browserController.close();
         });
-
-        test('should work with proxyUrl', async () => {
+        test('should work with non authenticated proxyUrl', async () => {
             const proxyUrl = 'http://10.10.10.0:8080';
             const plugin = new PlaywrightPlugin(playwright.chromium);
+            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
             const context = await plugin.createLaunchContext({ proxyUrl });
 
             browserController = await plugin.launch(context);
             expect(context.launchOptions.proxy.server).toEqual(proxyUrl);
+            expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
+        });
+        test('should work with authenticated proxyUrl', async () => {
+            const proxyUrl = 'http://apify1234@10.10.10.0:8080';
+            const plugin = new PlaywrightPlugin(playwright.chromium);
+            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+            const context = await plugin.createLaunchContext({ proxyUrl });
+
+            browserController = await plugin.launch(context);
+            expect(context.launchOptions.proxy.server).toEqual(context.anonymizedProxyUrl);
+            expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
         });
     });
 

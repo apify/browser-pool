@@ -128,7 +128,6 @@ class BrowserPlugin {
      */
     async _getAnonymizedProxyUrl(proxyUrl) {
         let anonymizedProxyUrl;
-
         try {
             anonymizedProxyUrl = await proxyChain.anonymizeProxy(proxyUrl);
         } catch (e) {
@@ -149,6 +148,18 @@ class BrowserPlugin {
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch((err) => {
             log.debug(`Could not close anonymized proxy server.\nCause:${err.message}`);
         });
+    }
+
+    _shouldAnonymizeProxy(proxyUrl) {
+        const parsedProxyUrl = proxyChain.parseUrl(proxyUrl);
+        if (parsedProxyUrl.username || parsedProxyUrl.password) {
+            if (parsedProxyUrl.scheme !== 'http') {
+                throw new Error('Invalid "proxyUrl" option: authentication is only supported for HTTP proxy type.');
+            }
+            return true;
+        }
+
+        return false;
     }
 }
 
