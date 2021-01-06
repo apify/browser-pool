@@ -383,6 +383,8 @@ class BrowserPool extends EventEmitter {
     }
 
     /**
+     * Removes a browser controller from the pool. The underlying
+     * browser will be closed after all its pages are closed.
      * @param {BrowserController} browserController
      *
      */
