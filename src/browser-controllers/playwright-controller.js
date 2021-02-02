@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const BrowserController = require('../abstract-classes/browser-controller');
 
 /**
