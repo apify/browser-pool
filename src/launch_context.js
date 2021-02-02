@@ -14,6 +14,9 @@
  * @property {object} launchOptions
  *  The actual options the browser was launched with, after changes.
  *  Those changes would be typically made in pre-launch hooks.
+ * @property {object} usePersistentContext
+ *  If set to true pages use share the same browser context.
+ *  If set to false each page uses its own context that is destroyed once the page is closed or crashes.
  * @hideconstructor
  */
 class LaunchContext {
@@ -23,6 +26,7 @@ class LaunchContext {
      * @param {object} options.launchOptions
      * @param {string} [options.id]
      * @param {string} [options.proxyUrl]
+     * @param {boolean} [options.usePersistentContext]
      */
     constructor(options) {
         const {
@@ -30,11 +34,13 @@ class LaunchContext {
             browserPlugin,
             launchOptions,
             proxyUrl,
+            usePersistentContext,
         } = options;
 
         this.id = id;
         this.browserPlugin = browserPlugin;
         this.launchOptions = launchOptions;
+        this.usePersistentContext = usePersistentContext;
 
         this._proxyUrl = proxyUrl;
         this._reservedFieldNames = Reflect.ownKeys(this);

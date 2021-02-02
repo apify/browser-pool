@@ -101,7 +101,7 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *  Pre-page-create hooks are executed just before a new page is created. They
  *  are useful to make dynamic changes to the browser before opening a page.
  *  The hooks are called with two arguments:
- *  `pageId`: `string` and `browserController`: {@link BrowserController}
+ *  `pageId`: `string`, `browserController`: {@link BrowserController} and `pageOptions`: `object` -  library page creation options.
  * @param {function[]} [options.postPageCreateHooks]
  *  Post-page-create hooks are called right after a new page is created
  *  and all internal actions of Browser Pool are completed. This is the
@@ -203,7 +203,7 @@ class BrowserPool extends EventEmitter {
     async newPage(options = {}) {
         const {
             id = nanoid(),
-            pageOptions,
+            pageOptions = {},
             browserPlugin = this._pickBrowserPlugin(),
         } = options;
 
@@ -251,7 +251,7 @@ class BrowserPool extends EventEmitter {
     async newPageInNewBrowser(options = {}) {
         const {
             id = nanoid(),
-            pageOptions,
+            pageOptions = {},
             launchOptions,
             browserPlugin = this._pickBrowserPlugin(),
         } = options;
@@ -354,7 +354,7 @@ class BrowserPool extends EventEmitter {
         // TODO This is needed for concurrent newPage calls to wait for the browser launch.
         // It's not ideal though, we need to come up with a better API.
         await browserController.isActivePromise;
-        await this._executeHooks(this.prePageCreateHooks, pageId, browserController);
+        await this._executeHooks(this.prePageCreateHooks, pageId, browserController, pageOptions);
         let page;
         try {
             page = await addTimeoutToPromise(

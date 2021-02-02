@@ -111,6 +111,38 @@ describe('Plugins', () => {
             expect(argWithProxy.includes(context.anonymizedProxyUrl)).toBeTruthy();
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
         });
+
+        test('should use persistent context by default', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer);
+            const browserController = plugin.createController();
+
+            const launchContext = plugin.createLaunchContext();
+
+            browser = await plugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+            browserController.activate();
+
+            const page = await browserController.newPage();
+            const browserContext = page.browserContext();
+
+            expect(browserContext.isIncognito()).toBeFalsy();
+        });
+
+        test('should use incognito context', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer);
+            const browserController = plugin.createController();
+
+            const launchContext = plugin.createLaunchContext({ usePersistentContext: false });
+
+            browser = await plugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+            browserController.activate();
+
+            const page = await browserController.newPage();
+            const browserContext = page.browserContext();
+
+            expect(browserContext.isIncognito()).toBeTruthy();
+        });
     });
 
     runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer);
@@ -140,6 +172,40 @@ describe('Plugins', () => {
             browserController = await plugin.launch(context);
             expect(context.launchOptions.proxy.server).toEqual(context.anonymizedProxyUrl);
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
+        });
+
+        test('should use persistent context by option', async () => {
+            const plugin = new PlaywrightPlugin(playwright.chromium);
+            browserController = plugin.createController();
+
+            const launchContext = plugin.createLaunchContext({ usePersistentContext: true });
+
+            const browser = await plugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+            browserController.activate();
+
+            const page = await browserController.newPage();
+            const browserContext = page.context();
+            await browserController.newPage();
+
+            expect(browserContext.pages()).toHaveLength(3);
+        });
+
+        test('should use incognito context by default', async () => {
+            const plugin = new PlaywrightPlugin(playwright.chromium);
+            browserController = plugin.createController();
+
+            const launchContext = plugin.createLaunchContext();
+
+            const browser = await plugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+            browserController.activate();
+
+            const page = await browserController.newPage();
+            const context = await page.context();
+            await browserController.newPage();
+
+            expect(context.pages()).toHaveLength(1);
         });
     });
 

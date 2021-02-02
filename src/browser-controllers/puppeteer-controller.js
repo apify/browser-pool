@@ -1,3 +1,5 @@
+const _ = require('lodash');
+
 const BrowserController = require('../abstract-classes/browser-controller');
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
@@ -7,15 +9,27 @@ const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
  */
 class PuppeteerController extends BrowserController {
     async _newPage(pageOptions) {
-        const page = await this.browser.newPage(pageOptions);
+        const { usePersistentContext = true } = this.launchContext;
+        let page;
+        let context;
+
+        if (usePersistentContext) {
+            page = await this.browser.newPage(pageOptions);
+        } else {
+            context = await this.browser.createIncognitoBrowserContext();
+            page = await context.newPage();
+        }
 
         page.once('close', () => {
             this.activePages--;
+            if (!usePersistentContext) {
+                context.close().catch(_.noop);
+            }
         });
 
         page.once('error', (error) => {
             this.log.exception(error, 'Page crashed.');
-            page.close().catch();
+            page.close().catch(_.noop);
         });
 
         return page;

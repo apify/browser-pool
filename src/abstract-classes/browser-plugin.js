@@ -59,6 +59,7 @@ class BrowserPlugin {
             id,
             launchOptions = {},
             proxyUrl = this.proxyUrl,
+            usePersistentContext,
         } = options;
 
         return new LaunchContext({
@@ -66,6 +67,7 @@ class BrowserPlugin {
             launchOptions: _.merge({}, this.launchOptions, launchOptions),
             browserPlugin: this,
             proxyUrl,
+            usePersistentContext,
         });
     }
 

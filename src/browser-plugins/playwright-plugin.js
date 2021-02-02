@@ -11,8 +11,14 @@ class PlaywrightPlugin extends BrowserPlugin {
      * @private
      */
     async _launch(launchContext) {
-        const { launchOptions, anonymizedProxyUrl } = launchContext;
-        const browser = await this.library.launch(launchOptions);
+        const { launchOptions, anonymizedProxyUrl, usePersistentContext = false } = launchContext;
+        let browser;
+
+        if (usePersistentContext) {
+            browser = await this.library.launchPersistentContext('', launchOptions); // @TODO: allow to set the userDataDir
+        } else {
+            browser = await this.library.launch(launchOptions);
+        }
 
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
