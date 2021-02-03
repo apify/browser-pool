@@ -13,8 +13,18 @@ class PuppeteerPlugin extends BrowserPlugin {
      * @private
      */
     async _launch(launchContext) {
-        const { launchOptions, anonymizedProxyUrl } = launchContext;
-        const browser = await this.library.launch(launchOptions);
+        const {
+            launchOptions,
+            anonymizedProxyUrl,
+            userDataDir,
+        } = launchContext;
+
+        const finalLaunchOptions = {
+            ...launchOptions,
+            userDataDir: launchOptions.userDataDir || userDataDir,
+        };
+
+        const browser = await this.library.launch(finalLaunchOptions);
 
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {

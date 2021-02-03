@@ -51,6 +51,11 @@ class BrowserPlugin {
      * @param {string} [options.id]
      * @param {object} [options.launchOptions]
      * @param {string} [options.proxyUrl]
+     * @property {boolean} [useIncognitoPages]
+     *  If set to false pages use share the same browser context.
+     *  If set to true each page uses its own context that is destroyed once the page is closed or crashes.
+     * @property {object} [userDataDir]
+     *  Path to a User Data Directory, which stores browser session data like cookies and local storage.
      * @return {LaunchContext}
      * @ignore
      */
@@ -59,7 +64,8 @@ class BrowserPlugin {
             id,
             launchOptions = {},
             proxyUrl = this.proxyUrl,
-            usePersistentContext,
+            useIncognitoPages,
+            userDataDir,
         } = options;
 
         return new LaunchContext({
@@ -67,7 +73,8 @@ class BrowserPlugin {
             launchOptions: _.merge({}, this.launchOptions, launchOptions),
             browserPlugin: this,
             proxyUrl,
-            usePersistentContext,
+            useIncognitoPages,
+            userDataDir,
         });
     }
 

@@ -6,6 +6,7 @@ const PuppeteerController = require('../../src/browser-controllers/puppeteer-con
 
 const PlaywrightPlugin = require('../../src/browser-plugins/playwright-plugin.js');
 const PlaywrightController = require('../../src/browser-controllers/playwright-controller');
+const LaunchContext = require('../../src/launch_context');
 
 const runPluginTest = (Plugin, Controller, library) => {
     const plugin = new Plugin(library);
@@ -50,15 +51,6 @@ const runPluginTest = (Plugin, Controller, library) => {
         test('should create browser controller', () => {
             const browserController = plugin.createController();
             expect(browserController).toBeInstanceOf(Controller);
-        });
-
-        test('should pass launch options to browser', async () => {
-            jest.spyOn(plugin.library, 'launch');
-            const launchOptions = {
-                foo: 'bar',
-            };
-            browser = await plugin.launch({ launchOptions });
-            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
         });
 
         test('should work with cookies', async () => {
@@ -128,11 +120,11 @@ describe('Plugins', () => {
             expect(browserContext.isIncognito()).toBeFalsy();
         });
 
-        test('should use incognito context', async () => {
+        test('should use incognito pages by option', async () => {
             const plugin = new PuppeteerPlugin(puppeteer);
             const browserController = plugin.createController();
 
-            const launchContext = plugin.createLaunchContext({ usePersistentContext: false });
+            const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
 
             browser = await plugin.launch(launchContext);
             browserController.assignBrowser(browser, launchContext);
@@ -142,6 +134,19 @@ describe('Plugins', () => {
             const browserContext = page.browserContext();
 
             expect(browserContext.isIncognito()).toBeTruthy();
+        });
+
+        test('should pass launch options to browser', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer);
+
+            jest.spyOn(plugin.library, 'launch');
+            const launchOptions = {
+                foo: 'bar',
+            };
+            const launchContext = plugin.createLaunchContext({ launchOptions });
+            browser = await plugin.launch(launchContext);
+            launchOptions.userDataDir = launchContext.userDataDir;
+            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
         });
     });
 
@@ -174,11 +179,11 @@ describe('Plugins', () => {
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
         });
 
-        test('should use persistent context by option', async () => {
+        test('should use icognito context by option', async () => {
             const plugin = new PlaywrightPlugin(playwright.chromium);
             browserController = plugin.createController();
 
-            const launchContext = plugin.createLaunchContext({ usePersistentContext: true });
+            const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
 
             const browser = await plugin.launch(launchContext);
             browserController.assignBrowser(browser, launchContext);
@@ -188,10 +193,10 @@ describe('Plugins', () => {
             const browserContext = page.context();
             await browserController.newPage();
 
-            expect(browserContext.pages()).toHaveLength(3);
+            expect(browserContext.pages()).toHaveLength(1);
         });
 
-        test('should use incognito context by default', async () => {
+        test('should use persistent context by default', async () => {
             const plugin = new PlaywrightPlugin(playwright.chromium);
             browserController = plugin.createController();
 
@@ -205,7 +210,19 @@ describe('Plugins', () => {
             const context = await page.context();
             await browserController.newPage();
 
-            expect(context.pages()).toHaveLength(1);
+            expect(context.pages()).toHaveLength(3);
+        });
+
+        test('should pass launch options to browser', async () => {
+            const plugin = new PlaywrightPlugin(playwright.chromium);
+
+            jest.spyOn(plugin.library, 'launch');
+            const launchOptions = {
+                foo: 'bar',
+            };
+            const launchContext = plugin.createLaunchContext({ launchOptions, useIncognitoPages: true });
+            browserController = await plugin.launch(launchContext);
+            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
         });
     });
 

@@ -25,12 +25,12 @@ class PlaywrightController extends BrowserController {
     }
 
     async _getCookies(page) {
-        const context = await page.context();
+        const context = page.context();
         return context.cookies();
     }
 
     async _setCookies(page, cookies) {
-        const context = await page.context();
+        const context = page.context();
         return context.addCookies(cookies);
     }
 }

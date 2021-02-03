@@ -11,13 +11,18 @@ class PlaywrightPlugin extends BrowserPlugin {
      * @private
      */
     async _launch(launchContext) {
-        const { launchOptions, anonymizedProxyUrl, usePersistentContext = false } = launchContext;
+        const {
+            launchOptions,
+            anonymizedProxyUrl,
+            useIncognitoPages,
+            userDataDir,
+        } = launchContext;
         let browser;
 
-        if (usePersistentContext) {
-            browser = await this.library.launchPersistentContext('', launchOptions); // @TODO: allow to set the userDataDir
-        } else {
+        if (useIncognitoPages) {
             browser = await this.library.launch(launchOptions);
+        } else {
+            browser = await this.library.launchPersistentContext(userDataDir, launchOptions);
         }
 
         if (anonymizedProxyUrl) {

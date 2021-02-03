@@ -8,21 +8,22 @@ const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
  * puppeteer
  */
 class PuppeteerController extends BrowserController {
-    async _newPage(pageOptions) {
-        const { usePersistentContext = true } = this.launchContext;
+    async _newPage() {
+        const { useIncognitoPages } = this.launchContext;
         let page;
         let context;
 
-        if (usePersistentContext) {
-            page = await this.browser.newPage(pageOptions);
-        } else {
+        if (useIncognitoPages) {
             context = await this.browser.createIncognitoBrowserContext();
             page = await context.newPage();
+        } else {
+            page = await this.browser.newPage();
         }
 
         page.once('close', () => {
             this.activePages--;
-            if (!usePersistentContext) {
+
+            if (useIncognitoPages) {
                 context.close().catch(_.noop);
             }
         });

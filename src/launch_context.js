@@ -1,3 +1,6 @@
+const path = require('path');
+const os = require('os');
+const { nanoid } = require('nanoid');
 /**
  * `LaunchContext` holds information about the launched browser. It's useful
  * to retrieve the `launchOptions`, the proxy the browser was launched with
@@ -14,9 +17,11 @@
  * @property {object} launchOptions
  *  The actual options the browser was launched with, after changes.
  *  Those changes would be typically made in pre-launch hooks.
- * @property {object} usePersistentContext
- *  If set to true pages use share the same browser context.
- *  If set to false each page uses its own context that is destroyed once the page is closed or crashes.
+ * @property {boolean} [useIncognitoPages=false]
+ *  If set to false pages use share the same browser context.
+ *  If set to true each page uses its own context that is destroyed once the page is closed or crashes.
+ * @property {object} [userDataDir]
+ *  Path to a User Data Directory, which stores browser session data like cookies and local storage.
  * @hideconstructor
  */
 class LaunchContext {
@@ -26,7 +31,8 @@ class LaunchContext {
      * @param {object} options.launchOptions
      * @param {string} [options.id]
      * @param {string} [options.proxyUrl]
-     * @param {boolean} [options.usePersistentContext]
+     * @param {boolean} [options.useIncognitoPages=false]
+     * @param {string} [options.userDataDir]
      */
     constructor(options) {
         const {
@@ -34,13 +40,15 @@ class LaunchContext {
             browserPlugin,
             launchOptions,
             proxyUrl,
-            usePersistentContext,
+            useIncognitoPages = false,
+            userDataDir = path.join(os.tmpdir(), nanoid()),
         } = options;
 
         this.id = id;
         this.browserPlugin = browserPlugin;
         this.launchOptions = launchOptions;
-        this.usePersistentContext = usePersistentContext;
+        this.useIncognitoPages = useIncognitoPages;
+        this.userDataDir = userDataDir;
 
         this._proxyUrl = proxyUrl;
         this._reservedFieldNames = Reflect.ownKeys(this);
