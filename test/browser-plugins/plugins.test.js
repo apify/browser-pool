@@ -6,7 +6,6 @@ const PuppeteerController = require('../../src/browser-controllers/puppeteer-con
 
 const PlaywrightPlugin = require('../../src/browser-plugins/playwright-plugin.js');
 const PlaywrightController = require('../../src/browser-controllers/playwright-controller');
-const LaunchContext = require('../../src/launch_context');
 
 const runPluginTest = (Plugin, Controller, library) => {
     const plugin = new Plugin(library);
