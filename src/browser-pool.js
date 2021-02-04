@@ -101,7 +101,10 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *  Pre-page-create hooks are executed just before a new page is created. They
  *  are useful to make dynamic changes to the browser before opening a page.
  *  The hooks are called with two arguments:
- *  `pageId`: `string` and `browserController`: {@link BrowserController}
+ *  `pageId`: `string`, `browserController`: {@link BrowserController} and
+ *  `pageOptions`: `object|undefined` - This only works if the underlying `BrowserController` supports new page options.
+ *  So far, new page options are only supported by `PlaywrightController`.
+ *  If the page options are not supported by `BrowserController` the `pageOptions` argument is `undefined`.
  * @param {function[]} [options.postPageCreateHooks]
  *  Post-page-create hooks are called right after a new page is created
  *  and all internal actions of Browser Pool are completed. This is the
@@ -350,15 +353,22 @@ class BrowserPool extends EventEmitter {
      * @return {Promise<Page>}
      * @private
      */
-    async _createPageForBrowser(pageId, browserController, pageOptions) {
+    async _createPageForBrowser(pageId, browserController, pageOptions = {}) {
         // TODO This is needed for concurrent newPage calls to wait for the browser launch.
         // It's not ideal though, we need to come up with a better API.
         await browserController.isActivePromise;
-        await this._executeHooks(this.prePageCreateHooks, pageId, browserController);
+
+        let finalPageOptions;
+        if (browserController.supportsPageOptions) {
+            finalPageOptions = pageOptions;
+        }
+
+        await this._executeHooks(this.prePageCreateHooks, pageId, browserController, finalPageOptions);
+
         let page;
         try {
             page = await addTimeoutToPromise(
-                browserController.newPage(pageOptions),
+                browserController.newPage(finalPageOptions),
                 this.operationTimeoutMillis,
                 'browserController.newPage() timed out.',
             );

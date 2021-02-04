@@ -22,6 +22,7 @@ to hear about your use cases in the [Discussions](https://github.com/apify/brows
   * [Simple configuration](#simple-configuration)
   * [Proxy management](#proxy-management)
   * [Lifecycle management with hooks](#lifecycle-management-with-hooks)
+  * [Manipulating playwright context using `pageOptions` or `launchOptions`](#manipulating-playwright-context-using-pageoptions-or-launchoptions)
   * [Single API for common operations](#single-api-for-common-operations)
   * [Graceful browser closing](#graceful-browser-closing)
   * [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
@@ -222,6 +223,16 @@ await browserPool.newPage({ id: 'my-page' });
 ```
 
 > See the API Documentation for all hooks and their arguments.
+### Manipulating playwright context using `pageOptions` or `launchOptions`
+Playwright allows customizing multiple browser attributes by browser context.
+You can customize some of them once the context is created, but some need to be customized within its creation.
+This part of the documentation should explain how you can effectively customize the browser context.
+
+First of all, let's take a look at what kind of context strategy you chose. You can choose between two strategies by `useIncognitoPages` `LaunchContext` option.
+
+Suppose you decide to keep `useIncognitoPages` default `false` and create a shared context across all pages launched by one browser. In this case,  you should pass the `contextOptions` as a `launchOptions` since the context is created within the new browser launch. The `launchOptions` corresponds to these [playwright options](https://playwright.dev/docs/api/class-browsertype#browsertypelaunchpersistentcontextuserdatadir-options). As you can see, these options contain not only ordinary playwright launch options but also the context options.
+
+If you set `useIncognitoPages` to `true`, you will create a new context within each new page, which allows you to handle each page its cookies and application data. This approach allows you to pass the context options as `pageOptions` because a new context is created once you create a new page. In this case, the `pageOptions` corresponds to these [playwright options](https://playwright.dev/docs/api/class-browser#browsernewpageoptions).
 
 ### Single API for common operations
 Puppeteer and Playwright handle some things differently. Browser Pool
@@ -350,6 +361,7 @@ const browserPool = new BrowserPool({
     * [`.getBrowserControllerByPage(page)`](#BrowserPool+getBrowserControllerByPage) ⇒ [<code>BrowserController</code>](#BrowserController)
     * [`.getPage(id)`](#BrowserPool+getPage) ⇒ <code>Page</code>
     * [`.getPageId(page)`](#BrowserPool+getPageId) ⇒ <code>string</code>
+    * [`.retireBrowserController(browserController)`](#BrowserPool+retireBrowserController)
     * [`.retireBrowserByPage(page)`](#BrowserPool+retireBrowserByPage)
     * [`.retireAllBrowsers()`](#BrowserPool+retireAllBrowsers)
     * [`.closeAllBrowsers()`](#BrowserPool+closeAllBrowsers) ⇒ <code>Promise.&lt;void&gt;</code>
@@ -372,7 +384,7 @@ const browserPool = new BrowserPool({
 | [options.closeInactiveBrowserAfterSecs] | <code>number</code> | <code>300</code> | Browsers normally close immediately after their last page is processed.  However, there could be situations where this does not happen. Browser Pool  makes sure all inactive browsers are closed regularly, to free resources. |
 | [options.preLaunchHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-launch hooks are executed just before a browser is launched and provide  a good opportunity to dynamically change the launch options.  The hooks are called with two arguments:  `pageId`: `string` and `launchContext`: [LaunchContext](#LaunchContext) |
 | [options.postLaunchHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-launch hooks are executed as soon as a browser is launched.  The hooks are called with two arguments:  `pageId`: `string` and `browserController`: [BrowserController](#BrowserController)  To guarantee order of execution before other hooks in the same browser,  the [BrowserController](#BrowserController) methods cannot be used until the post-launch  hooks complete. If you attempt to call `await browserController.close()` from  a post-launch hook, it will deadlock the process. This API is subject to change. |
-| [options.prePageCreateHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-page-create hooks are executed just before a new page is created. They  are useful to make dynamic changes to the browser before opening a page.  The hooks are called with two arguments:  `pageId`: `string` and `browserController`: [BrowserController](#BrowserController) |
+| [options.prePageCreateHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-page-create hooks are executed just before a new page is created. They  are useful to make dynamic changes to the browser before opening a page.  The hooks are called with two arguments:  `pageId`: `string`, `browserController`: [BrowserController](#BrowserController) and  `pageOptions`: `object|undefined` - This only works if the underlying `BrowserController` supports new page options.  So far, new page options are only supported by `PlaywrightController`.  If the page options are not supported by `BrowserController` the `pageOptions` argument is `undefined`. |
 | [options.postPageCreateHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-page-create hooks are called right after a new page is created  and all internal actions of Browser Pool are completed. This is the  place to make changes to a page that you would like to apply to all  pages. Such as injecting a JavaScript library into all pages.  The hooks are called with two arguments:  `page`: `Page` and `browserController`: [BrowserController](#BrowserController) |
 | [options.prePageCloseHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-page-close hooks give you the opportunity to make last second changes  in a page that's about to be closed, such as saving a snapshot or updating  state.  The hooks are called with two arguments:  `page`: `Page` and `browserController`: [BrowserController](#BrowserController) |
 | [options.postPageCloseHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-page-close hooks allow you to do page related clean up.  The hooks are called with two arguments:  `pageId`: `string` and `browserController`: [BrowserController](#BrowserController) |
@@ -497,6 +509,20 @@ until it's closed.
 | Param | Type |
 | --- | --- |
 | page | <code>Page</code> | 
+
+
+* * *
+
+<a name="BrowserPool+retireBrowserController"></a>
+
+#### `browserPool.retireBrowserController(browserController)`
+Removes a browser controller from the pool. The underlying
+browser will be closed after all its pages are closed.
+
+
+| Param | Type |
+| --- | --- |
+| browserController | [<code>BrowserController</code>](#BrowserController) | 
 
 
 * * *
@@ -648,11 +674,13 @@ values, such as session IDs.
 
 **Properties**
 
-| Name | Type | Description |
-| --- | --- | --- |
-| id | <code>string</code> | To make identification of `LaunchContext` easier, `BrowserPool` assigns  the `LaunchContext` an `id` that's equal to the `id` of the page that  triggered the browser launch. This is useful, because many pages share  a single launch context (single browser). |
-| browserPlugin | [<code>BrowserPlugin</code>](#BrowserPlugin) | The `BrowserPlugin` instance used to launch the browser. |
-| launchOptions | <code>object</code> | The actual options the browser was launched with, after changes.  Those changes would be typically made in pre-launch hooks. |
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| id | <code>string</code> |  | To make identification of `LaunchContext` easier, `BrowserPool` assigns  the `LaunchContext` an `id` that's equal to the `id` of the page that  triggered the browser launch. This is useful, because many pages share  a single launch context (single browser). |
+| browserPlugin | [<code>BrowserPlugin</code>](#BrowserPlugin) |  | The `BrowserPlugin` instance used to launch the browser. |
+| launchOptions | <code>object</code> |  | The actual options the browser was launched with, after changes.  Those changes would be typically made in pre-launch hooks. |
+| [useIncognitoPages] | <code>boolean</code> | <code>false</code> | By default pages share the same browser context.  If set to true each page uses its own context that is destroyed once the page is closed or crashes. |
+| [userDataDir] | <code>object</code> |  | Path to a User Data Directory, which stores browser session data like cookies and local storage. |
 
 
 * [LaunchContext](#LaunchContext)

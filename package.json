@@ -1,6 +1,6 @@
 {
 	"name": "browser-pool",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
 	"main": "src/index.js",
 	"dependencies": {
@@ -18,12 +18,12 @@
 		"jest": "^26.6.3",
 		"jsdoc-to-markdown": "^6.0.1",
 		"markdown-toc": "^1.2.0",
-		"playwright": "^1.6.2",
-		"puppeteer": "^5.3.1"
+		"playwright": "^1.8.0",
+		"puppeteer": "^5.5.0"
 	},
 	"scripts": {
-        "build-docs": "npm run build-toc && node docs/build_docs.js",
-        "build-toc": "markdown-toc docs/README.md -i",
+		"build-docs": "npm run build-toc && node docs/build_docs.js",
+		"build-toc": "markdown-toc docs/README.md -i",
 		"start": "node src/main.js",
 		"lint": "./node_modules/.bin/eslint ./src --ext .js,.jsx",
 		"lint:fix": "./node_modules/.bin/eslint ./src --ext .js,.jsx --fix",

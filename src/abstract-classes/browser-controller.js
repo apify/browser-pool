@@ -33,6 +33,7 @@ class BrowserController extends EventEmitter {
         this.browser = undefined;
         this.launchContext = undefined;
         this.isActive = false;
+        this.supportsPageOptions = false;
 
         this.isActivePromise = new Promise((resolve) => {
             this._activate = resolve;

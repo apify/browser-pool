@@ -57,7 +57,6 @@ describe('BrowserPool', () => {
         // Basic user facing functionality
         test('should open new page', async () => {
             const page = await browserPool.newPage();
-            const page2 = await browserPool.newPage();
 
             expect(page.goto).toBeDefined();
             expect(page.close).toBeDefined();
@@ -264,7 +263,24 @@ describe('BrowserPool', () => {
                     const page = await browserPool.newPage();
                     const pageId = browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, pageId, browserController); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, pageId, browserController, browserController.supportsPageOptions? {} : undefined); // eslint-disable-line
+                });
+
+                test('should allow changing pageOptions only when supported', async () => {
+                    let browserController;
+                    let options;
+                    const myAsyncHook = (pageId, controller, pageOptions) => {
+                        pageOptions.customOption = 'TEST';
+                        options = pageOptions;
+                        jest.spyOn(controller, 'newPage');
+                        browserController = controller;
+                    };
+                    browserPool.prePageCreateHooks = [myAsyncHook];
+                    browserPool.browserPlugins = [new PlaywrightPlugin(playwright.chromium)];
+                    jest.spyOn(browserPool, '_executeHooks');
+
+                    await browserPool.newPage();
+                    expect(browserController.newPage).toHaveBeenCalledWith(options);
                 });
             });
 

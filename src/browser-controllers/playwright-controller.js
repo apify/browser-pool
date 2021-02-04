@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const BrowserController = require('../abstract-classes/browser-controller');
 
 /**
@@ -6,20 +5,15 @@ const BrowserController = require('../abstract-classes/browser-controller');
  * @extends BrowserController
  */
 class PlaywrightController extends BrowserController {
-    constructor(browserPlugin) {
-        super(browserPlugin);
-
-        this.pageToContext = new WeakMap();
+    constructor(options) {
+        super(options);
+        this.supportsPageOptions = true;
     }
 
     async _newPage(pageOptions) {
-        const context = await this.browser.newContext();
-        const page = await context.newPage(pageOptions);
-
-        this.pageToContext.set(page, context);
+        const page = await this.browser.newPage(pageOptions);
 
         page.once('close', async () => {
-            await context.close().catch(_.noop);
             this.activePages--;
         });
 
@@ -36,12 +30,12 @@ class PlaywrightController extends BrowserController {
     }
 
     async _getCookies(page) {
-        const context = this.pageToContext.get(page);
+        const context = page.context();
         return context.cookies();
     }
 
     async _setCookies(page, cookies) {
-        const context = this.pageToContext.get(page);
+        const context = page.context();
         return context.addCookies(cookies);
     }
 }
