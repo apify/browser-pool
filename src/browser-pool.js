@@ -101,7 +101,9 @@ const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
  *  Pre-page-create hooks are executed just before a new page is created. They
  *  are useful to make dynamic changes to the browser before opening a page.
  *  The hooks are called with two arguments:
- *  `pageId`: `string`, `browserController`: {@link BrowserController} and `pageOptions`: `object` -  library page creation options.
+ *  `pageId`: `string`, `browserController`: {@link BrowserController} and
+ *  `pageOptions`: `object` - by default this is an empty object. This only works if the underlying `BrowserController` supports new page options.
+ *  So far, new page options are only supported by `PlaywrightController`.
  * @param {function[]} [options.postPageCreateHooks]
  *  Post-page-create hooks are called right after a new page is created
  *  and all internal actions of Browser Pool are completed. This is the
