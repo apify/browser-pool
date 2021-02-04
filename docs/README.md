@@ -22,6 +22,7 @@ to hear about your use cases in the [Discussions](https://github.com/apify/brows
   * [Simple configuration](#simple-configuration)
   * [Proxy management](#proxy-management)
   * [Lifecycle management with hooks](#lifecycle-management-with-hooks)
+  * [Manipulating playwright context using `pageOptions` or `launchOptions`](#manipulating-playwright-context-using-pageoptions-or-launchoptions)
   * [Single API for common operations](#single-api-for-common-operations)
   * [Graceful browser closing](#graceful-browser-closing)
   * [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
@@ -222,6 +223,16 @@ await browserPool.newPage({ id: 'my-page' });
 ```
 
 > See the API Documentation for all hooks and their arguments.
+### Manipulating playwright context using `pageOptions` or `launchOptions`
+Playwright allows customizing multiple browser attributes by browser context.
+You can customize some of them once the context is created, but some need to be customized within its creation.
+This part of the documentation should explain how you can effectively customize the browser context.
+
+First of all, let's take a look at what kind of context strategy you chose. You can choose between two strategies by `useIncognitoPages` `LaunchContext` option.
+
+Suppose you decide to keep `useIncognitoPages` default `false` and create a shared context across all pages launched by one browser. In this case,  you should pass the `contextOptions` as a `launchOptions` since the context is created within the new browser launch. The `launchOptions` corresponds to these [playwright options](https://playwright.dev/docs/api/class-browsertype#browsertypelaunchpersistentcontextuserdatadir-options). As you can see, these options contain not only ordinary playwright launch options but also the context options.
+
+If you set `useIncognitoPages` to `true`, you will create a new context within each new page, which allows you to handle each page its cookies and application data. This approach allows you to pass the context options as `pageOptions` because a new context is created once you create a new page. In this case, the `pageOptions` corresponds to these [playwright options](https://playwright.dev/docs/api/class-browser#browsernewpageoptions).
 
 ### Single API for common operations
 Puppeteer and Playwright handle some things differently. Browser Pool

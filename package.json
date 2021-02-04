@@ -1,6 +1,6 @@
 {
 	"name": "browser-pool",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
 	"main": "src/index.js",
 	"dependencies": {

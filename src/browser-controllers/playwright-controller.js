@@ -5,6 +5,11 @@ const BrowserController = require('../abstract-classes/browser-controller');
  * @extends BrowserController
  */
 class PlaywrightController extends BrowserController {
+    constructor(options) {
+        super(options);
+        this.supportsPageOptions = true;
+    }
+
     async _newPage(pageOptions) {
         const page = await this.browser.newPage(pageOptions);
 

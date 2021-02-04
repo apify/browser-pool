@@ -263,10 +263,10 @@ describe('BrowserPool', () => {
                     const page = await browserPool.newPage();
                     const pageId = browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, pageId, browserController, {}); // eslint-disable-line
+                    expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, pageId, browserController, browserController.supportsPageOptions? {} : undefined); // eslint-disable-line
                 });
 
-                test('should allow changing pageOptions', async () => {
+                test('should allow changing pageOptions only when supported', async () => {
                     let browserController;
                     let options;
                     const myAsyncHook = (pageId, controller, pageOptions) => {
@@ -276,6 +276,7 @@ describe('BrowserPool', () => {
                         browserController = controller;
                     };
                     browserPool.prePageCreateHooks = [myAsyncHook];
+                    browserPool.browserPlugins = [new PlaywrightPlugin(playwright.chromium)];
                     jest.spyOn(browserPool, '_executeHooks');
 
                     await browserPool.newPage();

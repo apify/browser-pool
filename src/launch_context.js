@@ -18,7 +18,7 @@ const { nanoid } = require('nanoid');
  *  The actual options the browser was launched with, after changes.
  *  Those changes would be typically made in pre-launch hooks.
  * @property {boolean} [useIncognitoPages=false]
- *  If set to false pages use share the same browser context.
+ *  By default pages share the same browser context.
  *  If set to true each page uses its own context that is destroyed once the page is closed or crashes.
  * @property {object} [userDataDir]
  *  Path to a User Data Directory, which stores browser session data like cookies and local storage.
