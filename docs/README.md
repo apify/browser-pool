@@ -234,6 +234,89 @@ Suppose you decide to keep `useIncognitoPages` default `false` and create a shar
 
 If you set `useIncognitoPages` to `true`, you will create a new context within each new page, which allows you to handle each page its cookies and application data. This approach allows you to pass the context options as `pageOptions` because a new context is created once you create a new page. In this case, the `pageOptions` corresponds to these [playwright options](https://playwright.dev/docs/api/class-browser#browsernewpageoptions).
 
+**Changing context options with `LaunchContext`:**
+
+This will only work if you keep the default value for `useIncognitoPages` (`false`).
+```javascript
+const browserPool = new BrowserPool({
+    browserPlugins: [
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                launchOptions: {
+                    deviceScaleFactor: 2,
+                },
+            },
+        ),
+    ],
+
+});
+```
+**Changing context options with `browserPool.newPage` options:**
+
+```javascript
+const browserPool = new BrowserPool({
+     browserPlugins: [
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: true, // You must turn on incognito pages.
+                launchOptions: {
+                    // launch options
+                    headless: false,
+                    devtools: true,
+                },
+            },
+        ),
+    ],
+});
+
+(async () => {
+    // Launches Chromium with Playwright and returns a Playwright Page.
+    const page = await browserPool.newPage({
+        pageOptions: {
+            // context options
+            deviceScaleFactor: 2,
+            colorScheme: 'light',
+            locale: 'de-DE',
+        },
+    });
+})();
+
+```
+**Changing context options with `prePageCreateHooks` options:**
+```javascript
+const browserPool = new BrowserPool({
+    browserPlugins: [
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: true,
+                launchOptions: {
+                // launch options
+                    headless: false,
+                    devtools: true,
+                },
+            },
+        ),
+    ],
+    prePageCreateHooks: [
+        (pageId, browserController, pageOptions) => {
+            pageOptions.deviceScaleFactor = 2;
+            pageOptions.colorScheme = 'dark';
+            pageOptions.locale = 'de-DE';
+
+            // Warning
+            // pageOptions = {deviceScaleFactor: 2, ...etc} => This will not work!
+        },
+    ],
+});
+
+(async () => {
+    // Launches Chromium with Playwright and returns a Playwright Page.
+    const page = await browserPool.newPage();
+})();
+```
 ### Single API for common operations
 Puppeteer and Playwright handle some things differently. Browser Pool
 attempts to remove those differences for the most common use-cases.

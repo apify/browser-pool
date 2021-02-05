@@ -234,6 +234,89 @@ Suppose you decide to keep `useIncognitoPages` default `false` and create a shar
 
 If you set `useIncognitoPages` to `true`, you will create a new context within each new page, which allows you to handle each page its cookies and application data. This approach allows you to pass the context options as `pageOptions` because a new context is created once you create a new page. In this case, the `pageOptions` corresponds to these [playwright options](https://playwright.dev/docs/api/class-browser#browsernewpageoptions).
 
+**Changing context options with `LaunchContext`:**
+
+This will only work if you keep the default value for `useIncognitoPages` (`false`).
+```javascript
+const browserPool = new BrowserPool({
+    browserPlugins: [
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                launchOptions: {
+                    deviceScaleFactor: 2,
+                },
+            },
+        ),
+    ],
+
+});
+```
+**Changing context options with `browserPool.newPage` options:**
+
+```javascript
+const browserPool = new BrowserPool({
+     browserPlugins: [
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: true, // You must turn on incognito pages.
+                launchOptions: {
+                    // launch options
+                    headless: false,
+                    devtools: true,
+                },
+            },
+        ),
+    ],
+});
+
+(async () => {
+    // Launches Chromium with Playwright and returns a Playwright Page.
+    const page = await browserPool.newPage({
+        pageOptions: {
+            // context options
+            deviceScaleFactor: 2,
+            colorScheme: 'light',
+            locale: 'de-DE',
+        },
+    });
+})();
+
+```
+**Changing context options with `prePageCreateHooks` options:**
+```javascript
+const browserPool = new BrowserPool({
+    browserPlugins: [
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: true,
+                launchOptions: {
+                // launch options
+                    headless: false,
+                    devtools: true,
+                },
+            },
+        ),
+    ],
+    prePageCreateHooks: [
+        (pageId, browserController, pageOptions) => {
+            pageOptions.deviceScaleFactor = 2;
+            pageOptions.colorScheme = 'dark';
+            pageOptions.locale = 'de-DE';
+
+            // Warning
+            // pageOptions = {deviceScaleFactor: 2, ...etc} => This will not work!
+        },
+    ],
+});
+
+(async () => {
+    // Launches Chromium with Playwright and returns a Playwright Page.
+    const page = await browserPool.newPage();
+})();
+```
 ### Single API for common operations
 Puppeteer and Playwright handle some things differently. Browser Pool
 attempts to remove those differences for the most common use-cases.
@@ -646,6 +729,13 @@ specialized controllers like `PuppeteerPlugin` or `PlaywrightPlugin` extend.
 Second, it allows the user to configure the automation libraries and
 feed them to [BrowserPool](#BrowserPool) for use.
 
+**Properties**
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| [useIncognitoPages] | <code>boolean</code> | <code>false</code> | By default pages share the same browser context.  If set to true each page uses its own context that is destroyed once the page is closed or crashes. |
+| [userDataDir] | <code>object</code> |  | Path to a User Data Directory, which stores browser session data like cookies and local storage. |
+
 
 * * *
 
@@ -674,13 +764,13 @@ values, such as session IDs.
 
 **Properties**
 
-| Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| id | <code>string</code> |  | To make identification of `LaunchContext` easier, `BrowserPool` assigns  the `LaunchContext` an `id` that's equal to the `id` of the page that  triggered the browser launch. This is useful, because many pages share  a single launch context (single browser). |
-| browserPlugin | [<code>BrowserPlugin</code>](#BrowserPlugin) |  | The `BrowserPlugin` instance used to launch the browser. |
-| launchOptions | <code>object</code> |  | The actual options the browser was launched with, after changes.  Those changes would be typically made in pre-launch hooks. |
-| [useIncognitoPages] | <code>boolean</code> | <code>false</code> | By default pages share the same browser context.  If set to true each page uses its own context that is destroyed once the page is closed or crashes. |
-| [userDataDir] | <code>object</code> |  | Path to a User Data Directory, which stores browser session data like cookies and local storage. |
+| Name | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | To make identification of `LaunchContext` easier, `BrowserPool` assigns  the `LaunchContext` an `id` that's equal to the `id` of the page that  triggered the browser launch. This is useful, because many pages share  a single launch context (single browser). |
+| browserPlugin | [<code>BrowserPlugin</code>](#BrowserPlugin) | The `BrowserPlugin` instance used to launch the browser. |
+| launchOptions | <code>object</code> | The actual options the browser was launched with, after changes.  Those changes would be typically made in pre-launch hooks. |
+| [useIncognitoPages] | <code>boolean</code> | By default pages share the same browser context.  If set to true each page uses its own context that is destroyed once the page is closed or crashes. |
+| [userDataDir] | <code>object</code> | Path to a User Data Directory, which stores browser session data like cookies and local storage. |
 
 
 * [LaunchContext](#LaunchContext)

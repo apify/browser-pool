@@ -1,5 +1,8 @@
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
+const path = require('path');
+const os = require('os');
+const { nanoid } = require('nanoid');
 const LaunchContext = require('../launch_context');
 const log = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
@@ -28,17 +31,26 @@ class BrowserPlugin {
      *  Automation libraries configure proxies differently. This helper allows you
      *  to set a proxy URL without worrying about specific implementations.
      *  It also allows you use an authenticated proxy without extra code.
+     * @property {boolean} [useIncognitoPages=false]
+     *  By default pages share the same browser context.
+     *  If set to true each page uses its own context that is destroyed once the page is closed or crashes.
+     * @property {object} [userDataDir]
+     *  Path to a User Data Directory, which stores browser session data like cookies and local storage.
      */
     constructor(library, options = {}) {
         const {
             launchOptions = {},
             proxyUrl,
+            useIncognitoPages = false,
+            userDataDir = path.join(os.tmpdir(), nanoid()),
         } = options;
 
         this.name = this.constructor.name;
         this.library = library;
         this.launchOptions = launchOptions;
         this.proxyUrl = proxyUrl && new URL(proxyUrl).href;
+        this.userDataDir = userDataDir;
+        this.useIncognitoPages = useIncognitoPages;
     }
 
     /**
@@ -64,8 +76,8 @@ class BrowserPlugin {
             id,
             launchOptions = {},
             proxyUrl = this.proxyUrl,
-            useIncognitoPages,
-            userDataDir,
+            useIncognitoPages = this.useIncognitoPages,
+            userDataDir = this.userDataDir,
         } = options;
 
         return new LaunchContext({
