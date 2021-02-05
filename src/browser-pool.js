@@ -358,11 +358,7 @@ class BrowserPool extends EventEmitter {
         // It's not ideal though, we need to come up with a better API.
         await browserController.isActivePromise;
 
-        let finalPageOptions;
-        if (browserController.supportsPageOptions) {
-            finalPageOptions = pageOptions;
-        }
-
+        const finalPageOptions = browserController.supportsPageOptions ? pageOptions : undefined;
         await this._executeHooks(this.prePageCreateHooks, pageId, browserController, finalPageOptions);
 
         let page;
