@@ -306,7 +306,7 @@ const browserPool = new BrowserPool({
             pageOptions.colorScheme = 'dark';
             pageOptions.locale = 'de-DE';
 
-            // Warning
+            // You must modify the 'pageOptions' object, not assign to the variable.
             // pageOptions = {deviceScaleFactor: 2, ...etc} => This will not work!
         },
     ],
