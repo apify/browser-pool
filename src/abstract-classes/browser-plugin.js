@@ -1,8 +1,5 @@
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
-const path = require('path');
-const os = require('os');
-const { nanoid } = require('nanoid');
 const LaunchContext = require('../launch_context');
 const log = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
@@ -42,7 +39,7 @@ class BrowserPlugin {
             launchOptions = {},
             proxyUrl,
             useIncognitoPages = false,
-            userDataDir = path.join(os.tmpdir(), nanoid()),
+            userDataDir,
         } = options;
 
         this.name = this.constructor.name;

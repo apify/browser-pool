@@ -15,18 +15,19 @@ to hear about your use cases in the [Discussions](https://github.com/apify/brows
 
 <!-- toc -->
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Launching multiple browsers](#launching-multiple-browsers)
-- [Features](#features)
-  * [Simple configuration](#simple-configuration)
-  * [Proxy management](#proxy-management)
-  * [Lifecycle management with hooks](#lifecycle-management-with-hooks)
-  * [Manipulating playwright context using `pageOptions` or `launchOptions`](#manipulating-playwright-context-using-pageoptions-or-launchoptions)
-  * [Single API for common operations](#single-api-for-common-operations)
-  * [Graceful browser closing](#graceful-browser-closing)
-  * [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
-- [API Reference](#api-reference)
+- [Browser Pool - the headless browser manager](#browser-pool---the-headless-browser-manager)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Launching multiple browsers](#launching-multiple-browsers)
+  - [Features](#features)
+    - [Simple configuration](#simple-configuration)
+    - [Proxy management](#proxy-management)
+    - [Lifecycle management with hooks](#lifecycle-management-with-hooks)
+    - [Manipulating playwright context using `pageOptions` or `launchOptions`](#manipulating-playwright-context-using-pageoptions-or-launchoptions)
+    - [Single API for common operations](#single-api-for-common-operations)
+    - [Graceful browser closing](#graceful-browser-closing)
+    - [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
+  - [API Reference](#api-reference)
 
 <!-- tocstop -->
 
@@ -306,7 +307,7 @@ const browserPool = new BrowserPool({
             pageOptions.colorScheme = 'dark';
             pageOptions.locale = 'de-DE';
 
-            // Warning
+            // You must modify the 'pageOptions' object, not assign to the variable.
             // pageOptions = {deviceScaleFactor: 2, ...etc} => This will not work!
         },
     ],

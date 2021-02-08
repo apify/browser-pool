@@ -1,3 +1,6 @@
+const path = require('path');
+const os = require('os');
+const { nanoid } = require('nanoid');
 /**
  * `LaunchContext` holds information about the launched browser. It's useful
  * to retrieve the `launchOptions`, the proxy the browser was launched with
@@ -38,7 +41,7 @@ class LaunchContext {
             launchOptions,
             proxyUrl,
             useIncognitoPages,
-            userDataDir,
+            userDataDir = path.join(os.tmpdir(), nanoid()),
         } = options;
 
         this.id = id;
