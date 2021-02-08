@@ -17,7 +17,7 @@ const { nanoid } = require('nanoid');
  * @property {object} launchOptions
  *  The actual options the browser was launched with, after changes.
  *  Those changes would be typically made in pre-launch hooks.
- * @property {boolean} [useIncognitoPages=false]
+ * @property {boolean} [useIncognitoPages]
  *  By default pages share the same browser context.
  *  If set to true each page uses its own context that is destroyed once the page is closed or crashes.
  * @property {object} [userDataDir]
@@ -31,7 +31,7 @@ class LaunchContext {
      * @param {object} options.launchOptions
      * @param {string} [options.id]
      * @param {string} [options.proxyUrl]
-     * @param {boolean} [options.useIncognitoPages=false]
+     * @param {boolean} [options.useIncognitoPages]
      * @param {string} [options.userDataDir]
      */
     constructor(options) {
@@ -40,7 +40,7 @@ class LaunchContext {
             browserPlugin,
             launchOptions,
             proxyUrl,
-            useIncognitoPages = false,
+            useIncognitoPages,
             userDataDir = path.join(os.tmpdir(), nanoid()),
         } = options;
 

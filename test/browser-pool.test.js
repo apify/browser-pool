@@ -62,6 +62,18 @@ describe('BrowserPool', () => {
             expect(page.close).toBeDefined();
         });
 
+        test('should open new page in incognito context', async () => {
+            browserPool = new BrowserPool({
+                browserPlugins: [new PlaywrightPlugin(playwright.chromium, { useIncognitoPages: true })],
+                closeInactiveBrowserAfterSecs: 2,
+            });
+            const page = await browserPool.newPage();
+            await browserPool.newPage();
+            await browserPool.newPage();
+
+            expect(await page.context().pages()).toHaveLength(1);
+        });
+
         test('should open page in correct browser plugin', async () => {
             let page = await browserPool.newPage({
                 browserPlugin: playwrightPlugin,

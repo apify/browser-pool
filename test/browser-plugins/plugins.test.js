@@ -8,11 +8,13 @@ const PlaywrightPlugin = require('../../src/browser-plugins/playwright-plugin.js
 const PlaywrightController = require('../../src/browser-controllers/playwright-controller');
 
 const runPluginTest = (Plugin, Controller, library) => {
-    const plugin = new Plugin(library);
+    let plugin = new Plugin(library);
 
     describe(`${plugin.constructor.name} general `, () => {
         let browser;
-
+        beforeEach(() => {
+            plugin = new Plugin(library);
+        });
         afterEach(async () => {
             if (browser) {
                 await browser.close();
@@ -45,6 +47,20 @@ const runPluginTest = (Plugin, Controller, library) => {
                 _proxyUrl: proxyUrl,
                 one: 1,
             });
+        });
+
+        test('should get default launchContext values from plugin options', async () => {
+            const proxyUrl = 'http://apify1234@10.10.10.0:8080/';
+            plugin = new Plugin(library, {
+                proxyUrl,
+                userDataDir: 'test',
+                useIncognitoPages: true,
+            });
+            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+            const context = await plugin.createLaunchContext();
+            expect(context.proxyUrl).toEqual(proxyUrl);
+            expect(context.useIncognitoPages).toBeTruthy();
+            expect(context.userDataDir).toEqual('test');
         });
 
         test('should create browser controller', () => {
