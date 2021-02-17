@@ -1,3 +1,4 @@
+const fsPromise = require('fs').promises;
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
 const LaunchContext = require('../launch_context');
@@ -103,8 +104,14 @@ class BrowserPlugin {
      * @ignore
      */
     async launch(launchContext = this.createLaunchContext()) {
-        if (launchContext.proxyUrl) {
+        const { proxyUrl, useIncognitoPages, userDataDir } = launchContext;
+
+        if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
+        }
+
+        if (!useIncognitoPages) {
+            await this._ensureDir(userDataDir);
         }
 
         return this._launch(launchContext);
@@ -168,6 +175,13 @@ class BrowserPlugin {
         });
     }
 
+    /**
+     *
+     * @param {string} proxyUrl
+     *  checks if proxy URL should be anonymized.
+     * @return {boolean}
+     * @private
+     */
     _shouldAnonymizeProxy(proxyUrl) {
         const parsedProxyUrl = proxyChain.parseUrl(proxyUrl);
         if (parsedProxyUrl.username || parsedProxyUrl.password) {
@@ -178,6 +192,26 @@ class BrowserPlugin {
         }
 
         return false;
+    }
+
+    /**
+     *
+     * @param {string} dir - absolute path to the directory.
+     * @returns {Promise<void>}
+     */
+    async _ensureDir(dir) {
+        let dirExists;
+
+        try {
+            await fsPromise.access(dir);
+            dirExists = true;
+        } catch (e) {
+            dirExists = false;
+        }
+
+        if (!dirExists) {
+            await fsPromise.mkdir(dir);
+        }
     }
 }
 

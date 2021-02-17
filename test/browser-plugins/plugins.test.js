@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer');
 const playwright = require('playwright');
+const fs = require('fs');
+const rimraf = require('rimraf');
 
 const PuppeteerPlugin = require('../../src/browser-plugins/puppeteer-plugin');
 const PuppeteerController = require('../../src/browser-controllers/puppeteer-controller');
@@ -83,6 +85,26 @@ const runPluginTest = (Plugin, Controller, library) => {
             expect(cookies[0].name).toBe('TEST');
             expect(cookies[0].value).toBe('TESTER-COOKIE');
         });
+
+        describe('user provided userDataDir', () => {
+            const dir = 'test/userDir';
+            afterEach(() => {
+                rimraf.sync(dir);
+            });
+            test('should not delete userDataDir if it is user provided', async () => {
+                plugin = new Plugin(library, {
+                    useIncognitoPages: false,
+                    userDataDir: dir,
+                });
+                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+                const context = await plugin.createLaunchContext();
+                browser = await plugin.launch(context);
+                expect(fs.existsSync(context.userDataDir)).toBeTruthy();
+                await browser.close();
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                expect(fs.existsSync(context.userDataDir)).toBeTruthy();
+            });
+        });
     });
 };
 describe('Plugins', () => {
@@ -106,6 +128,19 @@ describe('Plugins', () => {
             expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
         });
 
+        test('should create and delete userDatadir', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer, {
+                useIncognitoPages: false,
+            });
+
+            const context = await plugin.createLaunchContext();
+            browser = await plugin.launch(context);
+
+            expect(fs.existsSync(context.userDataDir)).toBeTruthy();
+            await browser.close();
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            expect(fs.existsSync(context.userDataDir)).toBeFalsy();
+        });
         test('should work with authenticated proxyUrl', async () => {
             const proxyUrl = 'http://apify1234@10.10.10.0:8080';
             const plugin = new PuppeteerPlugin(puppeteer);
@@ -194,6 +229,18 @@ describe('Plugins', () => {
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
         });
 
+        test.skip('should create and delete userDatadir', async () => {
+            // this is not gonna work due to disconnect event not available on browser context
+            const plugin = new PlaywrightPlugin(playwright.chromium, { useIncognitoPages: false });
+
+            const context = await plugin.createLaunchContext();
+            const browser = await plugin.launch(context);
+
+            expect(fs.existsSync(context.userDataDir)).toBeTruthy();
+            await browser.close();
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            expect(fs.existsSync(context.userDataDir)).toBeFalsy();
+        });
         test('should use icognito context by option', async () => {
             const plugin = new PlaywrightPlugin(playwright.chromium);
             browserController = plugin.createController();
