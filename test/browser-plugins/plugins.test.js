@@ -96,7 +96,6 @@ const runPluginTest = (Plugin, Controller, library) => {
                     useIncognitoPages: false,
                     userDataDir: dir,
                 });
-                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
                 const context = await plugin.createLaunchContext();
                 browser = await plugin.launch(context);
                 expect(fs.existsSync(context.userDataDir)).toBeTruthy();
