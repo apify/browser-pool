@@ -1,8 +1,5 @@
-const rimraf = require('rimraf');
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PlaywrightController = require('../browser-controllers/playwright-controller');
-const { USER_DATA_DIR_PREFIX } = require('../constants');
-const log = require('../logger');
 
 /**
  * playwright
@@ -31,16 +28,6 @@ class PlaywrightPlugin extends BrowserPlugin {
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
                 this._closeAnonymizedProxy(anonymizedProxyUrl);
-            });
-        }
-
-        const shouldRemoveRandomTempDir = !useIncognitoPages && userDataDir.includes(USER_DATA_DIR_PREFIX);
-
-        if (shouldRemoveRandomTempDir) {
-            browser.once('disconnected', () => {
-                rimraf(userDataDir, (error) => {
-                    log.debug('Could not delete browser userDataDir after browser disconected', { error });
-                });
             });
         }
 

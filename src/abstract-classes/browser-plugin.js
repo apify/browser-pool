@@ -1,4 +1,4 @@
-const fsPromise = require('fs').promises;
+const fs = require('fs-extra');
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
 const LaunchContext = require('../launch_context');
@@ -176,9 +176,8 @@ class BrowserPlugin {
     }
 
     /**
-     *
+     * checks if proxy URL should be anonymized.
      * @param {string} proxyUrl
-     *  checks if proxy URL should be anonymized.
      * @return {boolean}
      * @private
      */
@@ -200,17 +199,10 @@ class BrowserPlugin {
      * @returns {Promise<void>}
      */
     async _ensureDir(dir) {
-        let dirExists;
-
         try {
-            await fsPromise.access(dir);
-            dirExists = true;
-        } catch (e) {
-            dirExists = false;
-        }
-
-        if (!dirExists) {
-            await fsPromise.mkdir(dir);
+            await fs.ensureDir(dir);
+        } catch (error) {
+            log.debug(`Could not ensure dir: ${dir}`, { error });
         }
     }
 }

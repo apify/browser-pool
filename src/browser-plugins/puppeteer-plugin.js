@@ -1,9 +1,5 @@
-const rimraf = require('rimraf');
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PuppeteerController = require('../browser-controllers/puppeteer-controller');
-const log = require('../logger');
-
-const { USER_DATA_DIR_PREFIX } = require('../constants');
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
@@ -21,7 +17,6 @@ class PuppeteerPlugin extends BrowserPlugin {
             launchOptions,
             anonymizedProxyUrl,
             userDataDir,
-            useIncognitoPages,
         } = launchContext;
 
         const finalLaunchOptions = {
@@ -37,15 +32,6 @@ class PuppeteerPlugin extends BrowserPlugin {
             });
         }
 
-        const shouldRemoveRandomTempDir = !useIncognitoPages && userDataDir.includes(USER_DATA_DIR_PREFIX);
-
-        if (shouldRemoveRandomTempDir) {
-            browser.once('disconnected', () => {
-                rimraf(userDataDir, (error) => {
-                    log.debug('Could not delete browser userDataDir after browser disconected', { error });
-                });
-            });
-        }
         return browser;
     }
 

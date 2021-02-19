@@ -1,7 +1,6 @@
 const path = require('path');
 const os = require('os');
 const { nanoid } = require('nanoid');
-const { USER_DATA_DIR_PREFIX } = require('./constants');
 
 /**
  * `LaunchContext` holds information about the launched browser. It's useful
@@ -43,7 +42,7 @@ class LaunchContext {
             launchOptions,
             proxyUrl,
             useIncognitoPages,
-            userDataDir = path.join(os.tmpdir(), `${USER_DATA_DIR_PREFIX}-${nanoid()}`),
+            userDataDir = path.join(os.tmpdir(), nanoid()),
         } = options;
 
         this.id = id;
