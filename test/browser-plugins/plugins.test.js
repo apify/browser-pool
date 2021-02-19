@@ -256,5 +256,4 @@ describe('Plugins', () => {
 
     runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium);
     runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.firefox);
-    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.webkit);
 });
