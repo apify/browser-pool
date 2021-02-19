@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
-const LaunchContext = require('../launch_context');
+const LaunchContext = require('../launch-context');
 const log = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
 
