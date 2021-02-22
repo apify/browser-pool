@@ -1,3 +1,4 @@
+const fs = require('fs-extra');
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
 const LaunchContext = require('../launch-context');
@@ -103,8 +104,14 @@ class BrowserPlugin {
      * @ignore
      */
     async launch(launchContext = this.createLaunchContext()) {
-        if (launchContext.proxyUrl) {
+        const { proxyUrl, useIncognitoPages, userDataDir } = launchContext;
+
+        if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
+        }
+
+        if (!useIncognitoPages) {
+            await this._ensureDir(userDataDir);
         }
 
         return this._launch(launchContext);
@@ -168,6 +175,12 @@ class BrowserPlugin {
         });
     }
 
+    /**
+     * Checks if proxy URL should be anonymized.
+     * @param {string} proxyUrl
+     * @return {boolean}
+     * @private
+     */
     _shouldAnonymizeProxy(proxyUrl) {
         const parsedProxyUrl = proxyChain.parseUrl(proxyUrl);
         if (parsedProxyUrl.username || parsedProxyUrl.password) {
@@ -178,6 +191,15 @@ class BrowserPlugin {
         }
 
         return false;
+    }
+
+    /**
+     *
+     * @param {string} dir - Absolute path to the directory.
+     * @returns {Promise<void>}
+     */
+    async _ensureDir(dir) {
+        return fs.ensureDir(dir);
     }
 }
 

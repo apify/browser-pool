@@ -24,7 +24,7 @@ class PlaywrightPlugin extends BrowserPlugin {
         } else {
             browser = await this.library.launchPersistentContext(userDataDir, launchOptions);
         }
-
+        // @TODO: Rework the disconnected events once the browser context vs browser issue is fixed
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
                 this._closeAnonymizedProxy(anonymizedProxyUrl);

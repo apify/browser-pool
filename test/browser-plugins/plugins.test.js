@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const playwright = require('playwright');
+const fs = require('fs');
 
 const PuppeteerPlugin = require('../../src/browser-plugins/puppeteer-plugin');
 const PuppeteerController = require('../../src/browser-controllers/puppeteer-controller');
@@ -10,7 +11,7 @@ const PlaywrightController = require('../../src/browser-controllers/playwright-c
 const runPluginTest = (Plugin, Controller, library) => {
     let plugin = new Plugin(library);
 
-    describe(`${plugin.constructor.name} general `, () => {
+    describe(`${plugin.constructor.name} - ${library.name ? library.name() : ''} general`, () => {
         let browser;
         beforeEach(() => {
             plugin = new Plugin(library);
@@ -47,6 +48,18 @@ const runPluginTest = (Plugin, Controller, library) => {
                 _proxyUrl: proxyUrl,
                 one: 1,
             });
+        });
+
+        test('should create userDatadir', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer, {
+                useIncognitoPages: false,
+            });
+
+            const context = await plugin.createLaunchContext();
+            browser = await plugin.launch(context);
+
+            expect(fs.existsSync(context.userDataDir)).toBeTruthy();
+            await browser.close();
         });
 
         test('should get default launchContext values from plugin options', async () => {
@@ -242,4 +255,5 @@ describe('Plugins', () => {
     });
 
     runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium);
+    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.firefox);
 });
