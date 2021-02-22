@@ -1,5 +1,5 @@
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
-const PuppeteerController = require('../browser-controllers/puppeteer-controller');
+const PuppeteerController = require('./puppeteer-controller');
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 

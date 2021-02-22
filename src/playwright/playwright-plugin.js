@@ -1,5 +1,7 @@
+const _ = require('lodash');
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
-const PlaywrightController = require('../browser-controllers/playwright-controller');
+const PlaywrightController = require('./playwright-controller');
+const PlaywrightBrowser = require('./playwright-browser');
 
 /**
  * playwright
@@ -22,7 +24,16 @@ class PlaywrightPlugin extends BrowserPlugin {
         if (useIncognitoPages) {
             browser = await this.library.launch(launchOptions);
         } else {
-            browser = await this.library.launchPersistentContext(userDataDir, launchOptions);
+            const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
+
+            if (!this._browserVersion) {
+                const unUsedBrowserBecauseOfVersion = await this.library.launch(launchOptions);
+                this._browserVersion = unUsedBrowserBecauseOfVersion.version();
+
+                unUsedBrowserBecauseOfVersion.close().catch(_.noop);
+            }
+
+            browser = new PlaywrightBrowser({ browserContext, version: this._browserVersion });
         }
 
         if (anonymizedProxyUrl) {
