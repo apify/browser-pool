@@ -176,7 +176,7 @@ class BrowserPlugin {
     }
 
     /**
-     * checks if proxy URL should be anonymized.
+     * Checks if proxy URL should be anonymized.
      * @param {string} proxyUrl
      * @return {boolean}
      * @private
@@ -195,7 +195,7 @@ class BrowserPlugin {
 
     /**
      *
-     * @param {string} dir - absolute path to the directory.
+     * @param {string} dir - Absolute path to the directory.
      * @returns {Promise<void>}
      */
     async _ensureDir(dir) {
