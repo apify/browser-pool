@@ -35,7 +35,7 @@ class PlaywrightPlugin extends BrowserPlugin {
 
             browser = new PlaywrightBrowser({ browserContext, version: this._browserVersion });
         }
-
+        // @TODO: Rework the disconnected events once the browser context vs browser issue is fixed
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
                 this._closeAnonymizedProxy(anonymizedProxyUrl);
