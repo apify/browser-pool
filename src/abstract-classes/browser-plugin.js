@@ -199,11 +199,7 @@ class BrowserPlugin {
      * @returns {Promise<void>}
      */
     async _ensureDir(dir) {
-        try {
-            await fs.ensureDir(dir);
-        } catch (error) {
-            log.debug(`Could not ensure dir: ${dir}`, { error });
-        }
+        return fs.ensureDir(dir);
     }
 }
 
