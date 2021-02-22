@@ -228,6 +228,8 @@ describe('Plugins', () => {
         });
 
         test('should use persistent context by default', async () => {
+            jest.setTimeout(30000);
+
             const plugin = new PlaywrightPlugin(playwright.chromium);
             const browserController = plugin.createController();
 
