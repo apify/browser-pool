@@ -11,6 +11,8 @@ const PlaywrightBrowser = require('../../src/playwright/playwright-browser');
 
 const log = require('../../src/logger');
 
+jest.setTimeout(120000);
+
 const runPluginTest = (Plugin, Controller, library) => {
     let plugin = new Plugin(library);
 
@@ -231,8 +233,6 @@ describe('Plugins', () => {
             });
 
             test('should use persistent context by default', async () => {
-                jest.setTimeout(30000);
-
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 const browserController = plugin.createController();
 
