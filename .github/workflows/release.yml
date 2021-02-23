@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [10, 12, 14]
 
     steps:
@@ -29,6 +29,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+      -
+        uses: microsoft/playwright-github-action@v1
       -
         name: Cache Node Modules
         if: ${{ matrix.node-version == 14 }}

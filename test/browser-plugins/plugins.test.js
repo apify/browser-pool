@@ -192,7 +192,7 @@ describe('Plugins', () => {
             await browser.close();
         });
 
-        describe.each(['chromium', 'firefox'])('with %s', (browserName) => {
+        describe.each(['chromium', 'firefox', 'webkit'])('with %s', (browserName) => {
             test('should work with non authenticated proxyUrl', async () => {
                 const proxyUrl = 'http://10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
@@ -366,4 +366,5 @@ describe('Plugins', () => {
 
     runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium);
     runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.firefox);
+    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.webkit);
 });
