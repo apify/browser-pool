@@ -54,7 +54,7 @@ const runPluginTest = (Plugin, Controller, library) => {
         });
 
         test('should create userDatadir', async () => {
-            const plugin = new PuppeteerPlugin(puppeteer, {
+            plugin = new Plugin(library, {
                 useIncognitoPages: false,
             });
 
