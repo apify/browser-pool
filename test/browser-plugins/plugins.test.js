@@ -189,173 +189,177 @@ describe('Plugins', () => {
         afterEach(async () => {
             await browser.close();
         });
-        test('should work with non authenticated proxyUrl', async () => {
-            const proxyUrl = 'http://10.10.10.0:8080';
-            const plugin = new PlaywrightPlugin(playwright.chromium);
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-            const context = await plugin.createLaunchContext({ proxyUrl });
 
-            browser = await plugin.launch(context);
-            expect(context.launchOptions.proxy.server).toEqual(proxyUrl);
-            expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
-        });
-        test('should work with authenticated proxyUrl', async () => {
-            const proxyUrl = 'http://apify1234@10.10.10.0:8080';
-            const plugin = new PlaywrightPlugin(playwright.chromium);
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-            const context = await plugin.createLaunchContext({ proxyUrl });
+        describe.each(['chromium', 'firefox'])('with %s', (browserName) => {
+            test('should work with non authenticated proxyUrl', async () => {
+                const proxyUrl = 'http://10.10.10.0:8080';
+                const plugin = new PlaywrightPlugin(playwright[browserName]);
+                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+                const context = await plugin.createLaunchContext({ proxyUrl });
 
-            browser = await plugin.launch(context);
-            expect(context.launchOptions.proxy.server).toEqual(context.anonymizedProxyUrl);
-            expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
-        });
-
-        test('should use icognito context by option', async () => {
-            const plugin = new PlaywrightPlugin(playwright.chromium);
-            const browserController = plugin.createController();
-
-            const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
-
-            browser = await plugin.launch(launchContext);
-            browserController.assignBrowser(browser, launchContext);
-            browserController.activate();
-
-            const page = await browserController.newPage();
-            const browserContext = page.context();
-            await browserController.newPage();
-
-            expect(browserContext.pages()).toHaveLength(1);
-        });
-
-        test('should use persistent context by default', async () => {
-            jest.setTimeout(30000);
-
-            const plugin = new PlaywrightPlugin(playwright.chromium);
-            const browserController = plugin.createController();
-
-            const launchContext = plugin.createLaunchContext();
-
-            browser = await plugin.launch(launchContext);
-            browserController.assignBrowser(browser, launchContext);
-            browserController.activate();
-
-            const page = await browserController.newPage();
-            const context = await page.context();
-            await browserController.newPage();
-
-            expect(context.pages()).toHaveLength(3);
-        });
-
-        test('should pass launch options to browser', async () => {
-            const plugin = new PlaywrightPlugin(playwright.chromium);
-
-            jest.spyOn(plugin.library, 'launch');
-            const launchOptions = {
-                foo: 'bar',
-            };
-            const launchContext = plugin.createLaunchContext({ launchOptions, useIncognitoPages: true });
-            browser = await plugin.launch(launchContext);
-            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
-        });
-        describe('PlaywrighBrowser', () => {
-            test('should create new page', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
-
-                const launchContext = plugin.createLaunchContext();
-                browser = await plugin.launch(launchContext);
-                const page = await browser.newPage();
-
-                expect(page.close).toBeDefined();
+                browser = await plugin.launch(context);
+                expect(context.launchOptions.proxy.server).toEqual(proxyUrl);
+                expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
             });
 
-            test('should emit disconnnected event on close', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
+            test('should work with authenticated proxyUrl', async () => {
+                const proxyUrl = 'http://apify1234@10.10.10.0:8080';
+                const plugin = new PlaywrightPlugin(playwright[browserName]);
+                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+                const context = await plugin.createLaunchContext({ proxyUrl });
+
+                browser = await plugin.launch(context);
+                expect(context.launchOptions.proxy.server).toEqual(context.anonymizedProxyUrl);
+            expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
+            });
+
+            test('should use icognito context by option', async () => {
+                const plugin = new PlaywrightPlugin(playwright[browserName]);
+                const browserController = plugin.createController();
+
+                const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
+
+                browser = await plugin.launch(launchContext);
+                browserController.assignBrowser(browser, launchContext);
+                browserController.activate();
+
+                const page = await browserController.newPage();
+                const browserContext = page.context();
+                await browserController.newPage();
+
+                expect(browserContext.pages()).toHaveLength(1);
+            });
+
+            test('should use persistent context by default', async () => {
+                jest.setTimeout(30000);
+
+                const plugin = new PlaywrightPlugin(playwright[browserName]);
+                const browserController = plugin.createController();
 
                 const launchContext = plugin.createLaunchContext();
-                browser = await plugin.launch(launchContext);
-                let called = false;
 
-                browser.on('disconnected', () => {
-                    called = true;
+                browser = await plugin.launch(launchContext);
+                browserController.assignBrowser(browser, launchContext);
+                browserController.activate();
+
+                const page = await browserController.newPage();
+                const context = await page.context();
+                await browserController.newPage();
+
+                expect(context.pages()).toHaveLength(3);
+            });
+
+            test('should pass launch options to browser', async () => {
+                const plugin = new PlaywrightPlugin(playwright[browserName]);
+
+                jest.spyOn(plugin.library, 'launch');
+                const launchOptions = {
+                    foo: 'bar',
+                };
+                const launchContext = plugin.createLaunchContext({ launchOptions, useIncognitoPages: true });
+                browser = await plugin.launch(launchContext);
+                expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
+            });
+            describe('PlaywrighBrowser', () => {
+                test('should create new page', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
+
+                    const launchContext = plugin.createLaunchContext();
+                    browser = await plugin.launch(launchContext);
+                    const page = await browser.newPage();
+
+                    expect(page.close).toBeDefined();
                 });
 
-                await browser.close();
+                test('should emit disconnnected event on close', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                expect(called).toBeTruthy();
-            });
+                    const launchContext = plugin.createLaunchContext();
+                    browser = await plugin.launch(launchContext);
+                    let called = false;
 
-            test('should be used only with incognito pages context', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
+                    browser.on('disconnected', () => {
+                        called = true;
+                    });
 
-                const launchContext = plugin.createLaunchContext({ useIncognitoPages: false });
-                browser = await plugin.launch(launchContext);
-                expect(browser).toBeInstanceOf(PlaywrightBrowser);
+                    await browser.close();
 
-                await browser.close();
+                    expect(called).toBeTruthy();
+                });
 
-                const launchContext2 = plugin.createLaunchContext({ useIncognitoPages: true });
-                browser = await plugin.launch(launchContext2);
-                expect(browser).not.toBeInstanceOf(PlaywrightBrowser);
-            });
+                test('should be used only with incognito pages context', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-            test('should return correct version', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
+                    const launchContext = plugin.createLaunchContext({ useIncognitoPages: false });
+                    browser = await plugin.launch(launchContext);
+                    expect(browser).toBeInstanceOf(PlaywrightBrowser);
 
-                const launchContext = plugin.createLaunchContext({ useIncognitoPages: false });
-                browser = await plugin.launch(launchContext);
-                const version1 = browser.version();
+                    await browser.close();
 
-                await browser.close();
+                    const launchContext2 = plugin.createLaunchContext({ useIncognitoPages: true });
+                    browser = await plugin.launch(launchContext2);
+                    expect(browser).not.toBeInstanceOf(PlaywrightBrowser);
+                });
 
-                const launchContext2 = plugin.createLaunchContext({ useIncognitoPages: true });
-                browser = await plugin.launch(launchContext2);
-                expect(version1).toEqual(browser.version());
-            });
+                test('should return correct version', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-            test('should return all contexts', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
+                    const launchContext = plugin.createLaunchContext({ useIncognitoPages: false });
+                    browser = await plugin.launch(launchContext);
+                    const version1 = browser.version();
 
-                const launchContext = plugin.createLaunchContext();
-                browser = await plugin.launch(launchContext);
-                const contexts = browser.contexts();
-                expect(contexts).toHaveLength(1);
-                expect(contexts[0]).toEqual(browser.browserContext);
-            });
+                    await browser.close();
 
-            test('should return correct connected status', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
+                    const launchContext2 = plugin.createLaunchContext({ useIncognitoPages: true });
+                    browser = await plugin.launch(launchContext2);
+                    expect(version1).toEqual(browser.version());
+                });
 
-                const launchContext = plugin.createLaunchContext();
-                browser = await plugin.launch(launchContext);
-                expect(browser.isConnected()).toBeTruthy();
+                test('should return all contexts', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                await browser.close();
+                    const launchContext = plugin.createLaunchContext();
+                    browser = await plugin.launch(launchContext);
+                    const contexts = browser.contexts();
+                    expect(contexts).toHaveLength(1);
+                    expect(contexts[0]).toEqual(browser.browserContext);
+                });
 
-                expect(browser.isConnected()).toBeFalsy();
-            });
+                test('should return correct connected status', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-            test('should return old context as new context and log error', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
-                jest.spyOn(log, 'error');
-                const launchContext = plugin.createLaunchContext();
-                browser = await plugin.launch(launchContext);
-                const context = await browser.newContext();
+                    const launchContext = plugin.createLaunchContext();
+                    browser = await plugin.launch(launchContext);
+                    expect(browser.isConnected()).toBeTruthy();
 
-                expect(context).toEqual(browser.contexts()[0]);
-                expect(log.error).toBeCalledWith('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
-            });
+                    await browser.close();
 
-            test('should have same public interface as playwright browserType', async () => {
-                const plugin = new PlaywrightPlugin(playwright.chromium);
-                const originalFunctionNames = ['close', 'contexts', 'isConnected', 'newContext', 'newPage', 'version'];
-                const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
-                browser = await plugin.launch(launchContext);
+                    expect(browser.isConnected()).toBeFalsy();
+                });
 
-                for (const originalFunctionName of originalFunctionNames) {
-                    expect(browser[originalFunctionName]).toBeDefined();
-                }
+                test('should return old context as new context and log error', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
+                    jest.spyOn(log, 'error');
+                    const launchContext = plugin.createLaunchContext();
+                    browser = await plugin.launch(launchContext);
+                    const context = await browser.newContext();
 
-                expect.hasAssertions();
+                    expect(context).toEqual(browser.contexts()[0]);
+                    expect(log.error).toBeCalledWith('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
+                });
+
+                test('should have same public interface as playwright browserType', async () => {
+                    const plugin = new PlaywrightPlugin(playwright[browserName]);
+                    const originalFunctionNames = ['close', 'contexts', 'isConnected', 'newContext', 'newPage', 'version'];
+                    const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
+                    browser = await plugin.launch(launchContext);
+
+                    for (const originalFunctionName of originalFunctionNames) {
+                        expect(browser[originalFunctionName]).toBeDefined();
+                    }
+
+                    expect.hasAssertions();
+                });
             });
         });
     });
