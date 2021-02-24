@@ -47,6 +47,7 @@ const runPluginTest = (Plugin, Controller, library) => {
             context.extend({
                 one: 1,
             });
+
             const desiredObject = {
                 id,
                 launchOptions,
@@ -55,7 +56,16 @@ const runPluginTest = (Plugin, Controller, library) => {
                 one: 1,
                 useIncognitoPages: false,
             };
-            expect(context).toMatchObject(desiredObject);
+
+            // expect(context).toMatchObject(desiredObject)
+            // Switch to this after the issue with `TypeError: prop.startsWith is not a function` is solved.
+
+            expect(context.id).toEqual(desiredObject.id);
+            expect(context.launchOptions).toEqual(desiredObject.launchOptions);
+            expect(context.browserPlugin).toEqual(desiredObject.browserPlugin);
+            expect(context._proxyUrl).toEqual(desiredObject._proxyUrl); // eslint-disable-line
+            expect(context.one).toEqual(desiredObject.one);
+            expect(context.useIncognitoPages).toEqual(desiredObject.useIncognitoPages);
         });
 
         test('should create userDatadir', async () => {
