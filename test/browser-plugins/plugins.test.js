@@ -268,8 +268,8 @@ describe('Plugins', () => {
                     browser = await plugin.launch(launchContext);
                     const page = await browser.newPage();
 
-                    expect(typeof page.close === 'function').toBe(true);
-                    expect(typeof page.evaluate === 'function').toBe(true);
+                    expect(typeof page.close).toBe('function');
+                    expect(typeof page.evaluate).toBe('function');
                 });
 
                 test('should emit disconnected event on close', async () => {
@@ -355,7 +355,7 @@ describe('Plugins', () => {
                     browser = await plugin.launch(launchContext);
 
                     for (const originalFunctionName of originalFunctionNames) {
-                        expect(typeof browser[originalFunctionName] === 'function').toBe(true);
+                        expect(typeof browser[originalFunctionName]).toBe('function');
                     }
 
                     expect.hasAssertions();
