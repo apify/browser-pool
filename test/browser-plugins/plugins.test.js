@@ -9,8 +9,6 @@ const PlaywrightPlugin = require('../../src/playwright/playwright-plugin.js');
 const PlaywrightController = require('../../src/playwright/playwright-controller');
 const PlaywrightBrowser = require('../../src/playwright/playwright-browser');
 
-const { getAllMethodNames } = require('../utils');
-
 jest.setTimeout(120000);
 
 const runPluginTest = (Plugin, Controller, library) => {
