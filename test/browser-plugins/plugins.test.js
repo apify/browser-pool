@@ -8,6 +8,7 @@ const PuppeteerController = require('../../src/puppeteer/puppeteer-controller');
 const PlaywrightPlugin = require('../../src/playwright/playwright-plugin.js');
 const PlaywrightController = require('../../src/playwright/playwright-controller');
 const PlaywrightBrowser = require('../../src/playwright/playwright-browser');
+const LaunchContext = require('../../src/launch-context');
 
 jest.setTimeout(120000);
 
@@ -40,17 +41,21 @@ const runPluginTest = (Plugin, Controller, library) => {
                 launchOptions,
             });
 
+            expect(context).toBeInstanceOf(LaunchContext);
+
             context.proxyUrl = proxyUrl;
             context.extend({
                 one: 1,
             });
-            expect(context).toMatchObject({
+            const desiredObject = {
                 id,
                 launchOptions,
                 browserPlugin: plugin,
                 _proxyUrl: proxyUrl,
                 one: 1,
-            });
+                useIncognitoPages: false,
+            };
+            expect(context).toMatchObject(desiredObject);
         });
 
         test('should create userDatadir', async () => {
