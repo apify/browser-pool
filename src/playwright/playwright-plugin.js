@@ -1,5 +1,7 @@
+const _ = require('lodash');
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
-const PlaywrightController = require('../browser-controllers/playwright-controller');
+const PlaywrightController = require('./playwright-controller');
+const PlaywrightBrowser = require('./playwright-browser');
 
 /**
  * playwright
@@ -22,9 +24,20 @@ class PlaywrightPlugin extends BrowserPlugin {
         if (useIncognitoPages) {
             browser = await this.library.launch(launchOptions);
         } else {
-            browser = await this.library.launchPersistentContext(userDataDir, launchOptions);
+            const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
+
+            if (!this._browserVersion) {
+                // Launches unused browser just to get the browser version.
+
+                const inactiveBrowser = await this.library.launch(launchOptions);
+                this._browserVersion = inactiveBrowser.version();
+
+                inactiveBrowser.close().catch(_.noop);
+            }
+
+            browser = new PlaywrightBrowser({ browserContext, version: this._browserVersion });
         }
-        // @TODO: Rework the disconnected events once the browser context vs browser issue is fixed
+
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
                 this._closeAnonymizedProxy(anonymizedProxyUrl);

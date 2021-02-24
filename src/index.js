@@ -1,6 +1,6 @@
 const BrowserPool = require('./browser-pool');
-const PuppeteerPlugin = require('./browser-plugins/puppeteer-plugin');
-const PlaywrightPlugin = require('./browser-plugins/playwright-plugin');
+const PuppeteerPlugin = require('./puppeteer/puppeteer-plugin');
+const PlaywrightPlugin = require('./playwright/playwright-plugin');
 
 /**
  * The `browser-pool` module exports three constructors. One for `BrowserPool`
