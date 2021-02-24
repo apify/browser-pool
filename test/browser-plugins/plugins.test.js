@@ -9,7 +9,7 @@ const PlaywrightPlugin = require('../../src/playwright/playwright-plugin.js');
 const PlaywrightController = require('../../src/playwright/playwright-controller');
 const PlaywrightBrowser = require('../../src/playwright/playwright-browser');
 
-const log = require('../../src/logger');
+const { getAllMethodNames } = require('../utils');
 
 jest.setTimeout(120000);
 
@@ -205,7 +205,7 @@ describe('Plugins', () => {
             });
 
             test('should work with authenticated proxyUrl', async () => {
-                const proxyUrl = 'http://apify1234@10.10.10.0:8080';
+                const proxyUrl = 'http://apify1234:password@10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 jest.spyOn(plugin, '_getAnonymizedProxyUrl');
                 const context = await plugin.createLaunchContext({ proxyUrl });
@@ -215,7 +215,7 @@ describe('Plugins', () => {
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
             });
 
-            test('should use icognito context by option', async () => {
+            test('should use incognito context by option', async () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 const browserController = plugin.createController();
 
@@ -246,7 +246,7 @@ describe('Plugins', () => {
                 const context = await page.context();
                 await browserController.newPage();
 
-                expect(context.pages()).toHaveLength(3);
+                expect(context.pages()).toHaveLength(3); // 3 pages because of the about:blank.
             });
 
             test('should pass launch options to browser', async () => {
@@ -260,7 +260,7 @@ describe('Plugins', () => {
                 browser = await plugin.launch(launchContext);
                 expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
             });
-            describe('PlaywrighBrowser', () => {
+            describe('PlaywrightBrowser', () => {
                 test('should create new page', async () => {
                     const plugin = new PlaywrightPlugin(playwright[browserName]);
 
@@ -268,10 +268,11 @@ describe('Plugins', () => {
                     browser = await plugin.launch(launchContext);
                     const page = await browser.newPage();
 
-                    expect(page.close).toBeDefined();
+                    expect(typeof page.close === 'function').toBe(true);
+                    expect(typeof page.evaluate === 'function').toBe(true);
                 });
 
-                test('should emit disconnnected event on close', async () => {
+                test('should emit disconnected event on close', async () => {
                     const plugin = new PlaywrightPlugin(playwright[browserName]);
 
                     const launchContext = plugin.createLaunchContext();
@@ -284,7 +285,7 @@ describe('Plugins', () => {
 
                     await browser.close();
 
-                    expect(called).toBeTruthy();
+                    expect(called).toBe(true);
                 });
 
                 test('should be used only with incognito pages context', async () => {
@@ -330,22 +331,21 @@ describe('Plugins', () => {
 
                     const launchContext = plugin.createLaunchContext();
                     browser = await plugin.launch(launchContext);
-                    expect(browser.isConnected()).toBeTruthy();
+                    expect(browser.isConnected()).toBe(true);
 
                     await browser.close();
 
-                    expect(browser.isConnected()).toBeFalsy();
+                    expect(browser.isConnected()).toBe(false);
                 });
 
-                test('should return old context as new context and log error', async () => {
+                test('should throw on newContext call', async () => {
                     const plugin = new PlaywrightPlugin(playwright[browserName]);
-                    jest.spyOn(log, 'error');
                     const launchContext = plugin.createLaunchContext();
                     browser = await plugin.launch(launchContext);
-                    const context = await browser.newContext();
 
-                    expect(context).toEqual(browser.contexts()[0]);
-                    expect(log.error).toBeCalledWith('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
+                    expect(browser.newContext())
+                        .rejects
+                        .toThrow('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
                 });
 
                 test('should have same public interface as playwright browserType', async () => {
@@ -355,7 +355,7 @@ describe('Plugins', () => {
                     browser = await plugin.launch(launchContext);
 
                     for (const originalFunctionName of originalFunctionNames) {
-                        expect(browser[originalFunctionName]).toBeDefined();
+                        expect(typeof browser[originalFunctionName] === 'function').toBe(true);
                     }
 
                     expect.hasAssertions();

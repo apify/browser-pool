@@ -1,5 +1,4 @@
 const EventEmitter = require('events');
-const log = require('../logger');
 /**
  * @typedef PlaywrightBrowserOptions
  * @param {import('playwright').BrowserContext} browserContext
@@ -56,14 +55,11 @@ class PlaywrightBrowser extends EventEmitter {
 
     /**
      * Method added for API consistency.
-     * It does not create a new context.
-     * It only returns the old one since this class is used only without incognito pages.
-     * @returns {import('playwright').BrowserContext}
+     * Should not be used.
+     * Throws an error if called.
      */
     async newContext() {
-        log.error('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
-        // return same old context to allow API consistance?
-        return this.browserContext;
+        throw new Error('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
     }
 
     /**

@@ -29,10 +29,10 @@ class PlaywrightPlugin extends BrowserPlugin {
             if (!this._browserVersion) {
                 // Launches unused browser just to get the browser version.
 
-                const inActiveBrowser = await this.library.launch(launchOptions);
-                this._browserVersion = inActiveBrowser.version();
+                const inactiveBrowser = await this.library.launch(launchOptions);
+                this._browserVersion = inactiveBrowser.version();
 
-                inActiveBrowser.close().catch(_.noop);
+                inactiveBrowser.close().catch(_.noop);
             }
 
             browser = new PlaywrightBrowser({ browserContext, version: this._browserVersion });
