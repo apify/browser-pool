@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const BrowserPlugin = require('../abstract-classes/browser-plugin');
 const PlaywrightController = require('./playwright-controller');
-const PlaywrightBrowser = require('./playwright-browser');
+const Browser = require('./browser');
 
 /**
  * playwright
@@ -35,7 +35,7 @@ class PlaywrightPlugin extends BrowserPlugin {
                 inactiveBrowser.close().catch(_.noop);
             }
 
-            browser = new PlaywrightBrowser({ browserContext, version: this._browserVersion });
+            browser = new Browser({ browserContext, version: this._browserVersion });
         }
 
         if (anonymizedProxyUrl) {
