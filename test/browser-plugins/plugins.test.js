@@ -7,7 +7,7 @@ const PuppeteerController = require('../../src/puppeteer/puppeteer-controller');
 
 const PlaywrightPlugin = require('../../src/playwright/playwright-plugin.js');
 const PlaywrightController = require('../../src/playwright/playwright-controller');
-const PlaywrightBrowser = require('../../src/playwright/playwright-browser');
+const Browser = require('../../src/playwright/browser');
 const LaunchContext = require('../../src/launch-context');
 
 jest.setTimeout(120000);
@@ -273,7 +273,7 @@ describe('Plugins', () => {
                 browser = await plugin.launch(launchContext);
                 expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
             });
-            describe('PlaywrightBrowser', () => {
+            describe('Browser', () => {
                 test('should create new page', async () => {
                     const plugin = new PlaywrightPlugin(playwright[browserName]);
 
@@ -306,13 +306,13 @@ describe('Plugins', () => {
 
                     const launchContext = plugin.createLaunchContext({ useIncognitoPages: false });
                     browser = await plugin.launch(launchContext);
-                    expect(browser).toBeInstanceOf(PlaywrightBrowser);
+                    expect(browser).toBeInstanceOf(Browser);
 
                     await browser.close();
 
                     const launchContext2 = plugin.createLaunchContext({ useIncognitoPages: true });
                     browser = await plugin.launch(launchContext2);
-                    expect(browser).not.toBeInstanceOf(PlaywrightBrowser);
+                    expect(browser).not.toBeInstanceOf(Browser);
                 });
 
                 test('should return correct version', async () => {

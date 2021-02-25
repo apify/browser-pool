@@ -1,6 +1,6 @@
 const EventEmitter = require('events');
 /**
- * @typedef PlaywrightBrowserOptions
+ * @typedef BrowserOptions
  * @param {import('playwright').BrowserContext} browserContext
  * @param {string} version
  *
@@ -9,10 +9,10 @@ const EventEmitter = require('events');
 /**
  * Browser wrapper created to have consistent API with persistent and non-persistent contexts.
  */
-class PlaywrightBrowser extends EventEmitter {
+class Browser extends EventEmitter {
     /**
      *
-     * @param {PlaywrightBrowserOptions} options
+     * @param {BrowserOptions} options
      */
     constructor(options = {}) {
         super();
@@ -79,4 +79,4 @@ class PlaywrightBrowser extends EventEmitter {
     }
 }
 
-module.exports = PlaywrightBrowser;
+module.exports = Browser;
