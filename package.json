@@ -4,11 +4,11 @@
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
 	"main": "src/index.js",
 	"dependencies": {
-		"apify-shared": "^0.5.0",
+		"apify-shared": "^0.6.0",
 		"fs-extra": "^9.1.0",
 		"lodash": "^4.17.20",
 		"nanoid": "^3.1.16",
-		"ow": "^0.20.0",
+		"ow": "^0.23.0",
 		"proxy-chain": "^0.4.5"
 	},
 	"devDependencies": {
@@ -18,8 +18,8 @@
 		"jest": "^26.6.3",
 		"jsdoc-to-markdown": "^6.0.1",
 		"markdown-toc": "^1.2.0",
-		"playwright": "^1.8.0",
-		"puppeteer": "^5.5.0"
+		"playwright": "^1.9.1",
+		"puppeteer": "^7.1.0"
 	},
 	"scripts": {
 		"build-docs": "npm run build-toc && node docs/build_docs.js",

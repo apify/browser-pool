@@ -1,3 +1,8 @@
+1.1.1 / 2021/02/25
+====================
+- Fixed `playwrightPlugin.launch()` returning `BrowserContext` instead of `Browser` when `useIncognitoPages: false` was used.
+- Fixed user data directory not being correctly created when using Firefox in Docker.
+
 1.1.0 / 2021/02/04
 ====================
 - Added `useIncognitoPages` and `userDataDir` to `LaunchContext`.
