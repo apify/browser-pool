@@ -1,17 +1,19 @@
-const _ = require('lodash');
+import type { Page, Browser, ChromeArgOptions, BrowserContext } from 'puppeteer';
+import log from '../logger';
+import BrowserController, { BrowserControllerCookie } from '../abstract-classes/browser-controller';
 
-const BrowserController = require('../abstract-classes/browser-controller');
+const noop = require('lodash.noop');
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 /**
  * puppeteer
  */
-class PuppeteerController extends BrowserController {
+export default class PuppeteerController extends BrowserController<Browser, Page, ChromeArgOptions, never> {
     async _newPage() {
         const { useIncognitoPages } = this.launchContext;
-        let page;
-        let context;
+        let page: Page;
+        let context: BrowserContext;
 
         if (useIncognitoPages) {
             context = await this.browser.createIncognitoBrowserContext();
@@ -24,13 +26,13 @@ class PuppeteerController extends BrowserController {
             this.activePages--;
 
             if (useIncognitoPages) {
-                context.close().catch(_.noop);
+                context.close().catch(noop);
             }
         });
 
         page.once('error', (error) => {
-            this.log.exception(error, 'Page crashed.');
-            page.close().catch(_.noop);
+            log.exception(error, 'Page crashed.');
+            page.close().catch(noop);
         });
 
         return page;
@@ -63,13 +65,11 @@ class PuppeteerController extends BrowserController {
         }
     }
 
-    async _getCookies(page) {
+    async _getCookies(page: Page) {
         return page.cookies();
     }
 
-    async _setCookies(page, cookies) {
+    async _setCookies(page: Page, cookies: BrowserControllerCookie[]) {
         return page.setCookie(...cookies);
     }
 }
-
-module.exports = PuppeteerController;

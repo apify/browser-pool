@@ -1,20 +1,22 @@
-const EventEmitter = require('events');
-/**
- * @typedef BrowserOptions
- * @param {import('playwright').BrowserContext} browserContext
- * @param {string} version
- *
-*/
+import EventEmitter from 'events';
+import type { BrowserContext } from 'playwright';
+
+export interface BrowserOptions {
+    browserContext: BrowserContext;
+    version: string;
+}
 
 /**
  * Browser wrapper created to have consistent API with persistent and non-persistent contexts.
  */
-class Browser extends EventEmitter {
-    /**
-     *
-     * @param {BrowserOptions} options
-     */
-    constructor(options = {}) {
+export default class Browser extends EventEmitter {
+    browserContext: BrowserContext;
+
+    _version: string;
+
+    _isConnected: boolean;
+
+    constructor(options: BrowserOptions) {
         super();
 
         const { browserContext, version } = options;
@@ -38,17 +40,14 @@ class Browser extends EventEmitter {
 
     /**
      * Returns an array of all open browser contexts. In a newly created browser, this will return zero browser contexts.
-     * @returns {Array<import('playwright').BrowserContext>}
      */
-    contexts() {
+    contexts(): BrowserContext[] {
         return [this.browserContext];
     }
 
     /**
      * Indicates that the browser is connected.
-     * @returns {boolean}
      */
-
     isConnected() {
         return this._isConnected;
     }
@@ -66,17 +65,15 @@ class Browser extends EventEmitter {
      * Creates a new page in a new browser context. Closing this page will close the context as well.
      * @param  {...any} args - New Page options. See https://playwright.dev/docs/next/api/class-browser#browsernewpageoptions.
      */
-    async newPage(...args) {
-        return this.browserContext.newPage(...args);
+    async newPage(...args: any) {
+        // TODO: BrowserContext.newPage doesn't allow arguments
+        return (this.browserContext.newPage as any)(...args);
     }
 
     /**
     * Returns the browser version.
-    * @returns {string} browser version.
     */
-    version() {
+    version(): string {
         return this._version;
     }
 }
-
-module.exports = Browser;

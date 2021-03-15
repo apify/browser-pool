@@ -1,7 +1,5 @@
 const defaultLog = require('apify-shared/log');
 
-const log = defaultLog.child({
+export default defaultLog.child({
     prefix: 'BrowserPool',
 });
-
-module.exports = log;

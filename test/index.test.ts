@@ -1,8 +1,8 @@
-const BrowserPool = require('../src/browser-pool');
-const PuppeteerPlugin = require('../src/puppeteer/puppeteer-plugin');
-const PlaywrightPlugin = require('../src/playwright/playwright-plugin.js');
+import BrowserPool from '../src/browser-pool';
+import PuppeteerPlugin from '../src/puppeteer/puppeteer-plugin';
+import PlaywrightPlugin from '../src/playwright/playwright-plugin';
 
-const modules = require('../src/index');
+import * as modules from '../src/index';
 
 describe('Exports', () => {
     test('Modules', () => {

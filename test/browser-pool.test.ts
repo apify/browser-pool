@@ -1,8 +1,9 @@
-const puppeteer = require('puppeteer');
-const playwright = require('playwright');
-const BrowserPool = require('../src/browser-pool');
-const PuppeteerPlugin = require('../src/puppeteer/puppeteer-plugin');
-const PlaywrightPlugin = require('../src/playwright/playwright-plugin');
+import puppeteer from 'puppeteer';
+import playwright from 'playwright';
+import BrowserPool from '../src/browser-pool';
+import PuppeteerPlugin from '../src/puppeteer/puppeteer-plugin';
+import PlaywrightPlugin from '../src/playwright/playwright-plugin';
+
 const {
     BROWSER_POOL_EVENTS: {
         BROWSER_LAUNCHED,
@@ -215,7 +216,7 @@ describe('BrowserPool', () => {
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
             await page.close();
 
-            await new Promise((resolve) => setTimeout(() => {
+            await new Promise<void>((resolve) => setTimeout(() => {
                 resolve();
             }, 1000));
 

@@ -1,14 +1,14 @@
-const puppeteer = require('puppeteer');
-const playwright = require('playwright');
-const fs = require('fs');
+import puppeteer from 'puppeteer';
+import playwright from 'playwright';
+import fs from 'fs';
 
-const PuppeteerPlugin = require('../../src/puppeteer/puppeteer-plugin');
-const PuppeteerController = require('../../src/puppeteer/puppeteer-controller');
+import PuppeteerPlugin from '../../src/puppeteer/puppeteer-plugin';
+import PuppeteerController from '../../src/puppeteer/puppeteer-controller';
 
-const PlaywrightPlugin = require('../../src/playwright/playwright-plugin.js');
-const PlaywrightController = require('../../src/playwright/playwright-controller');
-const Browser = require('../../src/playwright/browser');
-const LaunchContext = require('../../src/launch-context');
+import PlaywrightPlugin from '../../src/playwright/playwright-plugin';
+import PlaywrightController from '../../src/playwright/playwright-controller';
+import Browser from '../../src/playwright/browser';
+import LaunchContext from '../../src/launch-context';
 
 jest.setTimeout(120000);
 
