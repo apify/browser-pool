@@ -483,14 +483,36 @@ class BrowserPool extends EventEmitter {
             launchOptions,
         });
 
-        await this._executeHooks(this.preLaunchHooks, pageId, launchContext);
-        const browser = await browserPlugin.launch(launchContext);
-        browserController.assignBrowser(browser, launchContext);
+        try {
+            // If the hooks or the launch fails, we need to delete the controller,
+            // because otherwise it would be stuck in limbo without a browser.
+            await this._executeHooks(this.preLaunchHooks, pageId, launchContext);
+            const browser = await browserPlugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+        } catch (err) {
+            this.activeBrowserControllers.delete(browserController);
+            throw err;
+        }
 
         log.debug('Launched new browser.', { id: browserController.id });
-        await this._executeHooks(this.postLaunchHooks, pageId, browserController);
-        this.emit(BROWSER_LAUNCHED, browserController);
+
+        try {
+            // If the launch fails on the post-launch hooks, we need to clean up
+            // both the controller and the browser before throwing.
+            await this._executeHooks(this.postLaunchHooks, pageId, browserController);
+        } catch (err) {
+            this.activeBrowserControllers.delete(browserController);
+            browserController.close().catch((closeErr) => {
+                log.error(
+                    `Could not close browser whose post-launch hooks failed.\nCause:${closeErr.message}`,
+                    { id: browserController.id },
+                );
+            });
+            throw err;
+        }
+
         browserController.activate();
+        this.emit(BROWSER_LAUNCHED, browserController);
 
         return browserController;
     }

@@ -251,6 +251,28 @@ describe('BrowserPool', () => {
                     const { launchContext } = browserPool.getBrowserControllerByPage(page);
                     expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, pageId, launchContext); // eslint-disable-line
                 });
+
+                // We had a problem where if the first newPage() call, which launches
+                // a browser failed in hooks, then the browserController would get stuck
+                // in limbo and subsequent newPage() calls would never resolve.
+                test('error in hook does not leave browser stuck in limbo', async () => {
+                    const errorMessage = 'pre-launch failed';
+                    browserPool.preLaunchHooks = [
+                        async () => { throw new Error(errorMessage); },
+                    ];
+
+                    const attempts = 5;
+                    for (let i = 0; i < attempts; i++) {
+                        try {
+                            await browserPool.newPage();
+                        } catch (err) {
+                            expect(err.message).toBe(errorMessage);
+                        }
+                    }
+
+                    expect(browserPool.activeBrowserControllers.size).toBe(0);
+                    expect.assertions(attempts + 1);
+                });
             });
 
             describe('postLaunchHooks', () => {
@@ -262,7 +284,46 @@ describe('BrowserPool', () => {
                     const page = await browserPool.newPage();
                     const pageId = await browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
-                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, pageId, browserController); // eslint-disable-line
+                    expect(browserPool._executeHooks) // eslint-disable-line no-underscore-dangle
+                        .toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, pageId, browserController);
+                });
+
+                // We had a problem where if the first newPage() call, which launches
+                // a browser failed in hooks, then the browserController would get stuck
+                // in limbo and subsequent newPage() calls would never resolve.
+                test('error in hook does not leave browser stuck in limbo', async () => {
+                    const errorMessage = 'post-launch failed';
+                    const controllers = [];
+                    browserPool.postLaunchHooks = [
+                        async (pageId, browserController) => {
+                            controllers.push(browserController);
+                            throw new Error(errorMessage);
+                        },
+                    ];
+
+                    const attempts = 5;
+                    for (let i = 0; i < attempts; i++) {
+                        try {
+                            await browserPool.newPage();
+                        } catch (err) {
+                            expect(err.message).toBe(errorMessage);
+                        }
+                    }
+
+                    // Wait until all browsers are closed. This will only resolve if all close,
+                    // if it does not resolve, the test will timeout and fail.
+                    await new Promise((resolve) => {
+                        const int = setInterval(() => {
+                            const stillWaiting = controllers.some((c) => c.isActive === true);
+                            if (!stillWaiting) {
+                                clearInterval(int);
+                                resolve();
+                            }
+                        }, 10);
+                    });
+
+                    expect(browserPool.activeBrowserControllers.size).toBe(0);
+                    expect.assertions(attempts + 1);
                 });
             });
 
