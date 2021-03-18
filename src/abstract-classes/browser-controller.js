@@ -84,9 +84,11 @@ class BrowserController extends EventEmitter {
      */
     async close() {
         await this.hasBrowserPromise;
-        await this._close().catch((err) => {
-            log.debug(`Could not close browser.\nCause: ${err.message}`, { id: this.id });
-        });
+        await this._close()
+            .then(() => { this.isActive = false; })
+            .catch((err) => {
+                log.debug(`Could not close browser.\nCause: ${err.message}`, { id: this.id });
+            });
         this.emit(BROWSER_CLOSED, this);
         setTimeout(() => {
             this._kill().catch((err) => {
