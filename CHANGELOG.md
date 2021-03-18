@@ -1,3 +1,7 @@
+1.1.2 / 2021/03/18
+====================
+- Fixed an error where chains of errors in `preLaunchHooks` and `postLaunchHooks` would cause browser(controller)s to be stuck in limbo forever.
+
 1.1.1 / 2021/02/25
 ====================
 - Fixed `playwrightPlugin.launch()` returning `BrowserContext` instead of `Browser` when `useIncognitoPages: false` was used.
