@@ -14,7 +14,10 @@ const proxyChain = require('proxy-chain');
  * `BrowserPlugin` does not include the library. You can choose any version
  * or fork of the library. It also keeps `browser-pool` installation small.
  */
-export type Browser = any;
+export interface Launcher {
+    launch(object: any): any;
+    name?: () => string;
+}
 
 export interface BrowserPluginOptions<LaunchOptions extends Record<string, any>> {
     /**
@@ -48,14 +51,15 @@ export interface BrowserPluginOptions<LaunchOptions extends Record<string, any>>
  * feed them to {@link BrowserPool} for use.
  */
 export default class BrowserPlugin<
-    BrowserLibrary extends Browser,
+    BrowserLauncher extends Launcher,
+    BrowserLibrary,
     Page extends object,
     LaunchOptions extends Record<string, any>,
     PageOptions extends Record<string, any>,
 > {
     name: string;
 
-    library: BrowserLibrary;
+    library: BrowserLauncher;
 
     launchOptions: NonNullable<LaunchOptions>;
 
@@ -65,7 +69,7 @@ export default class BrowserPlugin<
 
     userDataDir: BrowserPluginOptions<LaunchOptions>['userDataDir'];
 
-    constructor(library: BrowserLibrary, options: BrowserPluginOptions<LaunchOptions>) {
+    constructor(library: BrowserLauncher, options: BrowserPluginOptions<LaunchOptions> = {}) {
         const {
             launchOptions = {},
             proxyUrl,
@@ -88,7 +92,7 @@ export default class BrowserPlugin<
      * management of the pool and extra features.
      * @ignore
      */
-    createLaunchContext(options: Partial<LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>>): LaunchContext<BrowserLibrary, Page, LaunchOptions, PageOptions> {
+    createLaunchContext(options: Partial<LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>> = {}): LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> {
         const {
             id,
             launchOptions = {},
@@ -110,7 +114,7 @@ export default class BrowserPlugin<
     /**
      * @ignore
      */
-    createController(): BrowserController<BrowserLibrary, Page, LaunchOptions, PageOptions> {
+    createController(): BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> {
         return this._createController();
     }
 
@@ -119,14 +123,14 @@ export default class BrowserPlugin<
      *
      * @ignore
      */
-    async launch(launchContext: LaunchContext<BrowserLibrary, Page, LaunchOptions, PageOptions>): Promise<BrowserLibrary> {
+    async launch(launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> | LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> = {}): Promise<BrowserLibrary> {
         const { proxyUrl, useIncognitoPages, userDataDir } = launchContext;
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
         }
 
-        if (!useIncognitoPages) {
+        if (!useIncognitoPages && userDataDir) {
             await this._ensureDir(userDataDir);
         }
 
@@ -136,21 +140,21 @@ export default class BrowserPlugin<
     /**
      * @private
      */
-    async _addProxyToLaunchOptions(_launchContext: LaunchContext<BrowserLibrary, Page, LaunchOptions, PageOptions>): Promise<void> { // eslint-disable-line
+    async _addProxyToLaunchOptions(_launchContext: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>): Promise<void> { // eslint-disable-line
         throwImplementationNeeded('_addProxyToLaunchOptions');
     }
 
     /**
      * @private
      */
-    async _launch(_launchContext: LaunchContext<BrowserLibrary, Page, LaunchOptions, PageOptions>): Promise<BrowserLibrary> { // eslint-disable-line
+    async _launch(_launchContext: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>): Promise<BrowserLibrary> { // eslint-disable-line
         throwImplementationNeeded('_launch');
     }
 
     /**
      * @private
      */
-    _createController(): BrowserController<BrowserLibrary, Page, LaunchOptions, PageOptions> {
+    _createController(): BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> {
         throwImplementationNeeded('_createController');
     }
 

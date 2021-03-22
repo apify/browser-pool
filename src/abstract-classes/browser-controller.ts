@@ -1,10 +1,10 @@
-import EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import { nanoid } from 'nanoid';
 import type { Protocol } from 'puppeteer';
 import log from '../logger';
 import { throwImplementationNeeded } from './utils';
 import type BrowserPlugin from './browser-plugin'; // eslint-disable-line import/no-duplicates
-import type { Browser } from './browser-plugin'; // eslint-disable-line import/no-duplicates
+import type { Launcher } from './browser-plugin'; // eslint-disable-line import/no-duplicates
 import type LaunchContext from '../launch-context';
 
 const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events');
@@ -56,7 +56,8 @@ export interface BrowserControllerCookie {
  * @hideconstructor
  */
 export default class BrowserController<
-    BrowserLibrary extends Browser,
+    BrowserLauncher extends Launcher,
+    BrowserLibrary,
     Page extends object,
     LaunchOptions extends Record<string, any>,
     PageOptions extends Record<string, any>,
@@ -66,7 +67,7 @@ export default class BrowserController<
     /**
      * The `BrowserPlugin` instance used to launch the browser.
      */
-    browserPlugin: BrowserPlugin<BrowserLibrary, Page, LaunchOptions, PageOptions>
+    browserPlugin: BrowserPlugin<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>
 
     /**
      * Browser representation of the underlying automation library.
@@ -76,7 +77,7 @@ export default class BrowserController<
     /**
      * The configuration the browser was launched with.
      */
-    launchContext: LaunchContext<BrowserLibrary, Page, LaunchOptions, PageOptions>;
+    launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>;
 
     isActive: boolean;
 
@@ -96,7 +97,7 @@ export default class BrowserController<
 
     lastPageOpenedAt: number;
 
-    constructor(browserPlugin: BrowserPlugin<BrowserLibrary, Page, LaunchOptions, PageOptions>) {
+    constructor(browserPlugin: BrowserPlugin<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>) {
         super();
 
         this.id = nanoid();
@@ -135,7 +136,10 @@ export default class BrowserController<
     /**
      * @ignore
      */
-    assignBrowser(browser: BrowserLibrary, launchContext: LaunchContext<BrowserLibrary, Page, LaunchOptions, PageOptions>): void {
+    assignBrowser(
+        browser: BrowserLibrary,
+        launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>,
+    ): void {
         if (this.browser) {
             throw new Error('BrowserController already has a browser instance assigned.');
         }
@@ -152,9 +156,11 @@ export default class BrowserController<
      */
     async close(): Promise<void> {
         await this.hasBrowserPromise;
-        await this._close().catch((err) => {
-            log.debug(`Could not close browser.\nCause: ${err.message}`, { id: this.id });
-        });
+        await this._close()
+            .then(() => { this.isActive = false; })
+            .catch((err) => {
+                log.debug(`Could not close browser.\nCause: ${err.message}`, { id: this.id });
+            });
         this.emit(BROWSER_CLOSED, this);
         setTimeout(() => {
             this._kill().catch((err) => {

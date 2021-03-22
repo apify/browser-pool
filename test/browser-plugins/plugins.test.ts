@@ -2,6 +2,9 @@ import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 import fs from 'fs';
 
+import BrowserPlugin, { Launcher } from '../../src/abstract-classes/browser-plugin';
+import BrowserController from '../../src/abstract-classes/browser-controller';
+
 import PuppeteerPlugin from '../../src/puppeteer/puppeteer-plugin';
 import PuppeteerController from '../../src/puppeteer/puppeteer-controller';
 
@@ -12,11 +15,12 @@ import LaunchContext from '../../src/launch-context';
 
 jest.setTimeout(120000);
 
-const runPluginTest = (Plugin, Controller, library) => {
+const runPluginTest = <A extends typeof BrowserPlugin, B extends typeof BrowserController, C extends Launcher>(Plugin: A, Controller: B, library: C) => {
     let plugin = new Plugin(library);
 
     describe(`${plugin.constructor.name} - ${library.name ? library.name() : ''} general`, () => {
-        let browser;
+        let browser: BrowserController<any, any, any, any, any>;
+
         beforeEach(() => {
             plugin = new Plugin(library);
         });
@@ -27,7 +31,7 @@ const runPluginTest = (Plugin, Controller, library) => {
         });
 
         test('should launch browser', async () => {
-            browser = await plugin.launch();
+            browser = await plugin.launch() as any;
             expect(typeof browser.newPage).toBe('function');
             expect(typeof browser.close).toBe('function');
         });
@@ -63,8 +67,8 @@ const runPluginTest = (Plugin, Controller, library) => {
             expect(context.id).toEqual(desiredObject.id);
             expect(context.launchOptions).toEqual(desiredObject.launchOptions);
             expect(context.browserPlugin).toEqual(desiredObject.browserPlugin);
-            expect(context._proxyUrl).toEqual(desiredObject._proxyUrl); // eslint-disable-line
-            expect(context.one).toEqual(desiredObject.one);
+            expect((context as any)._proxyUrl).toEqual(desiredObject._proxyUrl); // eslint-disable-line
+            expect((context as any).one).toEqual(desiredObject.one);
             expect(context.useIncognitoPages).toEqual(desiredObject.useIncognitoPages);
         });
 
@@ -73,8 +77,8 @@ const runPluginTest = (Plugin, Controller, library) => {
                 useIncognitoPages: false,
             });
 
-            const context = await plugin.createLaunchContext();
-            browser = await plugin.launch(context);
+            const context = plugin.createLaunchContext();
+            browser = await plugin.launch(context) as any;
 
             expect(fs.existsSync(context.userDataDir)).toBeTruthy();
             await browser.close();
@@ -101,14 +105,14 @@ const runPluginTest = (Plugin, Controller, library) => {
 
         test('should work with cookies', async () => {
             const browserController = plugin.createController();
-            const context = await plugin.createLaunchContext();
-            browser = await plugin.launch(context);
+            const context = plugin.createLaunchContext();
+            browser = await plugin.launch(context) as any;
             browserController.assignBrowser(browser, context);
             browserController.activate();
 
             const page = await browserController.newPage();
             await browserController.setCookies(page, [{ name: 'TEST', value: 'TESTER-COOKIE', url: 'https://example.com' }]);
-            await page.goto('https://example.com', { waitUntil: 'domcontentloaded' });
+            await (page as any).goto('https://example.com', { waitUntil: 'domcontentloaded' });
 
             const cookies = await browserController.getCookies(page);
             expect(cookies[0].name).toBe('TEST');
@@ -118,7 +122,7 @@ const runPluginTest = (Plugin, Controller, library) => {
 };
 describe('Plugins', () => {
     describe('Puppeteer specifics', () => {
-        let browser;
+        let browser: puppeteer.Browser;
 
         afterEach(async () => {
             await browser.close();
@@ -126,32 +130,32 @@ describe('Plugins', () => {
 
         test('should work with non authenticated proxyUrl', async () => {
             const proxyUrl = 'http://10.10.10.0:8080';
-            const plugin = new PuppeteerPlugin(puppeteer);
+            const plugin = new PuppeteerPlugin(puppeteer as any);
             jest.spyOn(plugin, '_getAnonymizedProxyUrl');
             const context = await plugin.createLaunchContext({ proxyUrl });
 
-            browser = await plugin.launch(context);
-            const argWithProxy = context.launchOptions.args.find((arg) => arg.includes('--proxy-server='));
+            browser = await plugin.launch(context) as any;
+            const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
-            expect(argWithProxy.includes(proxyUrl)).toBeTruthy();
+            expect(argWithProxy?.includes(proxyUrl)).toBeTruthy();
             expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
         });
 
         test('should work with authenticated proxyUrl', async () => {
             const proxyUrl = 'http://apify1234@10.10.10.0:8080';
-            const plugin = new PuppeteerPlugin(puppeteer);
+            const plugin = new PuppeteerPlugin(puppeteer as any);
             jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-            const context = await plugin.createLaunchContext({ proxyUrl });
+            const context = plugin.createLaunchContext({ proxyUrl });
 
-            browser = await plugin.launch(context);
-            const argWithProxy = context.launchOptions.args.find((arg) => arg.includes('--proxy-server='));
+            browser = await plugin.launch(context) as any;
+            const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
-            expect(argWithProxy.includes(context.anonymizedProxyUrl)).toBeTruthy();
+            expect(argWithProxy?.includes(context?.anonymizedProxyUrl as any)).toBeTruthy();
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
         });
 
         test('should use persistent context by default', async () => {
-            const plugin = new PuppeteerPlugin(puppeteer);
+            const plugin = new PuppeteerPlugin(puppeteer as any);
             const browserController = plugin.createController();
 
             const launchContext = plugin.createLaunchContext();
@@ -186,7 +190,7 @@ describe('Plugins', () => {
             const plugin = new PuppeteerPlugin(puppeteer);
 
             jest.spyOn(plugin.library, 'launch');
-            const launchOptions = {
+            const launchOptions: Record<string, any> = {
                 foo: 'bar',
             };
             const launchContext = plugin.createLaunchContext({ launchOptions });
@@ -196,16 +200,18 @@ describe('Plugins', () => {
         });
     });
 
-    runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer);
+    runPluginTest(PuppeteerPlugin as any, PuppeteerController as any, puppeteer);
+
+    type BrowserName = keyof Pick<typeof playwright, 'firefox' | 'webkit' | 'chromium'>;
 
     describe('Playwright specifics', () => {
-        let browser;
+        let browser: playwright.Browser;
 
         afterEach(async () => {
             await browser.close();
         });
 
-        describe.each(['chromium', 'firefox', 'webkit'])('with %s', (browserName) => {
+        describe.each(['chromium', 'firefox', 'webkit'] as BrowserName[])('with %s', (browserName) => {
             test('should work with non authenticated proxyUrl', async () => {
                 const proxyUrl = 'http://10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
@@ -213,7 +219,7 @@ describe('Plugins', () => {
                 const context = await plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
-                expect(context.launchOptions.proxy.server).toEqual(proxyUrl);
+                expect(context?.launchOptions?.proxy?.server).toEqual(proxyUrl);
                 expect(plugin._getAnonymizedProxyUrl).not.toBeCalled(); // eslint-disable-line
             });
 
@@ -224,7 +230,7 @@ describe('Plugins', () => {
                 const context = await plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
-                expect(context.launchOptions.proxy.server).toEqual(context.anonymizedProxyUrl);
+                expect(context?.launchOptions?.proxy?.server).toEqual(context.anonymizedProxyUrl);
             expect(plugin._getAnonymizedProxyUrl).toBeCalled(); // eslint-disable-line
             });
 
@@ -266,7 +272,7 @@ describe('Plugins', () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
                 jest.spyOn(plugin.library, 'launch');
-                const launchOptions = {
+                const launchOptions: Record<string, any> = {
                     foo: 'bar',
                 };
                 const launchContext = plugin.createLaunchContext({ launchOptions, useIncognitoPages: true });
@@ -336,7 +342,8 @@ describe('Plugins', () => {
                     browser = await plugin.launch(launchContext);
                     const contexts = browser.contexts();
                     expect(contexts).toHaveLength(1);
-                    expect(contexts[0]).toEqual(browser.browserContext);
+                    // TODO this is actually the wrapper of original playwright browser instance in playwright/browser.ts
+                    expect(contexts[0]).toEqual((browser as any).browserContext);
                 });
 
                 test('should return correct connected status', async () => {
@@ -363,7 +370,7 @@ describe('Plugins', () => {
 
                 test('should have same public interface as playwright browserType', async () => {
                     const plugin = new PlaywrightPlugin(playwright[browserName]);
-                    const originalFunctionNames = ['close', 'contexts', 'isConnected', 'newContext', 'newPage', 'version'];
+                    const originalFunctionNames: Array<keyof typeof browser> = ['close', 'contexts', 'isConnected', 'newContext', 'newPage', 'version'];
                     const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
                     browser = await plugin.launch(launchContext);
 
@@ -377,7 +384,7 @@ describe('Plugins', () => {
         });
     });
 
-    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.chromium);
-    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.firefox);
-    runPluginTest(PlaywrightPlugin, PlaywrightController, playwright.webkit);
+    runPluginTest(PlaywrightPlugin as any, PlaywrightController as any, playwright.chromium);
+    runPluginTest(PlaywrightPlugin as any, PlaywrightController as any, playwright.firefox);
+    runPluginTest(PlaywrightPlugin as any, PlaywrightController as any, playwright.webkit);
 });

@@ -2,13 +2,13 @@ import path from 'path';
 import os from 'os';
 import { nanoid } from 'nanoid';
 import type BrowserPlugin from './abstract-classes/browser-plugin'; // eslint-disable-line import/no-duplicates
-import type { Browser } from './abstract-classes/browser-plugin'; // eslint-disable-line import/no-duplicates
+import type { Launcher } from './abstract-classes/browser-plugin'; // eslint-disable-line import/no-duplicates
 
-export interface LaunchContextOptions<BrowserLibrary extends Browser, Page extends object, LaunchOptions, PageOptions> extends LaunchContextDynamicProps {
+export interface LaunchContextOptions<BrowserLauncher extends Launcher, BrowserLibrary, Page extends object, LaunchOptions, PageOptions> extends LaunchContextDynamicProps {
     /**
      * The `BrowserPlugin` instance used to launch the browser.
      */
-    browserPlugin: BrowserPlugin<BrowserLibrary, Page, LaunchOptions, PageOptions>;
+    browserPlugin?: BrowserPlugin<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>;
     /**
      *  To make identification of `LaunchContext` easier, `BrowserPool` assigns
      *  the `LaunchContext` an `id` that's equal to the `id` of the page that
@@ -43,26 +43,31 @@ export interface LaunchContextDynamicProps {
  * @hideconstructor
  */
 export default class LaunchContext<
-    BrowserLibrary extends Browser,
+    BrowserLauncher extends Launcher,
+    BrowserLibrary,
     Page extends object, // eslint-disable-line
     LaunchOptions extends Record<string, any>,
     PageOptions extends Record<string, any>,
 > implements LaunchContextDynamicProps {
-    id: NonNullable<LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>['id']>;
+    [key: string]: any;
 
-    launchOptions: NonNullable<LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>['launchOptions']>;
+    id: NonNullable<LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>['id']>;
 
-    browserPlugin: LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>['browserPlugin'];
+    launchOptions: NonNullable<LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>['launchOptions']>;
 
-    useIncognitoPages: LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>['useIncognitoPages'];
+    browserPlugin: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>['browserPlugin'];
 
-    userDataDir: NonNullable<LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>['userDataDir']>;
+    useIncognitoPages: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>['useIncognitoPages'];
+
+    userDataDir: NonNullable<LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>['userDataDir']>;
 
     protected _proxyUrl?: string;
 
     protected _reservedFieldNames: (string|symbol)[];
 
-    constructor(options: LaunchContextOptions<BrowserLibrary, Page, LaunchOptions, PageOptions>) {
+    anonymizedProxyUrl?: string;
+
+    constructor(options: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>) {
         const {
             id = nanoid(),
             browserPlugin,

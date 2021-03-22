@@ -5,7 +5,7 @@
         "module": "commonjs",
         "lib": [
             "DOM",
-            "DOM.Iterable",
+            "ES5",
             "ES6",
             "ES2019.Symbol",
             "ES2019.String",

@@ -1,6 +1,6 @@
 {
 	"name": "browser-pool",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
 	"main": "lib/index.js",
 	"dependencies": {
@@ -10,7 +10,7 @@
 		"lodash.merge": "^4.6.2",
 		"lodash.noop": "^3.0.1",
 		"ow": "^0.23.0",
-		"proxy-chain": "^0.4.7"
+		"proxy-chain": "^1.0.0"
 	},
 	"devDependencies": {
 		"@apify/eslint-config": "^0.1.3",
@@ -30,13 +30,15 @@
 		"jsdoc-to-markdown": "^7.0.0",
 		"markdown-toc": "^1.2.0",
 		"playwright": "^1.9.1",
-		"puppeteer": "^7.1.0",
-		"typescript": "^4.2.3"
+		"typescript": "^4.2.3",
+		"puppeteer": "^8.0.0",
+		"@microsoft/api-documenter": "^7.12.14"
 	},
 	"scripts": {
 		"build": "tsc -p .",
 		"build-docs": "npm run build && npm run build-toc && node docs/build_docs.js",
 		"build-toc": "markdown-toc docs/README.md -i",
+		"api-documenter": "api-extractor run && api-documenter markdown",
 		"lint": "./node_modules/.bin/eslint ./src --ext .js,.ts,.jsx",
 		"lint:fix": "./node_modules/.bin/eslint ./src --ext .js,.ts,.jsx --fix",
 		"test": "jest --maxWorkers=3 --forceExit"

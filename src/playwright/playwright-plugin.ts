@@ -6,7 +6,7 @@ import Browser from './browser';
 
 const noop = require('lodash.noop');
 
-export interface PlaywrightLaunchContext<T extends PlaywrightBrowser> extends LaunchContextOptions<T, Page, LaunchOptions, PlaywrightControllerPageOptions> {
+export interface PlaywrightLaunchContext<T extends BrowserType<any>> extends LaunchContextOptions<T, Browser & PlaywrightBrowser, Page, LaunchOptions, PlaywrightControllerPageOptions> {
     anonymizedProxyUrl?: string;
 }
 
@@ -14,7 +14,7 @@ export interface PlaywrightLaunchContext<T extends PlaywrightBrowser> extends La
  * playwright
  */
 export default class PlaywrightPlugin<T extends FirefoxBrowser | ChromiumBrowser | WebKitBrowser>
-    extends BrowserPlugin<BrowserType<T>, Page, LaunchOptions, PlaywrightControllerPageOptions> {
+    extends BrowserPlugin<BrowserType<T>, PlaywrightBrowser, Page, LaunchOptions, PlaywrightControllerPageOptions> {
     _browserVersion: string | null = null;
 
     /**
@@ -58,18 +58,16 @@ export default class PlaywrightPlugin<T extends FirefoxBrowser | ChromiumBrowser
     }
 
     /**
-     * TODO: find a way to make this work to remove any
      * @private
      */
-    _createController(): PlaywrightController<any> {
-        return new PlaywrightController<T>(this as any);
+    _createController(): PlaywrightController<T> {
+        return new PlaywrightController(this);
     }
 
     /**
-     * TODO: find a way to make this work to remove any
      * @private
      */
-    async _addProxyToLaunchOptions(launchContext: PlaywrightLaunchContext<any>) {
+    async _addProxyToLaunchOptions(launchContext: PlaywrightLaunchContext<BrowserType<T>>) {
         const { launchOptions, proxyUrl } = launchContext;
 
         if (launchOptions) {

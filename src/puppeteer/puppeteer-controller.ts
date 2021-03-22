@@ -1,4 +1,5 @@
-import type { Page, Browser, ChromeArgOptions, BrowserContext } from 'puppeteer';
+import type { Page, Browser, BrowserLaunchArgumentOptions, BrowserContext } from 'puppeteer'; // eslint-disable-line import/no-duplicates
+import type * as Puppeteer from 'puppeteer'; // eslint-disable-line import/no-duplicates
 import log from '../logger';
 import BrowserController, { BrowserControllerCookie } from '../abstract-classes/browser-controller';
 
@@ -9,7 +10,7 @@ const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 /**
  * puppeteer
  */
-export default class PuppeteerController extends BrowserController<Browser, Page, ChromeArgOptions, never> {
+export default class PuppeteerController extends BrowserController<typeof Puppeteer, Browser, Page, BrowserLaunchArgumentOptions, never> {
     async _newPage() {
         const { useIncognitoPages } = this.launchContext;
         let page: Page;

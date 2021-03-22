@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
-import BrowserPool from '../src/browser-pool';
+import BrowserPool, { BrowserPoolPrePageCreateHook } from '../src/browser-pool';
 import PuppeteerPlugin from '../src/puppeteer/puppeteer-plugin';
 import PlaywrightPlugin from '../src/playwright/playwright-plugin';
+import type BrowserController from '../src/abstract-classes/browser-controller';
 
 const {
     BROWSER_POOL_EVENTS: {
@@ -15,9 +17,9 @@ const {
 
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
-    const puppeteerPlugin = new PuppeteerPlugin(puppeteer);
+    const puppeteerPlugin: any = new PuppeteerPlugin(puppeteer);
     const playwrightPlugin = new PlaywrightPlugin(playwright.chromium); // chromium is faster than firefox and webkit
-    let browserPool;
+    let browserPool: BrowserPool<any, any, any, any, any>;
 
     beforeEach(async () => {
         jest.clearAllMocks();
@@ -28,7 +30,7 @@ describe('BrowserPool', () => {
     });
 
     afterEach(async () => {
-        browserPool = await browserPool.destroy();
+        browserPool = await browserPool.destroy() as any;
     });
 
     describe('Initialization & retirement', () => {
@@ -42,8 +44,8 @@ describe('BrowserPool', () => {
 
         test('should destroy pool', async () => {
             const page = await browserPool.newPage();
-            const browserController = await browserPool.getBrowserControllerByPage(page);
-            jest.spyOn(browserController, 'close');
+            const browserController = browserPool.getBrowserControllerByPage(page)!;
+            jest.spyOn(browserController as any, 'close');
 
             await browserPool.destroy();
 
@@ -79,13 +81,13 @@ describe('BrowserPool', () => {
             let page = await browserPool.newPage({
                 browserPlugin: playwrightPlugin,
             });
-            let controller = browserPool.getBrowserControllerByPage(page);
+            let controller = browserPool.getBrowserControllerByPage(page)!;
             expect(controller.launchContext.browserPlugin).toBe(playwrightPlugin);
 
             page = await browserPool.newPage({
                 browserPlugin: puppeteerPlugin,
             });
-            controller = browserPool.getBrowserControllerByPage(page);
+            controller = browserPool.getBrowserControllerByPage(page)!;
             expect(controller.launchContext.browserPlugin).toBe(puppeteerPlugin);
             expect(browserPool.activeBrowserControllers.size).toBe(2);
         });
@@ -105,7 +107,7 @@ describe('BrowserPool', () => {
             expect(pages).toHaveLength(correctPluginOrder.length);
             expect(browserPool.activeBrowserControllers.size).toBe(2);
             pages.forEach((page, idx) => {
-                const controller = browserPool.getBrowserControllerByPage(page);
+                const controller = browserPool.getBrowserControllerByPage(page)!;
                 const { browserPlugin } = controller.launchContext;
                 const correctPlugin = correctPluginOrder[idx];
                 expect(browserPlugin).toBe(correctPlugin);
@@ -127,8 +129,8 @@ describe('BrowserPool', () => {
 
         test('newPageWithEachPlugin should open all pages', async () => {
             const [puppeteerPage, playwrightPage] = await browserPool.newPageWithEachPlugin();
-            const puppeteerController = browserPool.getBrowserControllerByPage(puppeteerPage);
-            const playwrightController = browserPool.getBrowserControllerByPage(playwrightPage);
+            const puppeteerController = browserPool.getBrowserControllerByPage(puppeteerPage)!;
+            const playwrightController = browserPool.getBrowserControllerByPage(playwrightPage)!;
             expect(puppeteerController.launchContext.browserPlugin).toBe(puppeteerPlugin);
             expect(playwrightController.launchContext.browserPlugin).toBe(playwrightPlugin);
         });
@@ -158,7 +160,7 @@ describe('BrowserPool', () => {
 
             expect(browserPool._overridePageClose).toBeCalled(); // eslint-disable-line
 
-            const controller = browserPool.getBrowserControllerByPage(page);
+            const controller = browserPool.getBrowserControllerByPage(page)!;
 
             expect(controller.activePages).toEqual(1);
             expect(controller.totalPages).toEqual(1);
@@ -202,7 +204,7 @@ describe('BrowserPool', () => {
         test('should close retired browsers', async () => {
             browserPool.retireBrowserAfterPageCount = 1;
             clearInterval(browserPool.browserKillerInterval);
-            browserPool.browserKillerInterval = setInterval(
+            browserPool.browserKillerInterval = global.setInterval(
                 () => browserPool._closeInactiveRetiredBrowsers(), // eslint-disable-line
                 100,
             );
@@ -210,7 +212,7 @@ describe('BrowserPool', () => {
             expect(browserPool.retiredBrowserControllers.size).toBe(0);
 
             const page = await browserPool.newPage();
-            const controller = await browserPool.getBrowserControllerByPage(page);
+            const controller = browserPool.getBrowserControllerByPage(page)!;
             jest.spyOn(controller, 'close');
 
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
@@ -227,9 +229,9 @@ describe('BrowserPool', () => {
 
         describe('hooks', () => {
             test('should run hooks in series with custom args', async () => {
-                const indexArray = [];
-                const createAsyncHookReturningIndex = (i) => async () => {
-                    const index = await new Promise((resolve) => setTimeout(() => resolve(i), 100));
+                const indexArray: number[] = [];
+                const createAsyncHookReturningIndex = (i: number) => async () => {
+                    const index = await new Promise<number>((resolve) => setTimeout(() => resolve(i), 100));
                     indexArray.push(index);
                 };
                 const hooks = new Array(10);
@@ -243,46 +245,107 @@ describe('BrowserPool', () => {
 
             describe('preLaunchHooks', () => {
                 test('should evaluate hook before launching browser with correct args', async () => {
-                    const myAsyncHook = () => Promise.resolve({});
+                    const myAsyncHook = () => Promise.resolve<any>({});
                     browserPool.preLaunchHooks = [myAsyncHook];
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
                     const pageId = await browserPool.getPageId(page);
-                    const { launchContext } = browserPool.getBrowserControllerByPage(page);
+                    const { launchContext } = browserPool.getBrowserControllerByPage(page)!;
                     expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, pageId, launchContext); // eslint-disable-line
+                });
+
+                // We had a problem where if the first newPage() call, which launches
+                // a browser failed in hooks, then the browserController would get stuck
+                // in limbo and subsequent newPage() calls would never resolve.
+                test('error in hook does not leave browser stuck in limbo', async () => {
+                    const errorMessage = 'pre-launch failed';
+                    browserPool.preLaunchHooks = [
+                        async () => { throw new Error(errorMessage); },
+                    ];
+
+                    const attempts = 5;
+                    for (let i = 0; i < attempts; i++) {
+                        try {
+                            await browserPool.newPage();
+                        } catch (err) {
+                            expect(err.message).toBe(errorMessage);
+                        }
+                    }
+
+                    expect(browserPool.activeBrowserControllers.size).toBe(0);
+                    expect.assertions(attempts + 1);
                 });
             });
 
             describe('postLaunchHooks', () => {
                 test('should evaluate hook after launching browser with correct args', async () => {
-                    const myAsyncHook = () => Promise.resolve({});
+                    const myAsyncHook = () => Promise.resolve<any>({});
                     browserPool.postLaunchHooks = [myAsyncHook];
-                    jest.spyOn(browserPool, '_executeHooks');
-
-                    const page = await browserPool.newPage();
-                    const pageId = await browserPool.getPageId(page);
-                    const browserController = browserPool.getBrowserControllerByPage(page);
-                expect(browserPool._executeHooks).toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, pageId, browserController); // eslint-disable-line
-                });
-            });
-
-            describe('prePageCreateHooks', () => {
-                test('should evaluate hook after launching browser with correct args', async () => {
-                    const myAsyncHook = () => Promise.resolve({});
-                    browserPool.prePageCreateHooks = [myAsyncHook];
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
                     const pageId = browserPool.getPageId(page);
                     const browserController = browserPool.getBrowserControllerByPage(page);
+                    expect(browserPool._executeHooks) // eslint-disable-line no-underscore-dangle
+                        .toHaveBeenNthCalledWith(2, browserPool.postLaunchHooks, pageId, browserController);
+                });
+
+                // We had a problem where if the first newPage() call, which launches
+                // a browser failed in hooks, then the browserController would get stuck
+                // in limbo and subsequent newPage() calls would never resolve.
+                test('error in hook does not leave browser stuck in limbo', async () => {
+                    const errorMessage = 'post-launch failed';
+                    const controllers: Array<BrowserController<any, any, any, any, any>> = [];
+                    browserPool.postLaunchHooks = [
+                        async (_pageId, browserController) => {
+                            controllers.push(browserController);
+                            throw new Error(errorMessage);
+                        },
+                    ];
+
+                    const attempts = 5;
+                    for (let i = 0; i < attempts; i++) {
+                        try {
+                            await browserPool.newPage();
+                        } catch (err) {
+                            expect(err.message).toBe(errorMessage);
+                        }
+                    }
+
+                    // Wait until all browsers are closed. This will only resolve if all close,
+                    // if it does not resolve, the test will timeout and fail.
+                    await new Promise<void>((resolve) => {
+                        const int = setInterval(() => {
+                            const stillWaiting = controllers.some((c) => c.isActive === true);
+                            if (!stillWaiting) {
+                                clearInterval(int);
+                                resolve();
+                            }
+                        }, 10);
+                    });
+
+                    expect(browserPool.activeBrowserControllers.size).toBe(0);
+                    expect.assertions(attempts + 1);
+                });
+            });
+
+            describe('prePageCreateHooks', () => {
+                test('should evaluate hook after launching browser with correct args', async () => {
+                    const myAsyncHook = () => Promise.resolve<any>({});
+                    browserPool.prePageCreateHooks = [myAsyncHook];
+                    jest.spyOn(browserPool, '_executeHooks');
+
+                    const page = await browserPool.newPage();
+                    const pageId = browserPool.getPageId(page);
+                    const browserController = browserPool.getBrowserControllerByPage(page)!;
                     expect(browserPool._executeHooks).toHaveBeenNthCalledWith(3, browserPool.prePageCreateHooks, pageId, browserController, browserController.supportsPageOptions? {} : undefined); // eslint-disable-line
                 });
 
                 test('should allow changing pageOptions only when supported', async () => {
-                    let browserController;
+                    let browserController!: BrowserController<any, any, any, any, any>;
                     let options;
-                    const myAsyncHook = (pageId, controller, pageOptions) => {
+                    const myAsyncHook: BrowserPoolPrePageCreateHook<any, any, any, any, any> = async (_pageId, controller, pageOptions) => {
                         pageOptions.customOption = 'TEST';
                         options = pageOptions;
                         jest.spyOn(controller, 'newPage');
@@ -299,7 +362,7 @@ describe('BrowserPool', () => {
 
             describe('postPageCreateHooks', () => {
                 test('should evaluate hook after launching browser with correct args', async () => {
-                    const myAsyncHook = () => Promise.resolve({});
+                    const myAsyncHook = () => Promise.resolve<any>({});
                     browserPool.postPageCreateHooks = [myAsyncHook];
                     jest.spyOn(browserPool, '_executeHooks');
 
@@ -311,7 +374,7 @@ describe('BrowserPool', () => {
 
             describe('prePageCloseHooks', () => {
                 test('should evaluate hook after launching browser with correct args', async () => {
-                    const myAsyncHook = () => Promise.resolve({});
+                    const myAsyncHook = () => Promise.resolve<any>({});
                     browserPool.prePageCloseHooks = [myAsyncHook];
                     jest.spyOn(browserPool, '_executeHooks');
 
@@ -325,7 +388,7 @@ describe('BrowserPool', () => {
 
             describe('postPageCloseHooks', () => {
                 test('should evaluate hook after launching browser with correct args', async () => {
-                    const myAsyncHook = () => Promise.resolve({});
+                    const myAsyncHook = () => Promise.resolve<any>({});
                     browserPool.postPageCloseHooks = [myAsyncHook];
                     jest.spyOn(browserPool, '_executeHooks');
 

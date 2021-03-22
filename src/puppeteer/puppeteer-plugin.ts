@@ -1,17 +1,19 @@
-import type { Browser, Page, ChromeArgOptions } from 'puppeteer';
+import type { Page, BrowserLaunchArgumentOptions, Browser } from 'puppeteer'; // eslint-disable-line import/no-duplicates
+import type * as Puppeteer from 'puppeteer'; // eslint-disable-line import/no-duplicates
 import BrowserPlugin from '../abstract-classes/browser-plugin';
 import PuppeteerController from './puppeteer-controller';
 import type { LaunchContextOptions } from '../launch-context';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
-export interface PuppeteerLaunchContext extends LaunchContextOptions<Browser, Page, ChromeArgOptions, never> {
+export interface PuppeteerLaunchContext extends LaunchContextOptions<typeof Puppeteer, Browser, Page, BrowserLaunchArgumentOptions, never> {
     anonymizedProxyUrl?: string;
 }
+
 /**
  * puppeteer
  */
-export default class PuppeteerPlugin extends BrowserPlugin<Browser, Page, ChromeArgOptions, never> {
+export default class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer, Browser, Page, BrowserLaunchArgumentOptions, never> {
     /**
      * @private
      */
@@ -27,7 +29,7 @@ export default class PuppeteerPlugin extends BrowserPlugin<Browser, Page, Chrome
             userDataDir: launchOptions?.userDataDir || userDataDir,
         };
 
-        const browser = await (this.library as any).launch(finalLaunchOptions);
+        const browser = await this.library.launch(finalLaunchOptions);
 
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
@@ -46,12 +48,9 @@ export default class PuppeteerPlugin extends BrowserPlugin<Browser, Page, Chrome
     }
 
     /**
-     *
-     * @param launchContext {object}
-     * @return {Promise<void>}
      * @private
      */
-    async _addProxyToLaunchOptions(launchContext: PuppeteerLaunchContext) {
+    async _addProxyToLaunchOptions(launchContext: PuppeteerLaunchContext): Promise<void> {
         const { launchOptions, proxyUrl } = launchContext;
         let finalProxyUrl = proxyUrl;
 

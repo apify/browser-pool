@@ -8,7 +8,7 @@ import BrowserPool, {
     BrowserPoolPrePageCloseHook,
     BrowserPoolPrePageCreateHook,
 } from './browser-pool';
-import BrowserPlugin, { BrowserPluginOptions, Browser } from './abstract-classes/browser-plugin';
+import BrowserPlugin, { BrowserPluginOptions, Launcher } from './abstract-classes/browser-plugin';
 import BrowserController, { BrowserControllerCookie } from './abstract-classes/browser-controller';
 import PuppeteerPlugin from './puppeteer/puppeteer-plugin';
 import PlaywrightPlugin, { PlaywrightLaunchContext } from './playwright/playwright-plugin';
@@ -36,7 +36,7 @@ import PlaywrightPlugin, { PlaywrightLaunchContext } from './playwright/playwrig
  * ```
  */
 export {
-    Browser,
+    Launcher,
     BrowserPool,
     BrowserPlugin,
     BrowserController,
