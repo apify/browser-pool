@@ -12,5 +12,11 @@
         "expect": false,
         "test": false,
         "jest": false
+    },
+    "parserOptions": {
+        "project": "./tsconfig.json"
+    },
+    "rules": {
+        "@typescript-eslint/no-non-null-assertion": 0
     }
 }

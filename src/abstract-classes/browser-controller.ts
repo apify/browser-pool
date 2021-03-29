@@ -1,10 +1,51 @@
-const EventEmitter = require('events');
-const { nanoid } = require('nanoid');
-const log = require('../logger');
-const { throwImplementationNeeded } = require('./utils');
+import { EventEmitter } from 'events';
+import { nanoid } from 'nanoid';
+import type { Protocol } from 'puppeteer';
+import log from '../logger';
+import { throwImplementationNeeded } from './utils';
+import type BrowserPlugin from './browser-plugin'; // eslint-disable-line import/no-duplicates
+import type { Launcher } from './browser-plugin'; // eslint-disable-line import/no-duplicates
+import type LaunchContext from '../launch-context';
+
 const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events');
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
+
+/**
+ * Common interface for browser cookies
+ */
+export interface BrowserControllerCookie {
+    name: string;
+    value: string;
+    /**
+     * either url or domain / path are required. Optional.
+     */
+    url?: string;
+    /**
+     * either url or domain / path are required Optional.
+     */
+    domain?: string;
+    /**
+     * either url or domain / path are required Optional.
+     */
+    path?: string;
+    /**
+     * Unix time in seconds. Optional.
+     */
+    expires?: number;
+    /**
+     * Optional.
+     */
+    httpOnly?: boolean;
+    /**
+     * Optional.
+     */
+    secure?: boolean;
+    /**
+     * Optional.
+     */
+    sameSite?: Protocol.Network.CookieSameSite;
+}
 
 /**
  * The `BrowserController` serves two purposes. First, it is the base class that
@@ -12,26 +53,57 @@ const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
  * extend. Second, it defines the public interface of the specialized classes
  * which provide only private methods. Therefore, we do not keep documentation
  * for the specialized classes, because it's the same for all of them.
- * @property {string} id
- * @property {BrowserPlugin} browserPlugin
- *  The `BrowserPlugin` instance used to launch the browser.
- * @property {Browser} browser
- *  Browser representation of the underlying automation library.
- * @property {LaunchContext} launchContext
- *  The configuration the browser was launched with.
  * @hideconstructor
  */
-class BrowserController extends EventEmitter {
+export default class BrowserController<
+    BrowserLauncher extends Launcher,
+    BrowserLibrary,
+    Page extends object,
+    LaunchOptions extends Record<string, any>,
+    PageOptions extends Record<string, any>,
+> extends EventEmitter {
+    id: string;
+
     /**
-     * @param {BrowserPlugin} browserPlugin
+     * The `BrowserPlugin` instance used to launch the browser.
      */
-    constructor(browserPlugin) {
+    browserPlugin: BrowserPlugin<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>
+
+    /**
+     * Browser representation of the underlying automation library.
+     */
+    browser: BrowserLibrary;
+
+    /**
+     * The configuration the browser was launched with.
+     */
+    launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>;
+
+    isActive: boolean;
+
+    supportsPageOptions: boolean;
+
+    isActivePromise: Promise<void>;
+
+    hasBrowserPromise: Promise<void>;
+
+    protected _activate!: () => void;
+
+    protected commitBrowser!: () => void;
+
+    activePages: number;
+
+    totalPages: number;
+
+    lastPageOpenedAt: number;
+
+    constructor(browserPlugin: BrowserPlugin<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>) {
         super();
 
         this.id = nanoid();
         this.browserPlugin = browserPlugin;
-        this.browser = undefined;
-        this.launchContext = undefined;
+        this.browser = undefined as any;
+        this.launchContext = undefined as any;
         this.isActive = false;
         this.supportsPageOptions = false;
 
@@ -53,7 +125,7 @@ class BrowserController extends EventEmitter {
      * activate is called.
      * @ignore
      */
-    activate() {
+    activate(): void {
         if (!this.browser) {
             throw new Error('Cannot activate BrowserController without an assigned browser.');
         }
@@ -62,11 +134,12 @@ class BrowserController extends EventEmitter {
     }
 
     /**
-     * @param {Browser} browser
-     * @param {LaunchContext} launchContext
      * @ignore
      */
-    assignBrowser(browser, launchContext) {
+    assignBrowser(
+        browser: BrowserLibrary,
+        launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> = {} as any,
+    ): void {
         if (this.browser) {
             throw new Error('BrowserController already has a browser instance assigned.');
         }
@@ -80,9 +153,8 @@ class BrowserController extends EventEmitter {
      * there will be no lingering browser processes.
      *
      * Emits 'browserClosed' event.
-     * @return {Promise<void>}
      */
-    async close() {
+    async close(): Promise<void> {
         await this.hasBrowserPromise;
         await this._close()
             .then(() => { this.isActive = false; })
@@ -101,9 +173,8 @@ class BrowserController extends EventEmitter {
      * Immediately kills the browser process.
      *
      * Emits 'browserClosed' event.
-     * @return {Promise<void>}
      */
-    async kill() {
+    async kill(): Promise<void> {
         await this.hasBrowserPromise;
         await this._kill();
         this.emit(BROWSER_CLOSED, this);
@@ -111,11 +182,10 @@ class BrowserController extends EventEmitter {
 
     /**
      * Opens new browser page.
-     * @param {object} pageOptions
-     * @return {Promise<Page>}
+     *
      * @ignore
      */
-    async newPage(pageOptions) {
+    async newPage(pageOptions: PageOptions = {} as PageOptions): Promise<Page> {
         this.activePages++;
         this.totalPages++;
         await this.isActivePromise;
@@ -125,66 +195,49 @@ class BrowserController extends EventEmitter {
     }
 
     /**
-     * @param page {Object}
-     * @param cookies {Array<object>}
-     * @return {Promise<void>}
      */
-    async setCookies(page, cookies) {
+    async setCookies(page: Page, cookies: BrowserControllerCookie[]): Promise<void> {
         return this._setCookies(page, cookies);
     }
 
     /**
-     *
-     * @param page {Object}
-     * @return {Promise<Array<object>>}
      */
-    async getCookies(page) {
+    async getCookies(page: Page): Promise<BrowserControllerCookie[]> {
         return this._getCookies(page);
     }
 
     /**
-     * @return {Promise<void>}
-     * @private
+     * @protected
      */
-    async _close() {
+    async _close(): Promise<void> {
         throwImplementationNeeded('_close');
     }
 
     /**
-     * @return {Promise<void>}
-     * @private
+     * @protected
      */
-    async _kill() {
+    async _kill(): Promise<void> {
         throwImplementationNeeded('_kill');
     }
 
     /**
-     * @param {object} pageOptions
-     * @return {Promise<Page>}
-     * @private
+     * @protected
      */
-    async _newPage(pageOptions) { // eslint-disable-line no-unused-vars
+    async _newPage(_pageOptions?: PageOptions): Promise<Page> { // eslint-disable-line @typescript-eslint/no-unused-vars
         throwImplementationNeeded('_newPage');
     }
 
     /**
-     * @param {Page} page
-     * @param {object[]} cookies
-     * @return {Promise<void>}
-     * @private
+     * @protected
      */
-    async _setCookies(page, cookies) { // eslint-disable-line no-unused-vars
+    async _setCookies(_page: Page, _cookies: BrowserControllerCookie[]): Promise<void> { // eslint-disable-line @typescript-eslint/no-unused-vars
         throwImplementationNeeded('_setCookies');
     }
 
     /**
-     * @param {Page} page
-     * @return {Promise<Array<object>>}
-     * @private
+     * @protected
      */
-    async _getCookies(page) { // eslint-disable-line no-unused-vars
+    async _getCookies(_page: Page): Promise<BrowserControllerCookie[]> { // eslint-disable-line @typescript-eslint/no-unused-vars
         throwImplementationNeeded('_getCookies');
     }
 }
-
-module.exports = BrowserController;

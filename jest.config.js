@@ -6,4 +6,10 @@ module.exports = {
     rootDir: path.join(__dirname, './'),
     testTimeout: 20000,
     testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)'],
+    preset: 'ts-jest',
+    globals: {
+        'ts-jest': {
+            tsconfig: '<rootDir>/test/tsconfig.json',
+        },
+    },
 };
