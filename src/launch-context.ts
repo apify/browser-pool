@@ -67,7 +67,7 @@ export default class LaunchContext<
 
     anonymizedProxyUrl?: string;
 
-    constructor(options: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>) {
+    constructor(options: LaunchContextOptions<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> = {}) {
         const {
             id = nanoid(),
             browserPlugin,

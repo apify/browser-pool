@@ -87,9 +87,9 @@ export default class BrowserController<
 
     hasBrowserPromise: Promise<void>;
 
-    protected _activate!: () => any;
+    protected _activate!: () => void;
 
-    protected commitBrowser!: () => any;
+    protected commitBrowser!: () => void;
 
     activePages: number;
 
@@ -138,7 +138,7 @@ export default class BrowserController<
      */
     assignBrowser(
         browser: BrowserLibrary,
-        launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>,
+        launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions> = {} as any,
     ): void {
         if (this.browser) {
             throw new Error('BrowserController already has a browser instance assigned.');
@@ -185,7 +185,7 @@ export default class BrowserController<
      *
      * @ignore
      */
-    async newPage(pageOptions?: PageOptions): Promise<Page> {
+    async newPage(pageOptions: PageOptions = {} as PageOptions): Promise<Page> {
         this.activePages++;
         this.totalPages++;
         await this.isActivePromise;

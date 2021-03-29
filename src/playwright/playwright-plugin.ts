@@ -6,7 +6,7 @@ import Browser from './browser';
 
 const noop = require('lodash.noop');
 
-export interface PlaywrightLaunchContext<T extends BrowserType<any>> extends LaunchContextOptions<T, Browser & PlaywrightBrowser, Page, LaunchOptions, PlaywrightControllerPageOptions> {
+export interface PlaywrightLaunchContext<T extends BrowserType<unknown>> extends LaunchContextOptions<T, Browser & PlaywrightBrowser, Page, LaunchOptions, PlaywrightControllerPageOptions> {
     anonymizedProxyUrl?: string;
 }
 

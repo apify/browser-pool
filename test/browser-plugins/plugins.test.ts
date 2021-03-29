@@ -92,7 +92,7 @@ const runPluginTest = <A extends typeof BrowserPlugin, B extends typeof BrowserC
                 useIncognitoPages: true,
             });
             jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-            const context = await plugin.createLaunchContext();
+            const context = plugin.createLaunchContext();
             expect(context.proxyUrl).toEqual(proxyUrl);
             expect(context.useIncognitoPages).toBeTruthy();
             expect(context.userDataDir).toEqual('test');
@@ -132,7 +132,7 @@ describe('Plugins', () => {
             const proxyUrl = 'http://10.10.10.0:8080';
             const plugin = new PuppeteerPlugin(puppeteer as any);
             jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-            const context = await plugin.createLaunchContext({ proxyUrl });
+            const context = plugin.createLaunchContext({ proxyUrl });
 
             browser = await plugin.launch(context) as any;
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
@@ -216,7 +216,7 @@ describe('Plugins', () => {
                 const proxyUrl = 'http://10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-                const context = await plugin.createLaunchContext({ proxyUrl });
+                const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
                 expect(context?.launchOptions?.proxy?.server).toEqual(proxyUrl);
@@ -227,7 +227,7 @@ describe('Plugins', () => {
                 const proxyUrl = 'http://apify1234:password@10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-                const context = await plugin.createLaunchContext({ proxyUrl });
+                const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
                 expect(context?.launchOptions?.proxy?.server).toEqual(context.anonymizedProxyUrl);
@@ -262,7 +262,7 @@ describe('Plugins', () => {
                 browserController.activate();
 
                 const page = await browserController.newPage();
-                const context = await page.context();
+                const context = page.context();
                 await browserController.newPage();
 
                 expect(context.pages()).toHaveLength(3); // 3 pages because of the about:blank.

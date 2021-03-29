@@ -1,17 +1,18 @@
 {
     "extends": [
-        "@apify",
-        "eslint:recommended",
-        "plugin:@typescript-eslint/recommended"
+        "@apify/ts"
     ],
     "root": true,
-    "parser": "@typescript-eslint/parser",
-    "plugins": [
-        "@typescript-eslint"
-    ],
+    "env": {
+        "node": true
+    },
+    "parserOptions": {
+        "project": "./tsconfig.eslint.json"
+    },
     "rules": {
         "max-len": 0,
         "import/extensions": 0,
+        "@typescript-eslint/await-thenable": 1,
         "@typescript-eslint/ban-types": 0,
         "@typescript-eslint/no-explicit-any": 0,
         "@typescript-eslint/no-var-requires": 0,

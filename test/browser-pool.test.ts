@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 import BrowserPool, { BrowserPoolPrePageCreateHook } from '../src/browser-pool';
@@ -37,7 +36,7 @@ describe('BrowserPool', () => {
         test('should retire browsers', async () => {
             await browserPool.newPage();
 
-            await browserPool.retireAllBrowsers();
+            browserPool.retireAllBrowsers();
             expect(browserPool.activeBrowserControllers.size).toBe(0);
             expect(browserPool.retiredBrowserControllers.size).toBe(1);
         });
@@ -238,7 +237,10 @@ describe('BrowserPool', () => {
                 for (let i = 0; i < hooks.length; i++) {
                     hooks[i] = createAsyncHookReturningIndex(i);
                 }
-            await browserPool._executeHooks(hooks); // eslint-disable-line
+
+                // eslint-disable-next-line no-underscore-dangle
+                await browserPool._executeHooks(hooks);
+
                 expect(indexArray).toHaveLength(10);
                 indexArray.forEach((v, index) => expect(v).toEqual(index));
             });
@@ -250,7 +252,7 @@ describe('BrowserPool', () => {
                     jest.spyOn(browserPool, '_executeHooks');
 
                     const page = await browserPool.newPage();
-                    const pageId = await browserPool.getPageId(page);
+                    const pageId = browserPool.getPageId(page);
                     const { launchContext } = browserPool.getBrowserControllerByPage(page)!;
                     expect(browserPool._executeHooks).toHaveBeenNthCalledWith(1, browserPool.preLaunchHooks, pageId, launchContext); // eslint-disable-line
                 });

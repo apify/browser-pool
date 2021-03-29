@@ -52,33 +52,33 @@ export interface BrowserPoolNewPageOptions<BrowserLauncher extends Launcher, Bro
 
 // extract the types here so it's easier to assign them to the code as a consumer
 
-export type BrowserPoolPreLaunchHook<BrowserLauncher extends Launcher = any, BrowserLibrary = any, Page extends object = any, LaunchOptions = any, PageOptions = any> = (
+export type BrowserPoolPreLaunchHook<BrowserLauncher extends Launcher = never, BrowserLibrary = unknown, Page extends object = never, LaunchOptions = unknown, PageOptions = unknown> = (
     pageId: string,
     launchContext: LaunchContext<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>
 ) => Promise<void>;
 
-export type BrowserPoolPostLaunchHook<BrowserLauncher extends Launcher = any, BrowserLibrary = any, Page extends object = any, LaunchOptions = any, PageOptions = any> = (
+export type BrowserPoolPostLaunchHook<BrowserLauncher extends Launcher = never, BrowserLibrary = unknown, Page extends object = never, LaunchOptions = unknown, PageOptions = unknown> = (
     pageId: string,
     browserController: BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>
 ) => Promise<void>;
 
-export type BrowserPoolPrePageCreateHook<BrowserLauncher extends Launcher = any, BrowserLibrary = any, Page extends object = any, LaunchOptions = any, PageOptions = any> = (
+export type BrowserPoolPrePageCreateHook<BrowserLauncher extends Launcher = never, BrowserLibrary = unknown, Page extends object = never, LaunchOptions = unknown, PageOptions = unknown> = (
     pageId: string,
     browserController: BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>,
     pageOptions: PageOptions,
 ) => Promise<void>;
 
-export type BrowserPoolPostPageCreateHook<BrowserLauncher extends Launcher = any, BrowserLibrary = any, Page extends object = any, LaunchOptions = any, PageOptions = any> = (
+export type BrowserPoolPostPageCreateHook<BrowserLauncher extends Launcher = never, BrowserLibrary = unknown, Page extends object = never, LaunchOptions = unknown, PageOptions = unknown> = (
     page: Page,
     browserController: BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>,
 ) => Promise<void>;
 
-export type BrowserPoolPrePageCloseHook<BrowserLauncher extends Launcher = any, BrowserLibrary = any, Page extends object = any, LaunchOptions = any, PageOptions = any> = (
+export type BrowserPoolPrePageCloseHook<BrowserLauncher extends Launcher = never, BrowserLibrary = unknown, Page extends object = never, LaunchOptions = unknown, PageOptions = unknown> = (
     page: Page,
     browserController: BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>,
 ) => Promise<void>;
 
-export type BrowserPoolPostPageCloseHook<BrowserLauncher extends Launcher = any, BrowserLibrary = any, Page extends object = any, LaunchOptions = any, PageOptions = any> = (
+export type BrowserPoolPostPageCloseHook<BrowserLauncher extends Launcher = never, BrowserLibrary = unknown, Page extends object = never, LaunchOptions = unknown, PageOptions = unknown> = (
     pageId: string,
     browserController: BrowserController<BrowserLauncher, BrowserLibrary, Page, LaunchOptions, PageOptions>,
 ) => Promise<void>;
@@ -388,7 +388,7 @@ export default class BrowserPool<
      * const [chromiumPage, firefoxPage, webkitPage, puppeteerPage] = pages;
      * ```
      */
-    async newPageWithEachPlugin(optionsList: any[] = []): Promise<Page[]> {
+    async newPageWithEachPlugin(optionsList: Record<string, any>[] = []): Promise<Page[]> {
         const pagePromises = this.browserPlugins.map((browserPlugin, idx) => {
             const userOptions = optionsList[idx] || {};
 

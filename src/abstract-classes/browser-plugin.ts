@@ -15,7 +15,7 @@ const proxyChain = require('proxy-chain');
  * or fork of the library. It also keeps `browser-pool` installation small.
  */
 export interface Launcher {
-    launch(object: any): any;
+    launch(object: unknown): unknown;
     name?: () => string;
 }
 
@@ -182,7 +182,7 @@ export default class BrowserPlugin<
      *  Anonymized proxy URL of a running proxy server.
      * @private
      */
-    async _closeAnonymizedProxy(proxyUrl: string): Promise<any> {
+    async _closeAnonymizedProxy(proxyUrl: string): Promise<unknown> {
         return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch((err: Error) => {
             log.debug(`Could not close anonymized proxy server.\nCause:${err.message}`);
         });
