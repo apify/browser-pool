@@ -13,6 +13,14 @@
       "rules": {
         "import/extensions": 0
       }
+    },
+    {
+      "files": [
+        "test/**/*.js"
+      ],
+      "env": {
+        "jest": true
+      }
     }
   ]
 }
