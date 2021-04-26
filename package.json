@@ -2,37 +2,69 @@
 	"name": "browser-pool",
 	"version": "1.1.2",
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
-	"main": "src/index.js",
-	"dependencies": {
-		"apify-shared": "^0.6.0",
-		"fs-extra": "^9.1.0",
-		"lodash": "^4.17.20",
-		"nanoid": "^3.1.16",
-		"ow": "^0.23.0",
-		"proxy-chain": "^1.0.0"
-	},
-	"devDependencies": {
-		"@apify/eslint-config": "^0.1.0",
-		"@types/jest": "^26.0.16",
-		"eslint": "^7.10.0",
-		"jest": "^26.6.3",
-		"jsdoc-to-markdown": "^6.0.1",
-		"markdown-toc": "^1.2.0",
-		"playwright": "^1.9.1",
-		"puppeteer": "^8.0.0"
-	},
-	"scripts": {
-		"build-docs": "npm run build-toc && node docs/build_docs.js",
-		"build-toc": "markdown-toc docs/README.md -i",
-		"start": "node src/main.js",
-		"lint": "./node_modules/.bin/eslint ./src --ext .js,.jsx",
-		"lint:fix": "./node_modules/.bin/eslint ./src --ext .js,.jsx --fix",
-		"test": "jest --maxWorkers=3 --forceExit"
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.js"
+		}
 	},
 	"author": {
 		"name": "Apify",
 		"email": "support@apify.com",
 		"url": "https://apify.com"
 	},
-	"license": "Apache-2.0"
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/apify/browser-pool-js"
+	},
+	"bugs": {
+		"url": "https://github.com/apify/browser-pool/issues"
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -b src",
+		"postbuild": "gen-esm-wrapper dist/index.js dist/index.mjs",
+		"prepublishOnly": "npm run build",
+		"clean": "tsc -b src --clean",
+		"test": "jest",
+		"lint": "eslint src test --ext js,jsx,mjs,ts",
+		"lint:fix": "eslint src test --ext js,jsx,mjs,ts --fix",
+		"build:watch": "tsc -b src -w",
+		"build-docs": "npm run build-toc && node docs/build_docs.js",
+		"build-toc": "markdown-toc docs/README.md -i"
+	},
+	"dependencies": {
+		"apify-shared": "^0.7.6",
+		"fs-extra": "^9.1.0",
+		"lodash": "^4.17.21",
+		"nanoid": "^3.1.22",
+		"ow": "^0.23.0",
+		"proxy-chain": "^1.0.2",
+		"tslib": "^2.2.0"
+	},
+	"devDependencies": {
+		"@apify/eslint-config-ts": "^0.1.1",
+		"@types/fs-extra": "^9.0.11",
+		"@types/jest": "^26.0.22",
+		"@types/node": "^14.14.41",
+		"@typescript-eslint/eslint-plugin": "^4.22.0",
+		"@typescript-eslint/parser": "^4.22.0",
+		"eslint": "^7.25.0",
+		"gen-esm-wrapper": "^1.1.1",
+		"jest": "^26.6.3",
+		"jest-circus": "^26.6.3",
+		"jsdoc-to-markdown": "^7.0.1",
+		"markdown-toc": "^1.2.0",
+		"playwright": "^1.10.0",
+		"puppeteer": "^9.0.0",
+		"ts-jest": "^26.5.5",
+		"ts-node": "^9.1.1",
+		"typescript": "^4.2.4"
+	}
 }

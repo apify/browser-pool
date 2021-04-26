@@ -1,0 +1,23 @@
+import { join } from 'path';
+import type { Config } from '@jest/types';
+
+export default async (): Promise<Config.InitialOptions> => ({
+    verbose: true,
+    testMatch: [join(__dirname, '**/test/?(*.)+(spec|test).[tj]s?(x)')],
+    preset: 'ts-jest',
+    testEnvironment: 'node',
+    testRunner: 'jest-circus/runner',
+    testTimeout: 20_000,
+    collectCoverage: true,
+    collectCoverageFrom: [
+        '**/src/**/*.ts',
+        '**/src/**/*.js',
+        '!**/node_modules/**',
+    ],
+    maxWorkers: 3,
+    globals: {
+        'ts-jest': {
+            tsconfig: '<rootDir>/test/tsconfig.json',
+        },
+    },
+});
