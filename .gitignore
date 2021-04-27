@@ -16,3 +16,4 @@ package-lock.json
 tmp
 jsconfig.json
 test/userdir
+dist/
