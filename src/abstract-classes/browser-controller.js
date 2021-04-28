@@ -1,6 +1,6 @@
 const EventEmitter = require('events');
 const { nanoid } = require('nanoid');
-const log = require('../logger');
+const { log } = require('../logger');
 const { throwImplementationNeeded } = require('./utils');
 const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events');
 

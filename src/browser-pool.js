@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 const ow = require('ow').default;
 const { nanoid } = require('nanoid');
-const log = require('./logger');
+const { log } = require('./logger');
 const { addTimeoutToPromise } = require('./utils');
 
 const {
