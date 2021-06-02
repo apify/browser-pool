@@ -40,7 +40,7 @@
 		"build-toc": "markdown-toc docs/README.md -i"
 	},
 	"dependencies": {
-		"apify-shared": "^0.7.6",
+		"@apify/log": "^1.0.0",
 		"fs-extra": "^9.1.0",
 		"lodash": "^4.17.21",
 		"nanoid": "^3.1.22",
