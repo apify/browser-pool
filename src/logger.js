@@ -1,4 +1,4 @@
-const defaultLog = require('apify-shared/log');
+const { default: defaultLog } = require('@apify/log');
 
 const log = defaultLog.child({
     prefix: 'BrowserPool',

@@ -5,7 +5,7 @@ const fs = require('fs');
 const PuppeteerPlugin = require('../../src/puppeteer/puppeteer-plugin');
 const PuppeteerController = require('../../src/puppeteer/puppeteer-controller');
 
-const PlaywrightPlugin = require('../../src/playwright/playwright-plugin.js');
+const PlaywrightPlugin = require('../../src/playwright/playwright-plugin');
 const PlaywrightController = require('../../src/playwright/playwright-controller');
 const Browser = require('../../src/playwright/browser');
 const LaunchContext = require('../../src/launch-context');
