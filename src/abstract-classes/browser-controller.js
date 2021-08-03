@@ -1,8 +1,8 @@
 const EventEmitter = require('events');
 const { nanoid } = require('nanoid');
-const log = require('../logger');
-const { throwImplementationNeeded } = require('./utils');
-const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events');
+const { log } = require('../logger'); // eslint-disable-line import/extensions
+const { throwImplementationNeeded } = require('./utils'); // eslint-disable-line import/extensions
+const { BROWSER_CONTROLLER_EVENTS: { BROWSER_CLOSED } } = require('../events'); // eslint-disable-line import/extensions
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 

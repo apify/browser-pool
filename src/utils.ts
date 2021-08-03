@@ -1,4 +1,4 @@
-const addTimeoutToPromise = (promise, timeoutMillis, errorMessage) => {
+export function addTimeoutToPromise<T>(promise: Promise<T>, timeoutMillis: number, errorMessage: string): Promise<T> {
     return new Promise(async (resolve, reject) => { // eslint-disable-line
         const timeout = setTimeout(() => reject(new Error(errorMessage)), timeoutMillis);
         try {
@@ -10,8 +10,4 @@ const addTimeoutToPromise = (promise, timeoutMillis, errorMessage) => {
             clearTimeout(timeout);
         }
     });
-};
-
-module.exports = {
-    addTimeoutToPromise,
 };
