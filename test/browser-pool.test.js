@@ -10,7 +10,7 @@ const {
         PAGE_CREATED,
         PAGE_CLOSED,
     },
-} = require('../src/events');
+} = require('../src/events'); // eslint-disable-line import/extensions
 
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {

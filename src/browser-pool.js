@@ -1,8 +1,8 @@
 const EventEmitter = require('events');
 const ow = require('ow').default;
 const { nanoid } = require('nanoid');
-const { log } = require('./logger');
-const { addTimeoutToPromise } = require('./utils');
+const { log } = require('./logger'); // eslint-disable-line import/extensions
+const { addTimeoutToPromise } = require('./utils'); // eslint-disable-line import/extensions
 
 const {
     BROWSER_POOL_EVENTS: {
@@ -11,7 +11,7 @@ const {
         PAGE_CREATED,
         PAGE_CLOSED,
     },
-} = require('./events');
+} = require('./events'); // eslint-disable-line import/extensions
 
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;

@@ -2,8 +2,8 @@ const fs = require('fs-extra');
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
 const LaunchContext = require('../launch-context');
-const { log } = require('../logger');
-const { throwImplementationNeeded } = require('./utils');
+const { log } = require('../logger'); // eslint-disable-line import/extensions
+const { throwImplementationNeeded } = require('./utils'); // eslint-disable-line import/extensions
 
 /**
  * The `BrowserPlugin` serves two purposes. First, it is the base class that
