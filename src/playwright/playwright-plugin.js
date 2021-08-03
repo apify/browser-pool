@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const BrowserPlugin = require('../abstract-classes/browser-plugin');
+const { BrowserPlugin } = require('../abstract-classes/browser-plugin');
 const PlaywrightController = require('./playwright-controller');
 const Browser = require('./browser');
 
