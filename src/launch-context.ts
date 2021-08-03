@@ -10,7 +10,7 @@ import type BrowserPlugin from './abstract-classes/browser-plugin';
  * its `extend` function. This is very useful to keep track of browser-scoped
  * values, such as session IDs.
  */
-export interface LaunchContextOptions {
+export interface LaunchContextOptions<LibraryOptions> {
     /**
      * To make identification of `LaunchContext` easier, `BrowserPool` assigns
      * the `LaunchContext` an `id` that's equal to the `id` of the page that
@@ -26,7 +26,7 @@ export interface LaunchContextOptions {
      * The actual options the browser was launched with, after changes.
      * Those changes would be typically made in pre-launch hooks.
      */
-    launchOptions: Record<PropertyKey, unknown>;
+    launchOptions: LibraryOptions;
     /**
      * By default pages share the same browser context.
      * If set to `true` each page uses its own context that is destroyed once the page is closed or crashes.
@@ -39,12 +39,12 @@ export interface LaunchContextOptions {
     proxyUrl?: string;
 }
 
-export class LaunchContext {
+export class LaunchContext<LibraryOptions> {
     id?: string;
 
     browserPlugin: BrowserPlugin;
 
-    launchOptions: Record<PropertyKey, unknown>;
+    launchOptions: LibraryOptions;
 
     useIncognitoPages: boolean;
 
@@ -54,7 +54,7 @@ export class LaunchContext {
 
     private readonly _reservedFieldNames = [...Reflect.ownKeys(this), 'extend'];
 
-    constructor(options: LaunchContextOptions) {
+    constructor(options: LaunchContextOptions<LibraryOptions>) {
         const {
             id,
             browserPlugin,
