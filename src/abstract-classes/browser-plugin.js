@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const _ = require('lodash');
 const proxyChain = require('proxy-chain');
-const LaunchContext = require('../launch-context');
+const { LaunchContext } = require('../launch-context'); // eslint-disable-line import/extensions
 const { log } = require('../logger'); // eslint-disable-line import/extensions
 const { throwImplementationNeeded } = require('./utils'); // eslint-disable-line import/extensions
 
