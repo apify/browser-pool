@@ -1,4 +1,4 @@
-const BrowserController = require('../abstract-classes/browser-controller');
+const { BrowserController } = require('../abstract-classes/browser-controller'); // eslint-disable-line import/extensions
 
 /**
  * playwright
