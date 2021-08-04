@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-const BrowserController = require('../abstract-classes/browser-controller');
+const { BrowserController } = require('../abstract-classes/browser-controller'); // eslint-disable-line import/extensions
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 

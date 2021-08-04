@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { nanoid } from 'nanoid';
-import type { BrowserPlugin, CommonLibrary } from './abstract-classes/browser-plugin';
+import type { BrowserPlugin, CommonBrowser, CommonLibrary } from './abstract-classes/browser-plugin';
 import { UnwrapPromise } from './utils';
 
 /**
@@ -14,7 +14,9 @@ import { UnwrapPromise } from './utils';
 export interface LaunchContextOptions<
     Library extends CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
-    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+    LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
+    NewPageOptions = Parameters<LaunchResult['newPage']>[0],
+    NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
 > {
     /**
      * To make identification of `LaunchContext` easier, `BrowserPool` assigns
@@ -26,7 +28,7 @@ export interface LaunchContextOptions<
     /**
      * The `BrowserPlugin` instance used to launch the browser.
      */
-    browserPlugin: BrowserPlugin<Library, LibraryOptions, LaunchResult>;
+    browserPlugin: BrowserPlugin<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>;
     /**
      * The actual options the browser was launched with, after changes.
      * Those changes would be typically made in pre-launch hooks.
@@ -47,11 +49,13 @@ export interface LaunchContextOptions<
 export class LaunchContext<
     Library extends CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
-    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+    LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
+    NewPageOptions = Parameters<LaunchResult['newPage']>[0],
+    NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
 > {
     id?: string;
 
-    browserPlugin: BrowserPlugin<Library, LibraryOptions, LaunchResult>;
+    browserPlugin: BrowserPlugin<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>;
 
     launchOptions: LibraryOptions;
 
@@ -63,7 +67,7 @@ export class LaunchContext<
 
     private readonly _reservedFieldNames = [...Reflect.ownKeys(this), 'extend'];
 
-    constructor(options: LaunchContextOptions<Library, LibraryOptions, LaunchResult>) {
+    constructor(options: LaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>) {
         const {
             id,
             browserPlugin,
