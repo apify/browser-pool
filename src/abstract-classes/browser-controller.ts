@@ -204,7 +204,7 @@ export abstract class BrowserController<
      * Opens new browser page.
      * @ignore
      */
-    async newPage(pageOptions: NewPageOptions): Promise<NewPageResult> {
+    async newPage(pageOptions?: NewPageOptions): Promise<NewPageResult> {
         this.activePages++;
         this.totalPages++;
         await this.isActivePromise;
