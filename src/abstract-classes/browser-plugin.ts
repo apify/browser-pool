@@ -25,7 +25,14 @@ export interface CommonLibrary {
  * @internal
  */
 export interface CommonBrowser {
-    newPage(...args: unknown[]): unknown;
+    newPage(...args: unknown[]): CommonPage;
+}
+
+/**
+ * @internal
+ */
+export interface CommonPage {
+    close(...args: unknown[]): Promise<unknown>;
 }
 
 export interface BrowserPluginOptions<LibraryOptions> {
@@ -70,7 +77,7 @@ export type CreateLaunchContextOptions<
  * feed them to {@link BrowserPool} for use.
  */
 export abstract class BrowserPlugin<
-    Library extends CommonLibrary,
+    Library extends CommonLibrary = CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],

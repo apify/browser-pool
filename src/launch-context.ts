@@ -12,7 +12,7 @@ import { UnwrapPromise } from './utils';
  * values, such as session IDs.
  */
 export interface LaunchContextOptions<
-    Library extends CommonLibrary,
+    Library extends CommonLibrary = CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
@@ -47,7 +47,7 @@ export interface LaunchContextOptions<
 }
 
 export class LaunchContext<
-    Library extends CommonLibrary,
+    Library extends CommonLibrary = CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],

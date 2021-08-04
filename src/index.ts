@@ -1,9 +1,3 @@
-const BrowserPool = require('./browser-pool');
-// eslint-disable-next-line import/extensions
-const { PuppeteerPlugin } = require('./puppeteer/puppeteer-plugin');
-// eslint-disable-next-line import/extensions
-const { PlaywrightPlugin } = require('./playwright/playwright-plugin');
-
 /**
  * The `browser-pool` module exports three constructors. One for `BrowserPool`
  * itself and two for the included Puppeteer and Playwright plugins.
@@ -26,13 +20,8 @@ const { PlaywrightPlugin } = require('./playwright/playwright-plugin');
  * });
  * ```
  *
- * @property {BrowserPool} BrowserPool
- * @property {PuppeteerPlugin} PuppeteerPlugin
- * @property {PlaywrightPlugin} PlaywrightPlugin
  * @module browser-pool
  */
-module.exports = {
-    BrowserPool,
-    PuppeteerPlugin,
-    PlaywrightPlugin,
-};
+export * from './browser-pool';
+export * from './playwright/playwright-plugin';
+export * from './puppeteer/puppeteer-plugin';
