@@ -4,6 +4,7 @@ import { log } from '../logger';
 import { LaunchContext, LaunchContextOptions } from '../launch-context';
 import type BrowserController from './browser-controller';
 import { throwImplementationNeeded } from './utils';
+import { UnwrapPromise } from '../utils';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires -- TODO: Type this module, and convert import
 const proxyChain = require('proxy-chain');
@@ -47,8 +48,11 @@ export interface BrowserPluginOptions<LibraryOptions> {
     userDataDir?: string;
 };
 
-export type CreateLaunchContextOptions<Library extends CommonLibrary, LibraryOptions = Parameters<Library['launch']>[0]>
-    = Partial<Omit<LaunchContextOptions<Library, LibraryOptions>, 'browserPlugin'>>;
+export type CreateLaunchContextOptions<
+    Library extends CommonLibrary,
+    LibraryOptions = Parameters<Library['launch']>[0],
+    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+> = Partial<Omit<LaunchContextOptions<Library, LibraryOptions, LaunchResult>, 'browserPlugin'>>;
 
 /**
  * The `BrowserPlugin` serves two purposes. First, it is the base class that
@@ -56,7 +60,11 @@ export type CreateLaunchContextOptions<Library extends CommonLibrary, LibraryOpt
  * Second, it allows the user to configure the automation libraries and
  * feed them to {@link BrowserPool} for use.
  */
-export abstract class BrowserPlugin<Library extends CommonLibrary, LibraryOptions = Parameters<Library['launch']>[0]> {
+export abstract class BrowserPlugin<
+    Library extends CommonLibrary,
+    LibraryOptions = Parameters<Library['launch']>[0],
+    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+> {
     name = this.constructor.name;
 
     library: Library;
@@ -90,7 +98,9 @@ export abstract class BrowserPlugin<Library extends CommonLibrary, LibraryOption
      * it also includes internal properties used by `BrowserPool` for
      * management of the pool and extra features.
      */
-    createLaunchContext(options: CreateLaunchContextOptions<Library, LibraryOptions> = {}): LaunchContext<Library, LibraryOptions> {
+    createLaunchContext(
+        options: CreateLaunchContextOptions<Library, LibraryOptions, LaunchResult> = {},
+    ): LaunchContext<Library, LibraryOptions, LaunchResult> {
         const {
             id,
             launchOptions = {},
@@ -116,7 +126,7 @@ export abstract class BrowserPlugin<Library extends CommonLibrary, LibraryOption
     /**
      * Launches the browser using provided launch context.
      */
-    async launch(launchContext = this.createLaunchContext()): Promise<ReturnType<Library['launch']>> {
+    async launch(launchContext = this.createLaunchContext()): Promise<LaunchResult> {
         const { proxyUrl, useIncognitoPages, userDataDir } = launchContext;
 
         if (proxyUrl) {
@@ -144,7 +154,7 @@ export abstract class BrowserPlugin<Library extends CommonLibrary, LibraryOption
      */
     // @ts-expect-error Give runtime error as well as compile time
     // eslint-disable-next-line space-before-function-paren, @typescript-eslint/no-unused-vars
-    protected abstract _launch(launchContext: LaunchContext): Promise<ReturnType<Library['launch']>> {
+    protected abstract _launch(launchContext: LaunchContext): Promise<LaunchResult> {
         throwImplementationNeeded('_launch');
     }
 
