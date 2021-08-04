@@ -1,7 +1,7 @@
 import merge from 'lodash.merge';
 import { ensureDir } from 'fs-extra';
 import { log } from '../logger';
-import LaunchContext from '../launch-context';
+import { LaunchContext, LaunchContextOptions } from '../launch-context';
 import type BrowserController from './browser-controller';
 import { throwImplementationNeeded } from './utils';
 
@@ -47,6 +47,9 @@ export interface BrowserPluginOptions<LibraryOptions> {
     userDataDir?: string;
 };
 
+export type CreateLaunchContextOptions<Library extends CommonLibrary, LibraryOptions = Parameters<Library['launch']>[0]>
+    = Partial<Omit<LaunchContextOptions<Library, LibraryOptions>, 'browserPlugin'>>;
+
 /**
  * The `BrowserPlugin` serves two purposes. First, it is the base class that
  * specialized controllers like `PuppeteerPlugin` or `PlaywrightPlugin` extend.
@@ -86,18 +89,8 @@ export abstract class BrowserPlugin<Library extends CommonLibrary, LibraryOption
      * to launch a browser. Aside from library specific launch options,
      * it also includes internal properties used by `BrowserPool` for
      * management of the pool and extra features.
-     *
-     * @param {object} [options]
-     * @param {string} [options.id]
-     * @param {object} [options.launchOptions]
-     * @param {string} [options.proxyUrl]
-     * @property {boolean} [useIncognitoPages]
-     *  If set to false pages use share the same browser context.
-     *  If set to true each page uses its own context that is destroyed once the page is closed or crashes.
-     * @property {object} [userDataDir]
-     *  Path to a User Data Directory, which stores browser session data like cookies and local storage.
      */
-    createLaunchContext(options = {}): LaunchContext {
+    createLaunchContext(options: CreateLaunchContextOptions<Library, LibraryOptions> = {}): LaunchContext<Library, LibraryOptions> {
         const {
             id,
             launchOptions = {},
