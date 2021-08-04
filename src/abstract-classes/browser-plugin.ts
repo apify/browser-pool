@@ -2,7 +2,7 @@ import merge from 'lodash.merge';
 import { ensureDir } from 'fs-extra';
 import { log } from '../logger';
 import { LaunchContext, LaunchContextOptions } from '../launch-context';
-import type BrowserController from './browser-controller';
+import { BrowserController } from './browser-controller';
 import { throwImplementationNeeded } from './utils';
 import { UnwrapPromise } from '../utils';
 
@@ -17,8 +17,15 @@ const proxyChain = require('proxy-chain');
  * or fork of the library. It also keeps `browser-pool` installation small.
  */
 export interface CommonLibrary {
-    launch(...args: unknown[]): unknown;
+    launch(...args: unknown[]): CommonBrowser;
     name?: () => string;
+}
+
+/**
+ * @internal
+ */
+export interface CommonBrowser {
+    newPage(...args: unknown[]): unknown;
 }
 
 export interface BrowserPluginOptions<LibraryOptions> {
@@ -51,8 +58,10 @@ export interface BrowserPluginOptions<LibraryOptions> {
 export type CreateLaunchContextOptions<
     Library extends CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
-    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
-> = Partial<Omit<LaunchContextOptions<Library, LibraryOptions, LaunchResult>, 'browserPlugin'>>;
+    LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
+    NewPageOptions = Parameters<LaunchResult['newPage']>[0],
+    NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
+> = Partial<Omit<LaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>, 'browserPlugin'>>;
 
 /**
  * The `BrowserPlugin` serves two purposes. First, it is the base class that
@@ -63,7 +72,9 @@ export type CreateLaunchContextOptions<
 export abstract class BrowserPlugin<
     Library extends CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
-    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+    LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
+    NewPageOptions = Parameters<LaunchResult['newPage']>[0],
+    NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
 > {
     name = this.constructor.name;
 
@@ -99,8 +110,8 @@ export abstract class BrowserPlugin<
      * management of the pool and extra features.
      */
     createLaunchContext(
-        options: CreateLaunchContextOptions<Library, LibraryOptions, LaunchResult> = {},
-    ): LaunchContext<Library, LibraryOptions, LaunchResult> {
+        options: CreateLaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = {},
+    ): LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> {
         const {
             id,
             launchOptions = {},
@@ -119,7 +130,7 @@ export abstract class BrowserPlugin<
         });
     }
 
-    createController(): BrowserController {
+    createController(): BrowserController<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> {
         return this._createController();
     }
 
@@ -163,7 +174,7 @@ export abstract class BrowserPlugin<
      */
     // @ts-expect-error Give runtime error as well as compile time
     // eslint-disable-next-line space-before-function-paren
-    protected abstract _createController(): BrowserController {
+    protected abstract _createController(): BrowserController<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> {
         throwImplementationNeeded('_createController');
     }
 

@@ -5,8 +5,8 @@ export const BROWSER_POOL_EVENTS = {
 
     PAGE_CREATED: 'pageCreated',
     PAGE_CLOSED: 'pageClosed',
-};
+} as const;
 
 export const BROWSER_CONTROLLER_EVENTS = {
     BROWSER_CLOSED: 'browserClosed',
-};
+} as const;
