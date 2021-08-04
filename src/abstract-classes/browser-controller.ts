@@ -103,12 +103,12 @@ export abstract class BrowserController<
     /**
      * Browser representation of the underlying automation library.
      */
-    browser?: LaunchResult = undefined;
+    browser: LaunchResult = undefined!;
 
     /**
      * The configuration the browser was launched with.
      */
-    launchContext?: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = undefined;
+    launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = undefined!;
 
     isActive = false;
 

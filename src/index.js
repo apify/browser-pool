@@ -1,5 +1,6 @@
 const BrowserPool = require('./browser-pool');
-const PuppeteerPlugin = require('./puppeteer/puppeteer-plugin');
+// eslint-disable-next-line import/extensions
+const { PuppeteerPlugin } = require('./puppeteer/puppeteer-plugin');
 const PlaywrightPlugin = require('./playwright/playwright-plugin');
 
 /**
