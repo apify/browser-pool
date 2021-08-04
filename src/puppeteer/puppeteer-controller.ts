@@ -7,7 +7,7 @@ const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
     protected async _newPage(): Promise<Puppeteer.Page> {
-        const { useIncognitoPages } = this.launchContext!;
+        const { useIncognitoPages } = this.launchContext;
         let page: Puppeteer.Page;
         let context: Puppeteer.BrowserContext;
 

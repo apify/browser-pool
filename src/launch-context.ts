@@ -67,7 +67,8 @@ export class LaunchContext<
 
     private readonly _reservedFieldNames = [...Reflect.ownKeys(this), 'extend'];
 
-    [K: PropertyKey]: unknown;
+    // TODO: change this to PropertyKey
+    [K: string]: unknown;
 
     constructor(options: LaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>) {
         const {
