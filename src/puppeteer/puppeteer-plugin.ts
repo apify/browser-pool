@@ -6,16 +6,11 @@ import { PuppeteerController } from './puppeteer-controller';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
-// Shortcut since Puppeteer doesn't export this as one type
-export type PuppeteerLaunchOptions = Parameters<typeof Puppeteer['launch']>[0]
-
 /**
  * Puppeteer
  */
 export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
-    protected async _launch(
-        launchContext: LaunchContext<typeof Puppeteer, PuppeteerLaunchOptions, Puppeteer.Browser, undefined, Puppeteer.Page>,
-    ): Promise<Puppeteer.Browser> {
+    protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Puppeteer.Browser> {
         const {
             launchOptions,
             anonymizedProxyUrl,
@@ -38,12 +33,12 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         return browser;
     }
 
-    protected _createController(): BrowserController<typeof Puppeteer, PuppeteerLaunchOptions, Puppeteer.Browser, undefined, Puppeteer.Page> {
+    protected _createController(): BrowserController<typeof Puppeteer> {
         return new PuppeteerController(this);
     }
 
     protected async _addProxyToLaunchOptions(
-        launchContext: LaunchContext<typeof Puppeteer, PuppeteerLaunchOptions, Puppeteer.Browser, undefined, Puppeteer.Page>,
+        launchContext: LaunchContext<typeof Puppeteer>,
     ): Promise<void> {
         launchContext.launchOptions ??= {};
 
