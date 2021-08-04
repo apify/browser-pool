@@ -17,7 +17,7 @@ const proxyChain = require('proxy-chain');
  * or fork of the library. It also keeps `browser-pool` installation small.
  */
 export interface CommonLibrary {
-    launch(...args: unknown[]): CommonBrowser;
+    launch(...args: unknown[]): Promise<CommonBrowser>;
     name?: () => string;
 }
 
