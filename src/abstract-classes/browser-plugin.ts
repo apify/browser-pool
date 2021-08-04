@@ -134,7 +134,7 @@ export abstract class BrowserPlugin<
         }
 
         if (!useIncognitoPages) {
-            await this._ensureDir(userDataDir);
+            await ensureDir(userDataDir);
         }
 
         return this._launch(launchContext);
@@ -205,9 +205,5 @@ export abstract class BrowserPlugin<
         }
 
         return false;
-    }
-
-    private async _ensureDir(dir: string) {
-        return ensureDir(dir);
     }
 }
