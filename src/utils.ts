@@ -11,3 +11,5 @@ export function addTimeoutToPromise<T>(promise: Promise<T>, timeoutMillis: numbe
         }
     });
 };
+
+export type UnwrapPromise<T> = T extends PromiseLike<infer R> ? UnwrapPromise<R> : T;

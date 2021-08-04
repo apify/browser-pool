@@ -1,4 +1,4 @@
-const BrowserPlugin = require('../abstract-classes/browser-plugin');
+const { BrowserPlugin } = require('../abstract-classes/browser-plugin'); // eslint-disable-line import/extensions
 const PuppeteerController = require('./puppeteer-controller');
 
 const PROXY_SERVER_ARG = '--proxy-server=';

@@ -1,7 +1,8 @@
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { nanoid } from 'nanoid';
-import type BrowserPlugin from './abstract-classes/browser-plugin';
+import type { BrowserPlugin, CommonLibrary } from './abstract-classes/browser-plugin';
+import { UnwrapPromise } from './utils';
 
 /**
  * `LaunchContext` holds information about the launched browser. It's useful
@@ -10,7 +11,11 @@ import type BrowserPlugin from './abstract-classes/browser-plugin';
  * its `extend` function. This is very useful to keep track of browser-scoped
  * values, such as session IDs.
  */
-export interface LaunchContextOptions<LibraryOptions> {
+export interface LaunchContextOptions<
+    Library extends CommonLibrary,
+    LibraryOptions = Parameters<Library['launch']>[0],
+    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+> {
     /**
      * To make identification of `LaunchContext` easier, `BrowserPool` assigns
      * the `LaunchContext` an `id` that's equal to the `id` of the page that
@@ -21,7 +26,7 @@ export interface LaunchContextOptions<LibraryOptions> {
     /**
      * The `BrowserPlugin` instance used to launch the browser.
      */
-    browserPlugin: BrowserPlugin;
+    browserPlugin: BrowserPlugin<Library, LibraryOptions, LaunchResult>;
     /**
      * The actual options the browser was launched with, after changes.
      * Those changes would be typically made in pre-launch hooks.
@@ -39,10 +44,14 @@ export interface LaunchContextOptions<LibraryOptions> {
     proxyUrl?: string;
 }
 
-export class LaunchContext<LibraryOptions> {
+export class LaunchContext<
+    Library extends CommonLibrary,
+    LibraryOptions = Parameters<Library['launch']>[0],
+    LaunchResult = UnwrapPromise<ReturnType<Library['launch']>>,
+> {
     id?: string;
 
-    browserPlugin: BrowserPlugin;
+    browserPlugin: BrowserPlugin<Library, LibraryOptions, LaunchResult>;
 
     launchOptions: LibraryOptions;
 
@@ -54,7 +63,7 @@ export class LaunchContext<LibraryOptions> {
 
     private readonly _reservedFieldNames = [...Reflect.ownKeys(this), 'extend'];
 
-    constructor(options: LaunchContextOptions<LibraryOptions>) {
+    constructor(options: LaunchContextOptions<Library, LibraryOptions, LaunchResult>) {
         const {
             id,
             browserPlugin,
