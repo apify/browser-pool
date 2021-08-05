@@ -5,6 +5,9 @@ import { noop } from '../utils';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
+/**
+ * Puppeteer
+ */
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
     protected async _newPage(): Promise<Puppeteer.Page> {
         const { useIncognitoPages } = this.launchContext;
