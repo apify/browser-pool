@@ -1,27 +1,32 @@
-const EventEmitter = require('events');
-/**
- * @typedef BrowserOptions
- * @param {import('playwright').BrowserContext} browserContext
- * @param {string} version
- *
-*/
+import { BrowserContext } from 'playwright';
+import { TypedEmitter } from 'tiny-typed-emitter';
+
+export interface BrowserOptions {
+    browserContext: BrowserContext;
+    version: string;
+}
+
+export interface BrowserEvents {
+    disconnected: () => void;
+}
 
 /**
  * Browser wrapper created to have consistent API with persistent and non-persistent contexts.
  */
-class Browser extends EventEmitter {
-    /**
-     *
-     * @param {BrowserOptions} options
-     */
-    constructor(options = {}) {
+export class Browser extends TypedEmitter<BrowserEvents> {
+    browserContext: BrowserContext;
+
+    private _version: string;
+
+    private _isConnected = true;
+
+    constructor(options: BrowserOptions) {
         super();
 
         const { browserContext, version } = options;
         this.browserContext = browserContext;
 
         this._version = version;
-        this._isConnected = true;
 
         this.browserContext.on('close', () => {
             this._isConnected = false;
@@ -32,15 +37,14 @@ class Browser extends EventEmitter {
     /**
      * Closes browser and all pages/contexts assigned to it.
      */
-    async close() {
+    async close(): Promise<void> {
         await this.browserContext.close();
     }
 
     /**
      * Returns an array of all open browser contexts. In a newly created browser, this will return zero browser contexts.
-     * @returns {Array<import('playwright').BrowserContext>}
      */
-    contexts() {
+    contexts(): BrowserContext[] {
         return [this.browserContext];
     }
 
@@ -48,8 +52,7 @@ class Browser extends EventEmitter {
      * Indicates that the browser is connected.
      * @returns {boolean}
      */
-
-    isConnected() {
+    isConnected(): boolean {
         return this._isConnected;
     }
 
@@ -58,25 +61,22 @@ class Browser extends EventEmitter {
      * Should not be used.
      * Throws an error if called.
      */
-    async newContext() {
+    async newContext(): Promise<never> {
         throw new Error('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
     }
 
     /**
      * Creates a new page in a new browser context. Closing this page will close the context as well.
-     * @param  {...any} args - New Page options. See https://playwright.dev/docs/next/api/class-browser#browsernewpageoptions.
+     * @param args - New Page options. See https://playwright.dev/docs/next/api/class-browser#browsernewpageoptions.
      */
-    async newPage(...args) {
+    async newPage(...args: Parameters<BrowserContext['newPage']>): ReturnType<BrowserContext['newPage']> {
         return this.browserContext.newPage(...args);
     }
 
     /**
     * Returns the browser version.
-    * @returns {string} browser version.
     */
-    version() {
+    version(): string {
         return this._version;
     }
 }
-
-module.exports = Browser;
