@@ -25,14 +25,7 @@ export interface CommonLibrary {
  * @internal
  */
 export interface CommonBrowser {
-    newPage(...args: unknown[]): CommonPage;
-}
-
-/**
- * @internal
- */
-export interface CommonPage {
-    close(...args: unknown[]): Promise<unknown>;
+    newPage(...args: unknown[]): any;
 }
 
 export interface BrowserPluginOptions<LibraryOptions> {

@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import ow from 'ow';
 import { TypedEmitter } from 'tiny-typed-emitter';
 import { BrowserController } from './abstract-classes/browser-controller';
-import { BrowserPlugin, CommonPage } from './abstract-classes/browser-plugin';
+import { BrowserPlugin } from './abstract-classes/browser-plugin';
 import { BROWSER_POOL_EVENTS } from './events';
 import { LaunchContext } from './launch-context';
 import { log } from './logger';
@@ -11,7 +11,7 @@ import { addTimeoutToPromise, InferBrowserPluginArray, UnwrapPromise } from './u
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
 
-export interface BrowserPoolEvents<BC extends BrowserController, Page extends CommonPage> {
+export interface BrowserPoolEvents<BC extends BrowserController, Page> {
     [BROWSER_POOL_EVENTS.PAGE_CREATED]: (page: Page) => void | Promise<void>;
     [BROWSER_POOL_EVENTS.PAGE_CLOSED]: (page: Page) => void | Promise<void>;
     [BROWSER_POOL_EVENTS.BROWSER_RETIRED]: (browserController: BC) => void | Promise<void>;
@@ -152,7 +152,7 @@ export type PrePageCreateHook<
  */
 export type PostPageCreateHook<
     BC extends BrowserController = BrowserController,
-    Page extends CommonPage = UnwrapPromise<ReturnType<BC['newPage']>>,
+    Page = UnwrapPromise<ReturnType<BC['newPage']>>,
 > = (page: Page, browserController: BC) => void | Promise<void>;
 
 /**
@@ -164,7 +164,7 @@ export type PostPageCreateHook<
  */
 export type PrePageCloseHook<
     BC extends BrowserController = BrowserController,
-    Page extends CommonPage = UnwrapPromise<ReturnType<BC['newPage']>>,
+    Page = UnwrapPromise<ReturnType<BC['newPage']>>,
 > = (page: Page, browserController: BC) => void | Promise<void>;
 
 /**
@@ -227,7 +227,7 @@ export class BrowserPool<
     BrowserControllerReturn extends BrowserController = ReturnType<BrowserPlugins[number]['createController']>,
     LaunchContextReturn extends LaunchContext = ReturnType<BrowserPlugins[number]['createLaunchContext']>,
     PageOptions extends unknown = Parameters<BrowserControllerReturn['newPage']>[0],
-    PageReturn extends CommonPage = UnwrapPromise<ReturnType<BrowserControllerReturn['newPage']>>,
+    PageReturn extends UnwrapPromise<ReturnType<BrowserControllerReturn['newPage']>> = UnwrapPromise<ReturnType<BrowserControllerReturn['newPage']>>,
 > extends TypedEmitter<BrowserPoolEvents<BrowserControllerReturn, PageReturn>> {
     browserPlugins: BrowserPlugins;
 
@@ -646,11 +646,11 @@ export class BrowserPool<
         const browserController = this.pageToBrowserController.get(page)!;
         const pageId = this.getPageId(page)!;
 
-        page.close = async (...args) => {
+        page.close = async (...args: unknown[]) => {
             await this._executeHooks(this.prePageCloseHooks, page, browserController);
 
             await originalPageClose.apply(page, args)
-                .catch((err) => {
+                .catch((err: Error) => {
                     log.debug(`Could not close page.\nCause:${err.message}`, { id: browserController.id });
                 });
 
