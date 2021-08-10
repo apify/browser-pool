@@ -1,12 +1,12 @@
-import { TypedEmitter } from 'tiny-typed-emitter';
-import ow from 'ow';
 import { nanoid } from 'nanoid';
+import ow from 'ow';
+import { TypedEmitter } from 'tiny-typed-emitter';
+import { BrowserController } from './abstract-classes/browser-controller';
+import { BrowserPlugin, CommonPage } from './abstract-classes/browser-plugin';
+import { BROWSER_POOL_EVENTS } from './events';
+import { LaunchContext } from './launch-context';
 import { log } from './logger';
 import { addTimeoutToPromise, InferBrowserPluginArray, UnwrapPromise } from './utils';
-import { BROWSER_POOL_EVENTS } from './events';
-import { BrowserPlugin, CommonPage } from './abstract-classes/browser-plugin';
-import { LaunchContext } from './launch-context';
-import { BrowserController } from './abstract-classes/browser-controller';
 
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
