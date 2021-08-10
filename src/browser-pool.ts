@@ -337,7 +337,7 @@ export class BrowserPool<
         let browserController = this._pickBrowserWithFreeCapacity(browserPlugin);
         if (!browserController) browserController = await this._launchBrowser(id, { browserPlugin });
 
-        return this._createPageForBrowser(id, browserController!, pageOptions);
+        return this._createPageForBrowser(id, browserController, pageOptions);
     }
 
     /**
