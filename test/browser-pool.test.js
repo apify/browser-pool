@@ -3,7 +3,7 @@ const puppeteer = require('puppeteer');
 const playwright = require('playwright');
 const BrowserPool = require('../src/browser-pool');
 const { PuppeteerPlugin } = require('../src/puppeteer/puppeteer-plugin');
-const PlaywrightPlugin = require('../src/playwright/playwright-plugin');
+const { PlaywrightPlugin } = require('../src/playwright/playwright-plugin');
 const {
     BROWSER_POOL_EVENTS: {
         BROWSER_LAUNCHED,

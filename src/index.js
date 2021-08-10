@@ -1,7 +1,8 @@
 const BrowserPool = require('./browser-pool');
 // eslint-disable-next-line import/extensions
 const { PuppeteerPlugin } = require('./puppeteer/puppeteer-plugin');
-const PlaywrightPlugin = require('./playwright/playwright-plugin');
+// eslint-disable-next-line import/extensions
+const { PlaywrightPlugin } = require('./playwright/playwright-plugin');
 
 /**
  * The `browser-pool` module exports three constructors. One for `BrowserPool`
