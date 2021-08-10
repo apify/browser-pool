@@ -1,9 +1,10 @@
+/* eslint-disable import/extensions */
 const puppeteer = require('puppeteer');
 const playwright = require('playwright');
 const fs = require('fs');
 
-const PuppeteerPlugin = require('../../src/puppeteer/puppeteer-plugin');
-const PuppeteerController = require('../../src/puppeteer/puppeteer-controller');
+const { PuppeteerPlugin } = require('../../src/puppeteer/puppeteer-plugin');
+const { PuppeteerController } = require('../../src/puppeteer/puppeteer-controller');
 
 const PlaywrightPlugin = require('../../src/playwright/playwright-plugin');
 const PlaywrightController = require('../../src/playwright/playwright-controller');

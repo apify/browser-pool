@@ -67,6 +67,9 @@ export class LaunchContext<
 
     private readonly _reservedFieldNames = [...Reflect.ownKeys(this), 'extend'];
 
+    // TODO: change this to PropertyKey when TypeScript 4.4 releases
+    [K: string]: unknown;
+
     constructor(options: LaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>) {
         const {
             id,

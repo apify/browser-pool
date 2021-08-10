@@ -13,3 +13,6 @@ export function addTimeoutToPromise<T>(promise: Promise<T>, timeoutMillis: numbe
 };
 
 export type UnwrapPromise<T> = T extends PromiseLike<infer R> ? UnwrapPromise<R> : T;
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
+export function noop(..._args: unknown[]): void {}

@@ -1,17 +1,18 @@
-const _ = require('lodash');
-
-const { BrowserController } = require('../abstract-classes/browser-controller'); // eslint-disable-line import/extensions
+import * as Puppeteer from 'puppeteer';
+import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
+import { log } from '../logger';
+import { noop } from '../utils';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 /**
- * puppeteer
+ * Puppeteer
  */
-class PuppeteerController extends BrowserController {
-    async _newPage() {
+export class PuppeteerController extends BrowserController<typeof Puppeteer> {
+    protected async _newPage(): Promise<Puppeteer.Page> {
         const { useIncognitoPages } = this.launchContext;
-        let page;
-        let context;
+        let page: Puppeteer.Page;
+        let context: Puppeteer.BrowserContext;
 
         if (useIncognitoPages) {
             context = await this.browser.createIncognitoBrowserContext();
@@ -24,23 +25,23 @@ class PuppeteerController extends BrowserController {
             this.activePages--;
 
             if (useIncognitoPages) {
-                context.close().catch(_.noop);
+                context.close().catch(noop);
             }
         });
 
         page.once('error', (error) => {
-            this.log.exception(error, 'Page crashed.');
-            page.close().catch(_.noop);
+            log.exception(error, 'Page crashed.');
+            page.close().catch(noop);
         });
 
         return page;
     }
 
-    async _close() {
+    protected async _close(): Promise<void> {
         await this.browser.close();
     }
 
-    async _kill() {
+    protected async _kill(): Promise<void> {
         const browserProcess = this.browser.process();
 
         if (!browserProcess) {
@@ -52,7 +53,7 @@ class PuppeteerController extends BrowserController {
             // This is here because users reported that it happened
             // that error `TypeError: Cannot read property 'kill' of null` was thrown.
             // Likely Chrome process wasn't started due to some error ...
-            if (browserProcess) browserProcess.kill('SIGKILL');
+            browserProcess?.kill('SIGKILL');
         }, PROCESS_KILL_TIMEOUT_MILLIS);
 
         try {
@@ -63,13 +64,11 @@ class PuppeteerController extends BrowserController {
         }
     }
 
-    async _getCookies(page) {
+    protected _getCookies(page: Puppeteer.Page): Promise<Cookie[]> {
         return page.cookies();
     }
 
-    async _setCookies(page, cookies) {
+    protected _setCookies(page: Puppeteer.Page, cookies: Cookie[]): Promise<void> {
         return page.setCookie(...cookies);
     }
 }
-
-module.exports = PuppeteerController;

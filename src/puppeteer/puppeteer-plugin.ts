@@ -1,18 +1,16 @@
-const { BrowserPlugin } = require('../abstract-classes/browser-plugin'); // eslint-disable-line import/extensions
-const PuppeteerController = require('./puppeteer-controller');
+import * as Puppeteer from 'puppeteer';
+import { BrowserController } from '../abstract-classes/browser-controller';
+import { BrowserPlugin } from '../abstract-classes/browser-plugin';
+import { LaunchContext } from '../launch-context';
+import { PuppeteerController } from './puppeteer-controller';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
 /**
- * puppeteer
+ * Puppeteer
  */
-class PuppeteerPlugin extends BrowserPlugin {
-    /**
-     * @param {LaunchContext} launchContext
-     * @return {Promise<Browser>}
-     * @private
-     */
-    async _launch(launchContext) {
+export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
+    protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Puppeteer.Browser> {
         const {
             launchOptions,
             anonymizedProxyUrl,
@@ -21,39 +19,33 @@ class PuppeteerPlugin extends BrowserPlugin {
 
         const finalLaunchOptions = {
             ...launchOptions,
-            userDataDir: launchOptions.userDataDir || userDataDir,
+            userDataDir: launchOptions?.userDataDir ?? userDataDir,
         };
 
         const browser = await this.library.launch(finalLaunchOptions);
 
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
-                this._closeAnonymizedProxy(anonymizedProxyUrl);
+                this._closeAnonymizedProxy(anonymizedProxyUrl as string);
             });
         }
 
         return browser;
     }
 
-    /**
-     * @return {PuppeteerController}
-     * @private
-     */
-    _createController() {
+    protected _createController(): BrowserController<typeof Puppeteer> {
         return new PuppeteerController(this);
     }
 
-    /**
-     *
-     * @param launchContext {object}
-     * @return {Promise<void>}
-     * @private
-     */
-    async _addProxyToLaunchOptions(launchContext) {
+    protected async _addProxyToLaunchOptions(
+        launchContext: LaunchContext<typeof Puppeteer>,
+    ): Promise<void> {
+        launchContext.launchOptions ??= {};
+
         const { launchOptions, proxyUrl } = launchContext;
         let finalProxyUrl = proxyUrl;
 
-        if (this._shouldAnonymizeProxy(proxyUrl)) {
+        if (proxyUrl && this._shouldAnonymizeProxy(proxyUrl)) {
             finalProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
             launchContext.anonymizedProxyUrl = finalProxyUrl;
         }
@@ -67,5 +59,3 @@ class PuppeteerPlugin extends BrowserPlugin {
         }
     }
 }
-
-module.exports = PuppeteerPlugin;
