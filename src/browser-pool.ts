@@ -263,7 +263,7 @@ export class BrowserPool<
 
     pageToBrowserController = new WeakMap<PageReturn, BrowserControllerReturn>();
 
-    private browserKillerInterval?: NodeJS.Timeout = setInterval(
+    private browserKillerInterval? = setInterval(
         () => this._closeInactiveRetiredBrowsers(),
         BROWSER_KILLER_INTERVAL_MILLIS,
     );
