@@ -57,56 +57,6 @@ export interface BrowserPoolOptions<Plugin extends BrowserPlugin = BrowserPlugin
      * @default 300
      */
     closeInactiveBrowserAfterSecs?: number;
-    /**
-     * Pre-launch hooks are executed just before a browser is launched and provide
-     * a good opportunity to dynamically change the launch options.
-     * The hooks are called with two arguments:
-     * `pageId`: `string` and `launchContext`: {@link LaunchContext}
-     */
-    preLaunchHooks?: PreLaunchHook[];
-    /**
-     * Post-launch hooks are executed as soon as a browser is launched.
-     * The hooks are called with two arguments:
-     * `pageId`: `string` and `browserController`: {@link BrowserController}
-     * To guarantee order of execution before other hooks in the same browser,
-     * the {@link BrowserController} methods cannot be used until the post-launch
-     * hooks complete. If you attempt to call `await browserController.close()` from
-     * a post-launch hook, it will deadlock the process. This API is subject to change.
-     */
-    postLaunchHooks?: PostLaunchHook[];
-    /**
-     * Pre-page-create hooks are executed just before a new page is created. They
-     * are useful to make dynamic changes to the browser before opening a page.
-     * The hooks are called with three arguments:
-     * `pageId`: `string`, `browserController`: {@link BrowserController} and
-     * `pageOptions`: `object|undefined` - This only works if the underlying `BrowserController` supports new page options.
-     * So far, new page options are only supported by `PlaywrightController`.
-     * If the page options are not supported by `BrowserController` the `pageOptions` argument is `undefined`.
-     */
-    prePageCreateHooks?: PrePageCreateHook[];
-    /**
-     * Post-page-create hooks are called right after a new page is created
-     * and all internal actions of Browser Pool are completed. This is the
-     * place to make changes to a page that you would like to apply to all
-     * pages. Such as injecting a JavaScript library into all pages.
-     * The hooks are called with two arguments:
-     * `page`: `Page` and `browserController`: {@link BrowserController}
-     */
-    postPageCreateHooks?: PostPageCreateHook[];
-    /**
-     * Pre-page-close hooks give you the opportunity to make last second changes
-     * in a page that's about to be closed, such as saving a snapshot or updating
-     * state.
-     * The hooks are called with two arguments:
-     * `page`: `Page` and `browserController`: {@link BrowserController}
-     */
-    prePageCloseHooks?: PrePageCloseHook[];
-    /**
-     * Post-page-close hooks allow you to do page related clean up.
-     * The hooks are called with two arguments:
-     * `pageId`: `string` and `browserController`: {@link BrowserController}
-     */
-    postPageCloseHooks?: PostPageCloseHook[];
 }
 
 /**
@@ -115,7 +65,7 @@ export interface BrowserPoolOptions<Plugin extends BrowserPlugin = BrowserPlugin
  * The hooks are called with two arguments:
  * `pageId`: `string` and `launchContext`: {@link LaunchContext}
  */
-export type PreLaunchHook<LC extends LaunchContext = LaunchContext> = (pageId: string, launchContext: LC) => void | Promise<void>;
+export type PreLaunchHook<LC extends LaunchContext> = (pageId: string, launchContext: LC) => void | Promise<void>;
 
 /**
  * Post-launch hooks are executed as soon as a browser is launched.
@@ -126,7 +76,7 @@ export type PreLaunchHook<LC extends LaunchContext = LaunchContext> = (pageId: s
  * hooks complete. If you attempt to call `await browserController.close()` from
  * a post-launch hook, it will deadlock the process. This API is subject to change.
  */
-export type PostLaunchHook<BC extends BrowserController = BrowserController> = (pageId: string, browserController: BC) => void | Promise<void>;
+export type PostLaunchHook<BC extends BrowserController> = (pageId: string, browserController: BC) => void | Promise<void>;
 
 /**
  * Pre-page-create hooks are executed just before a new page is created. They
@@ -138,7 +88,7 @@ export type PostLaunchHook<BC extends BrowserController = BrowserController> = (
  * If the page options are not supported by `BrowserController` the `pageOptions` argument is `undefined`.
  */
 export type PrePageCreateHook<
-    BC extends BrowserController = BrowserController,
+    BC extends BrowserController,
     PO = Parameters<BC['newPage']>[0]
 > = (pageId: string, browserController: BC, pageOptions?: PO) => void | Promise<void>;
 
@@ -151,7 +101,7 @@ export type PrePageCreateHook<
  * `page`: `Page` and `browserController`: {@link BrowserController}
  */
 export type PostPageCreateHook<
-    BC extends BrowserController = BrowserController,
+    BC extends BrowserController,
     Page = UnwrapPromise<ReturnType<BC['newPage']>>,
 > = (page: Page, browserController: BC) => void | Promise<void>;
 
@@ -163,7 +113,7 @@ export type PostPageCreateHook<
  * `page`: `Page` and `browserController`: {@link BrowserController}
  */
 export type PrePageCloseHook<
-    BC extends BrowserController = BrowserController,
+    BC extends BrowserController,
     Page = UnwrapPromise<ReturnType<BC['newPage']>>,
 > = (page: Page, browserController: BC) => void | Promise<void>;
 
@@ -172,7 +122,64 @@ export type PrePageCloseHook<
  * The hooks are called with two arguments:
  * `pageId`: `string` and `browserController`: {@link BrowserController}
  */
-export type PostPageCloseHook<BC extends BrowserController = BrowserController> = (pageId: string, browserController: BC) => void | Promise<void>;
+export type PostPageCloseHook<BC extends BrowserController> = (pageId: string, browserController: BC) => void | Promise<void>;
+
+export interface BrowserPoolHooks<
+    BC extends BrowserController,
+    LC extends LaunchContext,
+    PR extends UnwrapPromise<ReturnType<BC['newPage']>> = UnwrapPromise<ReturnType<BC['newPage']>>,
+> {
+    /**
+     * Pre-launch hooks are executed just before a browser is launched and provide
+     * a good opportunity to dynamically change the launch options.
+     * The hooks are called with two arguments:
+     * `pageId`: `string` and `launchContext`: {@link LaunchContext}
+     */
+    preLaunchHooks?: PreLaunchHook<LC>[];
+    /**
+     * Post-launch hooks are executed as soon as a browser is launched.
+     * The hooks are called with two arguments:
+     * `pageId`: `string` and `browserController`: {@link BrowserController}
+     * To guarantee order of execution before other hooks in the same browser,
+     * the {@link BrowserController} methods cannot be used until the post-launch
+     * hooks complete. If you attempt to call `await browserController.close()` from
+     * a post-launch hook, it will deadlock the process. This API is subject to change.
+     */
+    postLaunchHooks?: PostLaunchHook<BC>[];
+    /**
+     * Pre-page-create hooks are executed just before a new page is created. They
+     * are useful to make dynamic changes to the browser before opening a page.
+     * The hooks are called with three arguments:
+     * `pageId`: `string`, `browserController`: {@link BrowserController} and
+     * `pageOptions`: `object|undefined` - This only works if the underlying `BrowserController` supports new page options.
+     * So far, new page options are only supported by `PlaywrightController`.
+     * If the page options are not supported by `BrowserController` the `pageOptions` argument is `undefined`.
+     */
+    prePageCreateHooks?: PrePageCreateHook<BC>[];
+    /**
+     * Post-page-create hooks are called right after a new page is created
+     * and all internal actions of Browser Pool are completed. This is the
+     * place to make changes to a page that you would like to apply to all
+     * pages. Such as injecting a JavaScript library into all pages.
+     * The hooks are called with two arguments:
+     * `page`: `Page` and `browserController`: {@link BrowserController}
+     */
+    postPageCreateHooks?: PostPageCreateHook<BC, PR>[];
+    /**
+     * Pre-page-close hooks give you the opportunity to make last second changes
+     * in a page that's about to be closed, such as saving a snapshot or updating
+     * state.
+     * The hooks are called with two arguments:
+     * `page`: `Page` and `browserController`: {@link BrowserController}
+     */
+    prePageCloseHooks?: PrePageCloseHook<BC, PR>[];
+    /**
+     * Post-page-close hooks allow you to do page related clean up.
+     * The hooks are called with two arguments:
+     * `pageId`: `string` and `browserController`: {@link BrowserController}
+     */
+    postPageCloseHooks?: PostPageCloseHook<BC>[];
+}
 
 /**
  * The `BrowserPool` class is the most important class of the `browser-pool` module.
@@ -268,7 +275,7 @@ export class BrowserPool<
         BROWSER_KILLER_INTERVAL_MILLIS,
     );
 
-    constructor(options: Options) {
+    constructor(options: Options & BrowserPoolHooks<BrowserControllerReturn, LaunchContextReturn, PageReturn>) {
         super();
 
         ow(options, ow.object.exactShape({

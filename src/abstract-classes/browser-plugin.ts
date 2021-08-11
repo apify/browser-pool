@@ -57,7 +57,7 @@ export interface BrowserPluginOptions<LibraryOptions> {
 
 export type CreateLaunchContextOptions<
     Library extends CommonLibrary,
-    LibraryOptions = Parameters<Library['launch']>[0],
+    LibraryOptions extends unknown = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
     NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
@@ -71,7 +71,7 @@ export type CreateLaunchContextOptions<
  */
 export abstract class BrowserPlugin<
     Library extends CommonLibrary = CommonLibrary,
-    LibraryOptions = Parameters<Library['launch']>[0],
+    LibraryOptions extends unknown = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
     NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
@@ -137,7 +137,9 @@ export abstract class BrowserPlugin<
     /**
      * Launches the browser using provided launch context.
      */
-    async launch(launchContext = this.createLaunchContext()): Promise<LaunchResult> {
+    async launch(
+        launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = this.createLaunchContext(),
+    ): Promise<LaunchResult> {
         const { proxyUrl, useIncognitoPages, userDataDir } = launchContext;
 
         if (proxyUrl) {
