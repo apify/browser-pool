@@ -570,7 +570,7 @@ export class BrowserPool<
             // If the hooks or the launch fails, we need to delete the controller,
             // because otherwise it would be stuck in limbo without a browser.
             await this._executeHooks(this.preLaunchHooks, pageId, launchContext);
-            const browser = await browserPlugin.launch(launchContext as never);
+            const browser = await browserPlugin.launch(launchContext);
             browserController.assignBrowser(browser, launchContext);
         } catch (err) {
             this.activeBrowserControllers.delete(browserController);
