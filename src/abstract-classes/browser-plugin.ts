@@ -21,11 +21,14 @@ export interface CommonLibrary {
     name?: () => string;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export interface CommonBrowser {
-    newPage(...args: unknown[]): any;
+    newPage(...args: unknown[]): Promise<CommonPage>;
+}
+
+/** @internal */
+export interface CommonPage {
+    close(...args: unknown[]): Promise<unknown>;
 }
 
 export interface BrowserPluginOptions<LibraryOptions> {
