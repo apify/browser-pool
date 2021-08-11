@@ -612,15 +612,17 @@ export class BrowserPool<
     }
 
     private _pickBrowserWithFreeCapacity(browserPlugin: BrowserPlugin) {
-        return Array.from(this.activeBrowserControllers.values())
-            .find((controller) => {
-                // TODO if you synchronously trigger a lot of page launches, controller.activePages
-                // will not get updated because the picks are done before the newPage launches.
-                // Not sure if it's a problem, let's monitor it.
-                const hasCapacity = controller.activePages < this.maxOpenPagesPerBrowser;
-                const isCorrectPlugin = controller.browserPlugin === browserPlugin;
-                return hasCapacity && isCorrectPlugin;
-            });
+        for (const controller of this.activeBrowserControllers) {
+            // TODO if you synchronously trigger a lot of page launches, controller.activePages
+            // will not get updated because the picks are done before the newPage launches.
+            // Not sure if it's a problem, let's monitor it.
+            const hasCapacity = controller.activePages < this.maxOpenPagesPerBrowser;
+            const isCorrectPlugin = controller.browserPlugin === browserPlugin;
+            if (hasCapacity && isCorrectPlugin) {
+                return controller;
+            }
+        }
+        return undefined;
     }
 
     private async _closeInactiveRetiredBrowsers() {
