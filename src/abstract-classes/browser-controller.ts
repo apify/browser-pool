@@ -87,7 +87,7 @@ export interface Cookie {
  * @hideconstructor
  */
 export abstract class BrowserController<
-    Library extends CommonLibrary,
+    Library extends CommonLibrary = CommonLibrary,
     LibraryOptions = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],

@@ -42,7 +42,6 @@
 	"dependencies": {
 		"@apify/log": "^1.0.0",
 		"fs-extra": "^9.1.0",
-		"lodash": "^4.17.21",
 		"lodash.merge": "^4.6.2",
 		"nanoid": "^3.1.22",
 		"ow": "^0.23.0",
@@ -54,7 +53,6 @@
 		"@apify/eslint-config-ts": "^0.1.1",
 		"@types/fs-extra": "^9.0.11",
 		"@types/jest": "^26.0.22",
-		"@types/lodash": "^4.14.172",
 		"@types/lodash.merge": "^4.6.6",
 		"@types/node": "^14.17.7",
 		"@typescript-eslint/eslint-plugin": "^4.22.0",
