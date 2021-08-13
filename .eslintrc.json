@@ -8,14 +8,6 @@
   "overrides": [
     {
       "files": [
-        "src/**/*.ts"
-      ],
-      "rules": {
-        "import/extensions": 0
-      }
-    },
-    {
-      "files": [
         "test/**/*.js"
       ],
       "env": {
