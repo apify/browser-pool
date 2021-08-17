@@ -28,15 +28,6 @@ jobs:
             -
                 uses: microsoft/playwright-github-action@v1
             -
-                name: Cache Node Modules
-                if: ${{ matrix.node-version == 14 }}
-                uses: actions/cache@v2
-                with:
-                    path: |
-                        node_modules
-                        build
-                    key: cache-${{ github.run_id }}-v14
-            -
                 name: Install Dependencies
                 run: npm install
             -
@@ -57,12 +48,7 @@ jobs:
                 with:
                     node-version: 14
             -
-                name: Load Cache
-                uses: actions/cache@v2
-                with:
-                    path: |
-                        node_modules
-                        build
-                    key: cache-${{ github.run_id }}-v14
+                name: Install Dependencies
+                run: npm install
             -
                 run: npm run lint
