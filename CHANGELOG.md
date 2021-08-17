@@ -1,7 +1,7 @@
 2.0.0 / 2021/08/17
 ====================
 
-- Converted library to TypeScript
+- Converted library to TypeScript (which may have some side effects in the event of misuse)
 
 1.1.2 / 2021/03/18
 ====================
