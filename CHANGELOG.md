@@ -1,4 +1,4 @@
-2.0.0 / 2021/08/17
+2.0.0 / 2021/08/24
 ====================
 
 - Converted library to TypeScript (which may have some side effects in the event of misuse)
