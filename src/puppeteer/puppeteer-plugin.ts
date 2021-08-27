@@ -22,12 +22,13 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
 
         let browser = await this.library.launch(finalLaunchOptions);
         if (useIncognitoPages) {
-            const incognitoContext = await browser.createIncognitoBrowserContext();
-
             browser = new Proxy(browser, {
                 get: (target, property: keyof typeof browser) => {
                     if (property === 'newPage') {
-                        return incognitoContext.newPage.bind(incognitoContext);
+                        return (async (...args) => {
+                            const incognitoContext = await browser.createIncognitoBrowserContext();
+                            return incognitoContext.newPage(...args);
+                        }) as typeof browser.newPage;
                     }
 
                     return target[property];
