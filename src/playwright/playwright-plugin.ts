@@ -5,9 +5,9 @@ import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
 
-let browserVersion: string;
-
 export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
+    declare _browserVersion: string;
+
     protected async _launch(launchContext: LaunchContext<BrowserType>): Promise<PlaywrightBrowser> {
         const {
             launchOptions,
@@ -22,15 +22,15 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
         } else {
             const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
 
-            if (!browserVersion) {
+            if (!this._browserVersion) {
                 // Launches unused browser just to get the browser version.
                 const inactiveBrowser = await this.library.launch(launchOptions);
-                browserVersion = inactiveBrowser.version();
+                this._browserVersion = inactiveBrowser.version();
 
                 await inactiveBrowser.close();
             }
 
-            browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: browserVersion });
+            browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });
         }
 
         if (anonymizedProxyUrl) {

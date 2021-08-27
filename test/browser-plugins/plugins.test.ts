@@ -388,7 +388,7 @@ describe('Plugins', () => {
 
                     expect(browser.newContext())
                         .rejects
-                        .toThrow('Could not call `newContext()` on browser, when `useIncognitoPages` is set to `false`');
+                        .toThrow('Function `newContext()` is not available in incognito mode');
                 });
 
                 test('should have same public interface as playwright browserType', async () => {
