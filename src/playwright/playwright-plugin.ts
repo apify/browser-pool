@@ -1,47 +1,36 @@
 import { Browser as PlaywrightBrowser, BrowserType } from 'playwright';
+import { Browser as PlaywrightBrowserWithPersistentContext } from './browser';
+import { PlaywrightController } from './playwright-controller';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
-import { noop } from '../utils';
-import { Browser as ApifyBrowser } from './browser';
-import { PlaywrightController } from './playwright-controller';
 
-export type PlaywrightPluginBrowsers = ApifyBrowser | PlaywrightBrowser;
+let browserVersion: string;
 
-/**
- * Playwright
- */
-export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightPluginBrowsers> {
-    private _browserVersion!: string;
-
-    protected _launch(launchContext: LaunchContext<BrowserType> & { useIncognitoPages: true }): Promise<PlaywrightBrowser>;
-
-    protected _launch(launchContext: LaunchContext<BrowserType> & { useIncognitoPages: false }): Promise<ApifyBrowser>;
-
-    protected async _launch(launchContext: LaunchContext<BrowserType>): Promise<ApifyBrowser | PlaywrightBrowser> {
+export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
+    protected async _launch(launchContext: LaunchContext<BrowserType>): Promise<PlaywrightBrowser> {
         const {
             launchOptions,
             anonymizedProxyUrl,
             useIncognitoPages,
             userDataDir,
         } = launchContext;
-        let browser: ApifyBrowser | PlaywrightBrowser;
+        let browser: PlaywrightBrowser;
 
         if (useIncognitoPages) {
             browser = await this.library.launch(launchOptions);
         } else {
             const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
 
-            if (!this._browserVersion) {
+            if (!browserVersion) {
                 // Launches unused browser just to get the browser version.
-
                 const inactiveBrowser = await this.library.launch(launchOptions);
-                this._browserVersion = inactiveBrowser.version();
+                browserVersion = inactiveBrowser.version();
 
-                inactiveBrowser.close().catch(noop);
+                await inactiveBrowser.close();
             }
 
-            browser = new ApifyBrowser({ browserContext, version: this._browserVersion });
+            browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: browserVersion });
         }
 
         if (anonymizedProxyUrl) {
@@ -53,7 +42,7 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
         return browser;
     }
 
-    protected _createController(): BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightPluginBrowsers> {
+    protected _createController(): BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
         return new PlaywrightController(this);
     }
 

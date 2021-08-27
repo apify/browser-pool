@@ -5,7 +5,7 @@ import fs from 'fs';
 import { PuppeteerPlugin } from '../../src/puppeteer/puppeteer-plugin';
 import { PuppeteerController } from '../../src/puppeteer/puppeteer-controller';
 
-import { PlaywrightPlugin, PlaywrightPluginBrowsers } from '../../src/playwright/playwright-plugin';
+import { PlaywrightPlugin } from '../../src/playwright/playwright-plugin';
 import { PlaywrightController } from '../../src/playwright/playwright-controller';
 import { Browser } from '../../src/playwright/browser';
 
@@ -23,7 +23,7 @@ const runPluginTest = <
     let plugin = new Plugin(library as never);
 
     describe(`${plugin.constructor.name} - ${'name' in library ? library.name!() : ''} general`, () => {
-        let browser: PlaywrightPluginBrowsers | UnwrapPromise<ReturnType<typeof puppeteer['launch']>> | undefined;
+        let browser: playwright.Browser | UnwrapPromise<ReturnType<typeof puppeteer['launch']>> | undefined;
 
         beforeEach(() => {
             plugin = new Plugin(library as never);
@@ -220,7 +220,7 @@ describe('Plugins', () => {
     runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer);
 
     describe('Playwright specifics', () => {
-        let browser: PlaywrightPluginBrowsers;
+        let browser: playwright.Browser;
 
         afterEach(async () => {
             await browser.close();
@@ -364,7 +364,9 @@ describe('Plugins', () => {
                     browser = await plugin.launch(launchContext);
                     const contexts = browser.contexts();
                     expect(contexts).toHaveLength(1);
-                    expect(contexts[0]).toEqual((browser as Browser).browserContext);
+                    // Cast to any to access private property
+                    // eslint-disable-next-line no-underscore-dangle
+                    expect(contexts[0]).toEqual((browser as any)._browserContext);
                 });
 
                 test('should return correct connected status', async () => {

@@ -6,15 +6,13 @@ import { PuppeteerController } from './puppeteer-controller';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
-/**
- * Puppeteer
- */
 export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
     protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Puppeteer.Browser> {
         const {
             launchOptions,
             anonymizedProxyUrl,
             userDataDir,
+            useIncognitoPages,
         } = launchContext;
 
         const finalLaunchOptions = {
@@ -22,7 +20,20 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             userDataDir: launchOptions?.userDataDir ?? userDataDir,
         };
 
-        const browser = await this.library.launch(finalLaunchOptions);
+        let browser = await this.library.launch(finalLaunchOptions);
+        if (useIncognitoPages) {
+            const incognitoContext = await browser.createIncognitoBrowserContext();
+
+            browser = new Proxy(browser, {
+                get: (target, property: keyof typeof browser) => {
+                    if (property === 'newPage') {
+                        return incognitoContext.newPage.bind(incognitoContext);
+                    }
+
+                    return target[property];
+                },
+            });
+        }
 
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
