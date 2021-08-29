@@ -6,7 +6,7 @@ import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
 
 export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
-    declare _browserVersion: string;
+    declare private _browserVersion: string;
 
     protected async _launch(launchContext: LaunchContext<BrowserType>): Promise<PlaywrightBrowser> {
         const {
