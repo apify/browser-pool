@@ -7,7 +7,7 @@ export class PlaywrightController extends BrowserController<BrowserType, Paramet
     protected async _newPage(pageOptions?: Parameters<Browser['newPage']>[0]): Promise<Page> {
         const page = await this.browser.newPage(pageOptions);
 
-        page.once('close', async () => {
+        page.once('close', () => {
             this.activePages--;
         });
 
