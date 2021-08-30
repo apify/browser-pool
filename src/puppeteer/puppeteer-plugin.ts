@@ -34,7 +34,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                         page.close().catch(noop);
                     });
                 }
-            } catch (error) {
+            } catch (error: any) {
                 log.exception(error, 'Failed to retrieve page from target.');
             }
         });
