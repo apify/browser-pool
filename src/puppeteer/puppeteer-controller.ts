@@ -1,37 +1,14 @@
 import * as Puppeteer from 'puppeteer';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
-import { log } from '../logger';
-import { noop } from '../utils';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
-/**
- * Puppeteer
- */
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
     protected async _newPage(): Promise<Puppeteer.Page> {
-        const { useIncognitoPages } = this.launchContext;
-        let page: Puppeteer.Page;
-        let context: Puppeteer.BrowserContext;
-
-        if (useIncognitoPages) {
-            context = await this.browser.createIncognitoBrowserContext();
-            page = await context.newPage();
-        } else {
-            page = await this.browser.newPage();
-        }
+        const page = await this.browser.newPage();
 
         page.once('close', () => {
             this.activePages--;
-
-            if (useIncognitoPages) {
-                context.close().catch(noop);
-            }
-        });
-
-        page.once('error', (error) => {
-            log.exception(error, 'Page crashed.');
-            page.close().catch(noop);
         });
 
         return page;

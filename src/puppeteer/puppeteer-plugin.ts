@@ -2,19 +2,19 @@ import * as Puppeteer from 'puppeteer';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
+import { log } from '../logger';
+import { noop } from '../utils';
 import { PuppeteerController } from './puppeteer-controller';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
-/**
- * Puppeteer
- */
 export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
     protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Puppeteer.Browser> {
         const {
             launchOptions,
             anonymizedProxyUrl,
             userDataDir,
+            useIncognitoPages,
         } = launchContext;
 
         const finalLaunchOptions = {
@@ -22,7 +22,37 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             userDataDir: launchOptions?.userDataDir ?? userDataDir,
         };
 
-        const browser = await this.library.launch(finalLaunchOptions);
+        let browser = await this.library.launch(finalLaunchOptions);
+
+        browser.on('targetcreated', async (target: Puppeteer.Target) => {
+            try {
+                const page = await target.page();
+
+                if (page) {
+                    page.on('error', (error) => {
+                        log.exception(error, 'Page crashed.');
+                        page.close().catch(noop);
+                    });
+                }
+            } catch (error: any) {
+                log.exception(error, 'Failed to retrieve page from target.');
+            }
+        });
+
+        if (useIncognitoPages) {
+            browser = new Proxy(browser, {
+                get: (target, property: keyof typeof browser) => {
+                    if (property === 'newPage') {
+                        return (async (...args) => {
+                            const incognitoContext = await browser.createIncognitoBrowserContext();
+                            return incognitoContext.newPage(...args);
+                        }) as typeof browser.newPage;
+                    }
+
+                    return target[property];
+                },
+            });
+        }
 
         if (anonymizedProxyUrl) {
             browser.once('disconnected', () => {
