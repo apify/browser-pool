@@ -45,15 +45,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                     if (property === 'newPage') {
                         return (async (...args) => {
                             const incognitoContext = await browser.createIncognitoBrowserContext();
-                            const page = await incognitoContext.newPage(...args);
-
-                            page.once('close', () => {
-                                incognitoContext.close().catch((error) => {
-                                    log.exception(error, 'Failed to close incognito context.');
-                                });
-                            });
-
-                            return page;
+                            return incognitoContext.newPage(...args);
                         }) as typeof browser.newPage;
                     }
 
