@@ -4,6 +4,7 @@ import { PlaywrightController } from './playwright-controller';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
+import { log } from '../logger';
 
 export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
     private _browserVersion?: string;
@@ -27,7 +28,9 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
                 const inactiveBrowser = await this.library.launch(launchOptions);
                 this._browserVersion = inactiveBrowser.version();
 
-                await inactiveBrowser.close();
+                inactiveBrowser.close().catch((error) => {
+                    log.exception(error, 'Failed to close browser.');
+                });
             }
 
             browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });

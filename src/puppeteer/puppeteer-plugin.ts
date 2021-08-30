@@ -2,6 +2,8 @@ import * as Puppeteer from 'puppeteer';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
+import { log } from '../logger';
+import { noop } from '../utils';
 import { PuppeteerController } from './puppeteer-controller';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
@@ -21,13 +23,37 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         };
 
         let browser = await this.library.launch(finalLaunchOptions);
+
+        browser.on('targetcreated', async (target: Puppeteer.Target) => {
+            try {
+                const page = await target.page();
+
+                if (page) {
+                    page.on('error', (error) => {
+                        log.exception(error, 'Page crashed.');
+                        page.close().catch(noop);
+                    });
+                }
+            } catch (error) {
+                log.exception(error, 'Failed to retrieve page from target.');
+            }
+        });
+
         if (useIncognitoPages) {
             browser = new Proxy(browser, {
                 get: (target, property: keyof typeof browser) => {
                     if (property === 'newPage') {
                         return (async (...args) => {
                             const incognitoContext = await browser.createIncognitoBrowserContext();
-                            return incognitoContext.newPage(...args);
+                            const page = await incognitoContext.newPage(...args);
+
+                            page.once('close', () => {
+                                incognitoContext.close().catch((error) => {
+                                    log.exception(error, 'Failed to close incognito context.');
+                                });
+                            });
+
+                            return page;
                         }) as typeof browser.newPage;
                     }
 
