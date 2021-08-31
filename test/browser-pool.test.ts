@@ -199,6 +199,25 @@ describe('BrowserPool', () => {
             expect(browserPool['_launchBrowser']).toBeCalledTimes(3);
         });
 
+        test('should allow max pages per browser - no race condition', async () => {
+            browserPool.maxOpenPagesPerBrowser = 1;
+            // @ts-expect-error Private function
+            jest.spyOn(browserPool!, '_launchBrowser');
+
+            const usePuppeteer = {
+                browserPlugin: puppeteerPlugin,
+            };
+
+            await Promise.all([
+                browserPool.newPage(usePuppeteer),
+                browserPool.newPage(usePuppeteer),
+            ]);
+
+            expect(browserPool.activeBrowserControllers.size).toBe(2);
+
+            expect(browserPool['_launchBrowser']).toBeCalledTimes(2);
+        });
+
         test('should close retired browsers', async () => {
             browserPool.retireBrowserAfterPageCount = 1;
 

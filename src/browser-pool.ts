@@ -1,3 +1,4 @@
+import pLimit from 'p-limit';
 import { nanoid } from 'nanoid';
 import ow from 'ow';
 import { TypedEmitter } from 'tiny-typed-emitter';
@@ -275,6 +276,8 @@ export class BrowserPool<
         BROWSER_KILLER_INTERVAL_MILLIS,
     );
 
+    private limiter = pLimit(1);
+
     constructor(options: Options & BrowserPoolHooks<BrowserControllerReturn, LaunchContextReturn, PageReturn>) {
         super();
 
@@ -341,10 +344,13 @@ export class BrowserPool<
             throw new Error('Provided browserPlugin is not one of the plugins used by BrowserPool.');
         }
 
-        let browserController = this._pickBrowserWithFreeCapacity(browserPlugin);
-        if (!browserController) browserController = await this._launchBrowser(id, { browserPlugin });
+        // Limiter is necessary - https://github.com/apify/apify-js/issues/1126
+        return this.limiter(async () => {
+            let browserController = this._pickBrowserWithFreeCapacity(browserPlugin);
+            if (!browserController) browserController = await this._launchBrowser(id, { browserPlugin });
 
-        return this._createPageForBrowser(id, browserController, pageOptions);
+            return this._createPageForBrowser(id, browserController, pageOptions);
+        });
     }
 
     /**
@@ -613,9 +619,6 @@ export class BrowserPool<
 
     private _pickBrowserWithFreeCapacity(browserPlugin: BrowserPlugin) {
         for (const controller of this.activeBrowserControllers) {
-            // TODO if you synchronously trigger a lot of page launches, controller.activePages
-            // will not get updated because the picks are done before the newPage launches.
-            // Not sure if it's a problem, let's monitor it.
             const hasCapacity = controller.activePages < this.maxOpenPagesPerBrowser;
             const isCorrectPlugin = controller.browserPlugin === browserPlugin;
             if (hasCapacity && isCorrectPlugin) {
