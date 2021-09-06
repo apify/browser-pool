@@ -25,10 +25,11 @@
 		"url": "https://github.com/apify/browser-pool/issues"
 	},
 	"files": [
-		"dist"
+		"dist",
+        "types"
 	],
 	"scripts": {
-		"build": "tsc",
+		"build": "node types.js && tsc",
 		"postbuild": "gen-esm-wrapper dist/index.js dist/index.mjs",
 		"prepublishOnly": "npm run build",
 		"clean": "rimraf dist",
