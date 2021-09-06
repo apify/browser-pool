@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { BrowserContext, Browser as PlaywrightBrowser } from 'playwright';
+import type { BrowserContext, Browser as PlaywrightBrowser } from 'playwright';
 
 export interface BrowserOptions {
     browserContext: BrowserContext;

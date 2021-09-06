@@ -1,4 +1,4 @@
-import * as Puppeteer from 'puppeteer';
+import type Puppeteer from 'puppeteer';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;

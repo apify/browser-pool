@@ -12,12 +12,12 @@ fs.copyFileSync('./node_modules/playwright/types/structs.d.ts', './types/playwri
 
 fs.writeFileSync('./types/puppeteer.d.ts', `
 declare module 'puppeteer' {
-    export * from './puppeteer/types.d.ts';
+    export * from './puppeteer/types';
 }
 `.trimStart());
 
 fs.writeFileSync('./types/playwright.d.ts', `
 declare module 'playwright' {
-    export * from './playwright/types.d.ts';
+    export * from './playwright/types';
 }
 `.trimStart());
