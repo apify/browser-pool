@@ -1,4 +1,5 @@
 import { Browser, BrowserType, Page } from 'playwright';
+import {Page as pp} from 'playwright';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 
 export class PlaywrightController extends BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], Browser> {
