@@ -202,7 +202,7 @@ describe('BrowserPool', () => {
         test('should allow max pages per browser - no race condition', async () => {
             browserPool.maxOpenPagesPerBrowser = 1;
             // @ts-expect-error Private function
-            jest.spyOn(browserPool!, '_launchBrowser');
+            jest.spyOn(browserPool, '_launchBrowser');
 
             const usePuppeteer = {
                 browserPlugin: puppeteerPlugin,
