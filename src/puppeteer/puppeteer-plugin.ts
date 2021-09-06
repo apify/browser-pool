@@ -1,4 +1,4 @@
-import * as Puppeteer from 'puppeteer';
+import type * as Puppeteer from 'puppeteer';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
