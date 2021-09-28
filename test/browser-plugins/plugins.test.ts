@@ -1,6 +1,5 @@
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
-import fs from 'fs';
 
 import { PuppeteerPlugin } from '../../src/puppeteer/puppeteer-plugin';
 import { PuppeteerController } from '../../src/puppeteer/puppeteer-controller';
