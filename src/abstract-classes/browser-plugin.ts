@@ -1,5 +1,4 @@
 import merge from 'lodash.merge';
-import { ensureDir } from 'fs-extra';
 import { log } from '../logger';
 import { LaunchContext, LaunchContextOptions } from '../launch-context';
 import { BrowserController } from './browser-controller';
@@ -143,14 +142,10 @@ export abstract class BrowserPlugin<
     async launch(
         launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = this.createLaunchContext(),
     ): Promise<LaunchResult> {
-        const { proxyUrl, useIncognitoPages, userDataDir } = launchContext;
+        const { proxyUrl } = launchContext;
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
-        }
-
-        if (!useIncognitoPages) {
-            await ensureDir(userDataDir);
         }
 
         return this._launch(launchContext);
