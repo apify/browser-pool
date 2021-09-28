@@ -84,7 +84,6 @@ const runPluginTest = <
             const context = plugin.createLaunchContext();
             browser = await plugin.launch(context as never);
 
-            expect(fs.existsSync(context.userDataDir)).toBeTruthy();
             await browser.close();
         });
 
