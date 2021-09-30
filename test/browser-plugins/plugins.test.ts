@@ -75,17 +75,6 @@ const runPluginTest = <
             expect(context.useIncognitoPages).toEqual(desiredObject.useIncognitoPages);
         });
 
-        test('should create userDatadir', async () => {
-            plugin = new Plugin(library as never, {
-                useIncognitoPages: false,
-            });
-
-            const context = plugin.createLaunchContext();
-            browser = await plugin.launch(context as never);
-
-            await browser.close();
-        });
-
         test('should get default launchContext values from plugin options', async () => {
             const proxyUrl = 'http://apify1234@10.10.10.0:8080/';
 
