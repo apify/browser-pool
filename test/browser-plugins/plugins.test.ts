@@ -1,6 +1,5 @@
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
-import fs from 'fs';
 
 import { PuppeteerPlugin } from '../../src/puppeteer/puppeteer-plugin';
 import { PuppeteerController } from '../../src/puppeteer/puppeteer-controller';
@@ -74,18 +73,6 @@ const runPluginTest = <
             expect(context['_proxyUrl']).toEqual(desiredObject._proxyUrl); // eslint-disable-line
             expect(context.one).toEqual(desiredObject.one);
             expect(context.useIncognitoPages).toEqual(desiredObject.useIncognitoPages);
-        });
-
-        test('should create userDatadir', async () => {
-            plugin = new Plugin(library as never, {
-                useIncognitoPages: false,
-            });
-
-            const context = plugin.createLaunchContext();
-            browser = await plugin.launch(context as never);
-
-            expect(fs.existsSync(context.userDataDir)).toBeTruthy();
-            await browser.close();
         });
 
         test('should get default launchContext values from plugin options', async () => {

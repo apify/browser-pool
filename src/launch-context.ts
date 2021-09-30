@@ -1,6 +1,3 @@
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { nanoid } from 'nanoid';
 import type { BrowserPlugin, CommonBrowser, CommonLibrary } from './abstract-classes/browser-plugin';
 import { UnwrapPromise } from './utils';
 
@@ -77,7 +74,7 @@ export class LaunchContext<
             launchOptions,
             proxyUrl,
             useIncognitoPages,
-            userDataDir = join(tmpdir(), nanoid()),
+            userDataDir = '',
         } = options;
 
         this.id = id;
