@@ -1,3 +1,20 @@
+2.0.4 / 2021/10/05
+====================
+- fix `proxyUrl` in incognito context (#51), closes apify/apify-js#1195
+
+2.0.3 / 2021/09/06
+====================
+- fix browser profile leak (#50)
+
+2.0.2 / 2021/09/06
+====================
+- fix race condition on `newPage` (#44)
+- attempt to fix types (#47)
+
+2.0.1 / 2021/08/31
+====================
+- fix incognito mode (#43)
+
 2.0.0 / 2021/08/24
 ====================
 
