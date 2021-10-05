@@ -17,6 +17,8 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             useIncognitoPages,
         } = launchContext;
 
+        const typedAnonymizedProxyUrl = anonymizedProxyUrl as string | undefined;
+
         const finalLaunchOptions = {
             ...launchOptions,
             userDataDir: launchOptions?.userDataDir ?? userDataDir,
@@ -44,7 +46,10 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                 get: (target, property: keyof typeof browser) => {
                     if (property === 'newPage') {
                         return (async (...args) => {
-                            const incognitoContext = await browser.createIncognitoBrowserContext();
+                            const incognitoContext = await browser.createIncognitoBrowserContext({
+                                proxyServer: typedAnonymizedProxyUrl || launchContext.proxyUrl,
+                            });
+
                             return incognitoContext.newPage(...args);
                         }) as typeof browser.newPage;
                     }
@@ -54,9 +59,9 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             });
         }
 
-        if (anonymizedProxyUrl) {
+        if (typedAnonymizedProxyUrl) {
             browser.once('disconnected', () => {
-                this._closeAnonymizedProxy(anonymizedProxyUrl as string);
+                this._closeAnonymizedProxy(typedAnonymizedProxyUrl);
             });
         }
 
