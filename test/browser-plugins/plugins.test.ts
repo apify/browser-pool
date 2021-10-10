@@ -139,7 +139,6 @@ describe('Plugins', () => {
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
             expect(argWithProxy?.includes(proxyUrl)).toBeTruthy();
-            expect(plugin['_getAnonymizedProxyUrl']).not.toBeCalled(); // eslint-disable-line
         });
 
         test('should work with authenticated proxyUrl', async () => {
@@ -155,7 +154,6 @@ describe('Plugins', () => {
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
             expect(argWithProxy?.includes(context.anonymizedProxyUrl as string)).toBeTruthy();
-            expect(plugin['_getAnonymizedProxyUrl']).toBeCalled(); // eslint-disable-line
         });
 
         test('should use persistent context by default', async () => {
@@ -218,28 +216,20 @@ describe('Plugins', () => {
                 const proxyUrl = 'http://10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                // @ts-expect-error Private function
-                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-
                 const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
                 expect(context.launchOptions!.proxy!.server).toEqual(proxyUrl);
-                expect(plugin['_getAnonymizedProxyUrl']).not.toBeCalled(); // eslint-disable-line
             });
 
             test('should work with authenticated proxyUrl', async () => {
                 const proxyUrl = 'http://apify1234:password@10.10.10.0:8080';
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                // @ts-expect-error Private function
-                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-
                 const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
                 expect(context.launchOptions!.proxy!.server).toEqual(context.anonymizedProxyUrl);
-                expect(plugin['_getAnonymizedProxyUrl']).toBeCalled(); // eslint-disable-line
             });
 
             test('should use incognito context by option', async () => {
