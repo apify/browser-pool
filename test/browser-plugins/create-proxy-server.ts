@@ -13,6 +13,16 @@ const hopByHopHeaders = [
 
 export const isHopByHopHeader = (header: string): boolean => hopByHopHeaders.includes(header.toLowerCase());
 
+const fromEntries = <K extends string | number | symbol, V>(entries: Array<[K, V]>) => {
+    const result: Record<K, V> = {} as Record<K, V>;
+
+    for (const [key, value] of entries) {
+        result[key] = value;
+    }
+
+    return result;
+};
+
 // --proxy-bypass-list=<-loopback> for launching Chrome
 export const createProxyServer = (localAddress: string, username: string, password: string): http.Server => {
     const pair = Buffer.from(`${username}:${password}`).toString('base64');
@@ -36,7 +46,7 @@ export const createProxyServer = (localAddress: string, username: string, passwo
         }
 
         const client = http.request(request.url!, {
-            headers: Object.fromEntries(
+            headers: fromEntries(
                 Object.entries(request.headers).filter(
                     (entry) => !isHopByHopHeader(entry[0]),
                 ),
