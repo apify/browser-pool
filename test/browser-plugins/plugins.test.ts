@@ -144,9 +144,6 @@ describe('Plugins', () => {
             const context = plugin.createLaunchContext({ proxyUrl });
 
             browser = await plugin.launch(context);
-            const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
-
-            expect(argWithProxy?.includes(context.anonymizedProxyUrl as string)).toBeTruthy();
         });
 
         test('should use persistent context by default', async () => {
@@ -222,7 +219,6 @@ describe('Plugins', () => {
                 const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
-                expect(context.launchOptions!.proxy!.server).toEqual(context.anonymizedProxyUrl);
             });
 
             test('should use incognito context by option', async () => {
