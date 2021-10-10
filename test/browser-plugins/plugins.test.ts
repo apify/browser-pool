@@ -16,84 +16,10 @@ import { LaunchContext } from '../../src/launch-context';
 import { UnwrapPromise } from '../../src/utils';
 import { CommonLibrary } from '../../src/abstract-classes/browser-plugin';
 
+// TODO: make `proxy-chain` accept `localAddress`
+import { createProxyServer } from './create-proxy-server';
+
 jest.setTimeout(120000);
-
-// --proxy-bypass-list="<-loopback>" for launching Chrome
-const createProxyServer = (localAddress: string, username: string, password: string): http.Server => {
-    const pair = Buffer.from(`${username}:${password}`).toString('base64');
-    const desiredAuthorization = `Basic ${pair}`;
-
-    const isAuthorized = (request: http.IncomingMessage) => {
-        const authorization = request.headers['proxy-authorization'] || request.headers.authorization;
-
-        if (username || password) {
-            return authorization === desiredAuthorization;
-        }
-
-        return true;
-    };
-
-    const server = http.createServer((request, response) => {
-        if (!isAuthorized(request)) {
-            response.statusCode = 401;
-            response.end();
-            return;
-        }
-
-        const client = http.request(request.url!, {
-            localAddress,
-        }, (clientResponse) => {
-            for (const [header, value] of Object.entries(clientResponse.headers)) {
-                response.setHeader(header, value!);
-            }
-
-            clientResponse.pipe(response);
-        });
-
-        request.pipe(client);
-    });
-
-    server.on('connect', (request, socket) => {
-        if (!isAuthorized(request)) {
-            socket.end([
-                'HTTP/1.1 401 Unauthorized',
-                'Connection: close',
-                `Date: ${(new Date()).toUTCString()}`,
-                'Content-Length: 0',
-                '',
-            ]);
-        }
-
-        const [host, port] = request.url!.split(':');
-
-        const target = net.connect({
-            host,
-            port: Number(port),
-            localAddress,
-        });
-
-        target.pipe(socket);
-        socket.pipe(target);
-
-        socket.once('close', () => {
-            target.resume();
-        });
-
-        target.once('close', () => {
-            socket.resume();
-        });
-
-        socket.once('error', () => {
-            target.destroy();
-        });
-
-        target.once('error', () => {
-            socket.destroy();
-        });
-    });
-
-    return server;
-};
 
 const runPluginTest = <
     P extends typeof PlaywrightPlugin | typeof PuppeteerPlugin,
@@ -216,9 +142,9 @@ describe('Plugins', () => {
     });
 
     afterAll(async () => {
-        await promisify(target.close.bind(target) as any)(0, '127.0.0.1');
-        await promisify(unprotectedProxy.close.bind(unprotectedProxy) as any)(0, '127.0.0.2');
-        await promisify(protectedProxy.close.bind(protectedProxy) as any)(0, '127.0.0.3');
+        await promisify(target.close.bind(target))();
+        await promisify(unprotectedProxy.close.bind(unprotectedProxy))();
+        await promisify(protectedProxy.close.bind(protectedProxy))();
     });
 
     describe('Puppeteer specifics', () => {
@@ -236,7 +162,7 @@ describe('Plugins', () => {
                 proxyUrl,
                 launchOptions: {
                     args: [
-                        '--proxy-bypass-list="<-loopback>"',
+                        '--proxy-bypass-list=<-loopback>',
                     ],
                 },
             });
