@@ -1,3 +1,7 @@
+import net, { AddressInfo } from 'net';
+import http from 'http';
+import { promisify } from 'util';
+
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 
@@ -13,6 +17,83 @@ import { UnwrapPromise } from '../../src/utils';
 import { CommonLibrary } from '../../src/abstract-classes/browser-plugin';
 
 jest.setTimeout(120000);
+
+// --proxy-bypass-list="<-loopback>" for launching Chrome
+const createProxyServer = (localAddress: string, username: string, password: string): http.Server => {
+    const pair = Buffer.from(`${username}:${password}`).toString('base64');
+    const desiredAuthorization = `Basic ${pair}`;
+
+    const isAuthorized = (request: http.IncomingMessage) => {
+        const authorization = request.headers['proxy-authorization'] || request.headers.authorization;
+
+        if (username || password) {
+            return authorization === desiredAuthorization;
+        }
+
+        return true;
+    };
+
+    const server = http.createServer((request, response) => {
+        if (!isAuthorized(request)) {
+            response.statusCode = 401;
+            response.end();
+            return;
+        }
+
+        const client = http.request(request.url!, {
+            localAddress,
+        }, (clientResponse) => {
+            for (const [header, value] of Object.entries(clientResponse.headers)) {
+                response.setHeader(header, value!);
+            }
+
+            clientResponse.pipe(response);
+        });
+
+        request.pipe(client);
+    });
+
+    server.on('connect', (request, socket) => {
+        if (!isAuthorized(request)) {
+            socket.end([
+                'HTTP/1.1 401 Unauthorized',
+                'Connection: close',
+                `Date: ${(new Date()).toUTCString()}`,
+                'Content-Length: 0',
+                '',
+            ]);
+        }
+
+        const [host, port] = request.url!.split(':');
+
+        const target = net.connect({
+            host,
+            port: Number(port),
+            localAddress,
+        });
+
+        target.pipe(socket);
+        socket.pipe(target);
+
+        socket.once('close', () => {
+            target.resume();
+        });
+
+        target.once('close', () => {
+            socket.resume();
+        });
+
+        socket.once('error', () => {
+            target.destroy();
+        });
+
+        target.once('error', () => {
+            socket.destroy();
+        });
+    });
+
+    return server;
+};
 
 const runPluginTest = <
     P extends typeof PlaywrightPlugin | typeof PuppeteerPlugin,
@@ -117,6 +198,29 @@ const runPluginTest = <
 };
 
 describe('Plugins', () => {
+    let target: http.Server;
+    let unprotectedProxy: http.Server;
+    let protectedProxy: http.Server;
+
+    beforeAll(async () => {
+        target = http.createServer((request, response) => {
+            response.end(request.socket.remoteAddress);
+        });
+        await promisify(target.listen.bind(target) as any)(0, '127.0.0.1');
+
+        unprotectedProxy = createProxyServer('127.0.0.2', '', '');
+        await promisify(unprotectedProxy.listen.bind(unprotectedProxy) as any)(0, '127.0.0.2');
+
+        protectedProxy = createProxyServer('127.0.0.3', 'foo', 'bar');
+        await promisify(protectedProxy.listen.bind(protectedProxy) as any)(0, '127.0.0.3');
+    });
+
+    afterAll(async () => {
+        await promisify(target.close.bind(target) as any)(0, '127.0.0.1');
+        await promisify(unprotectedProxy.close.bind(unprotectedProxy) as any)(0, '127.0.0.2');
+        await promisify(protectedProxy.close.bind(protectedProxy) as any)(0, '127.0.0.3');
+    });
+
     describe('Puppeteer specifics', () => {
         let browser: puppeteer.Browser;
 
@@ -125,15 +229,31 @@ describe('Plugins', () => {
         });
 
         test('should work with non authenticated proxyUrl', async () => {
-            const proxyUrl = 'http://10.10.10.0:8080';
+            const proxyUrl = `http://127.0.0.2:${(unprotectedProxy.address() as AddressInfo).port}`;
             const plugin = new PuppeteerPlugin(puppeteer);
 
-            const context = plugin.createLaunchContext({ proxyUrl });
+            const context = plugin.createLaunchContext({
+                proxyUrl,
+                launchOptions: {
+                    args: [
+                        '--proxy-bypass-list="<-loopback>"',
+                    ],
+                },
+            });
 
             browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
             expect(argWithProxy?.includes(proxyUrl)).toBeTruthy();
+
+            const page = await browser.newPage();
+            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+
+            const text = await response.text();
+
+            expect(text).toBe('127.0.0.2');
+
+            await page.close();
         });
 
         test('should work with authenticated proxyUrl', async () => {
