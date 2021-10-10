@@ -83,8 +83,6 @@ const runPluginTest = <
                 userDataDir: 'test',
                 useIncognitoPages: true,
             });
-            // @ts-expect-error Private function
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
 
             const context = plugin.createLaunchContext();
 
@@ -130,9 +128,6 @@ describe('Plugins', () => {
             const proxyUrl = 'http://10.10.10.0:8080';
             const plugin = new PuppeteerPlugin(puppeteer);
 
-            // @ts-expect-error Private function
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-
             const context = plugin.createLaunchContext({ proxyUrl });
 
             browser = await plugin.launch(context);
@@ -145,8 +140,6 @@ describe('Plugins', () => {
             const proxyUrl = 'http://apify1234@10.10.10.0:8080';
 
             const plugin = new PuppeteerPlugin(puppeteer);
-            // @ts-expect-error Private function
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
 
             const context = plugin.createLaunchContext({ proxyUrl });
 
