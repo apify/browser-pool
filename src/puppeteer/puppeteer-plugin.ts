@@ -40,26 +40,29 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             }
         });
 
+        const newPage = browser.newPage.bind(browser);
+
         browser = new Proxy(browser, {
             get: (target, property: keyof typeof browser) => {
                 if (property === 'newPage') {
                     return (async (...args) => {
-                        let from: { newPage: typeof browser.newPage } = browser;
+                        let page: Puppeteer.Page;
 
                         if (useIncognitoPages) {
-                            from = await browser.createIncognitoBrowserContext({
+                            const context = await browser.createIncognitoBrowserContext({
                                 proxyServer: proxyUrl,
                             });
+
+                            page = await context.newPage(...args);
+                        } else {
+                            page = await newPage(...args);
                         }
 
                         if (proxyCredentials) {
-                            const page = await from.newPage(...args);
                             await page.authenticate(proxyCredentials as Puppeteer.Credentials);
-
-                            return page;
                         }
 
-                        return from.newPage(...args);
+                        return page;
                     }) as typeof browser.newPage;
                 }
 
