@@ -1,5 +1,4 @@
 import http from 'http';
-import net from 'net';
 
 const hopByHopHeaders = [
     'connection',
@@ -55,53 +54,6 @@ export const createProxyServer = (localAddress: string, username: string, passwo
 
         client.once('error', () => {
             response.destroy();
-        });
-    });
-
-    server.on('connect', (request, socket) => {
-        if (!isAuthorized(request)) {
-            socket.end([
-                'HTTP/1.1 401 Unauthorized',
-                'Connection: close',
-                `Date: ${(new Date()).toUTCString()}`,
-                'Content-Length: 0',
-                '',
-            ]);
-        }
-
-        const [host, port] = request.url!.split(':');
-
-        const target = net.connect({
-            host,
-            port: Number(port),
-            localAddress,
-        });
-
-        target.pipe(socket);
-        socket.pipe(target);
-
-        socket.once('close', () => {
-            target.resume();
-
-            if (target.writable) {
-                target.end();
-            }
-        });
-
-        target.once('close', () => {
-            socket.resume();
-
-            if (socket.writable) {
-                socket.end();
-            }
-        });
-
-        socket.once('error', () => {
-            target.destroy();
-        });
-
-        target.once('error', () => {
-            socket.destroy();
         });
     });
 

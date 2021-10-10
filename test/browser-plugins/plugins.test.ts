@@ -1,4 +1,4 @@
-import net, { AddressInfo } from 'net';
+import { AddressInfo } from 'net';
 import http from 'http';
 import { promisify } from 'util';
 
