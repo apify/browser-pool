@@ -183,13 +183,31 @@ describe('Plugins', () => {
         });
 
         test('should work with authenticated proxyUrl', async () => {
-            const proxyUrl = 'http://apify1234@10.10.10.0:8080';
-
+            const proxyUrl = `http://foo:bar@127.0.0.3:${(unprotectedProxy.address() as AddressInfo).port}`;
             const plugin = new PuppeteerPlugin(puppeteer);
 
-            const context = plugin.createLaunchContext({ proxyUrl });
+            const context = plugin.createLaunchContext({
+                proxyUrl,
+                launchOptions: {
+                    args: [
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                },
+            });
 
             browser = await plugin.launch(context);
+            const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
+
+            expect(argWithProxy?.includes(proxyUrl)).toBeTruthy();
+
+            const page = await browser.newPage();
+            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+
+            const text = await response.text();
+
+            expect(text).toBe('127.0.0.3');
+
+            await page.close();
         });
 
         test('should use persistent context by default', async () => {
