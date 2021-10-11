@@ -87,10 +87,12 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         if (proxyUrl) {
             const url = new URL(proxyUrl);
 
-            launchContext.proxyCredentials = {
-                username: url.username,
-                password: url.password,
-            };
+            if (url.username || url.password) {
+                launchContext.proxyCredentials = {
+                    username: url.username,
+                    password: url.password,
+                };
+            }
 
             const proxyArg = `${PROXY_SERVER_ARG}${url.origin}`;
 
