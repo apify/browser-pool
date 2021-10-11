@@ -270,7 +270,14 @@ describe('Plugins', () => {
                 const proxyUrl = `http://127.0.0.2:${(unprotectedProxy.address() as AddressInfo).port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                const context = plugin.createLaunchContext({ proxyUrl });
+                const context = plugin.createLaunchContext({
+                    proxyUrl,
+                    launchOptions: {
+                        args: [
+                            '--proxy-bypass-list=<-loopback>',
+                        ],
+                    },
+                });
 
                 browser = await plugin.launch(context);
                 expect(context.launchOptions!.proxy!.server).toEqual(proxyUrl);
@@ -288,7 +295,14 @@ describe('Plugins', () => {
                 const proxyUrl = `http://foo:bar@127.0.0.3:${(unprotectedProxy.address() as AddressInfo).port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                const context = plugin.createLaunchContext({ proxyUrl });
+                const context = plugin.createLaunchContext({
+                    proxyUrl,
+                    launchOptions: {
+                        args: [
+                            '--proxy-bypass-list=<-loopback>',
+                        ],
+                    },
+                });
 
                 browser = await plugin.launch(context);
                 expect(context.launchOptions!.proxy!.server).toEqual(`http://127.0.0.3:${(unprotectedProxy.address() as AddressInfo).port}`);
