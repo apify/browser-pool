@@ -273,9 +273,9 @@ describe('Plugins', () => {
                 const context = plugin.createLaunchContext({
                     proxyUrl,
                     launchOptions: {
-                        args: [
-                            '--proxy-bypass-list="<-loopback>"',
-                        ],
+                        proxy: {
+                            bypass: '<-loopback>',
+                        } as any,
                     },
                 });
 
@@ -298,9 +298,9 @@ describe('Plugins', () => {
                 const context = plugin.createLaunchContext({
                     proxyUrl,
                     launchOptions: {
-                        args: [
-                            '--proxy-bypass-list="<-loopback>"',
-                        ],
+                        proxy: {
+                            bypass: '<-loopback>',
+                        } as any,
                     },
                 });
 
