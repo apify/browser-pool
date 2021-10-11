@@ -270,13 +270,15 @@ describe('Plugins', () => {
                 const proxyUrl = `http://127.0.0.2:${(unprotectedProxy.address() as AddressInfo).port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
+                const launchOptions = browserName === 'chromium' ? {
+                    args: [
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                } : undefined;
+
                 const context = plugin.createLaunchContext({
                     proxyUrl,
-                    launchOptions: {
-                        proxy: {
-                            bypass: '<-loopback>',
-                        } as any,
-                    },
+                    launchOptions,
                 });
 
                 browser = await plugin.launch(context);
@@ -295,13 +297,15 @@ describe('Plugins', () => {
                 const proxyUrl = `http://foo:bar@127.0.0.3:${(protectedProxy.address() as AddressInfo).port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
+                const launchOptions = browserName === 'chromium' ? {
+                    args: [
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                } : undefined;
+
                 const context = plugin.createLaunchContext({
                     proxyUrl,
-                    launchOptions: {
-                        proxy: {
-                            bypass: '<-loopback>',
-                        } as any,
-                    },
+                    launchOptions,
                 });
 
                 browser = await plugin.launch(context);
