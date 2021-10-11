@@ -198,7 +198,7 @@ describe('Plugins', () => {
             browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
-            expect(argWithProxy?.includes(proxyUrl)).toBeTruthy();
+            expect(argWithProxy?.includes(`http://127.0.0.3:${(unprotectedProxy.address() as AddressInfo).port}`)).toBeTruthy();
 
             const page = await browser.newPage();
             const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
