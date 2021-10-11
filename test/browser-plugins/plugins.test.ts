@@ -274,7 +274,7 @@ describe('Plugins', () => {
                     proxyUrl,
                     launchOptions: {
                         args: [
-                            '--proxy-bypass-list=<-loopback>',
+                            '--proxy-bypass-list="<-loopback>"',
                         ],
                     },
                 });
@@ -299,7 +299,7 @@ describe('Plugins', () => {
                     proxyUrl,
                     launchOptions: {
                         args: [
-                            '--proxy-bypass-list=<-loopback>',
+                            '--proxy-bypass-list="<-loopback>"',
                         ],
                     },
                 });
