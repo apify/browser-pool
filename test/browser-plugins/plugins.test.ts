@@ -267,22 +267,39 @@ describe('Plugins', () => {
 
         describe.each(['chromium', 'firefox', 'webkit'] as const)('with %s', (browserName) => {
             test('should work with non authenticated proxyUrl', async () => {
-                const proxyUrl = 'http://10.10.10.0:8080';
+                const proxyUrl = `http://127.0.0.2:${(unprotectedProxy.address() as AddressInfo).port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
                 const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
                 expect(context.launchOptions!.proxy!.server).toEqual(proxyUrl);
+
+                const page = await browser.newPage();
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const text = await response!.text();
+
+                expect(text).toBe('127.0.0.2');
+
+                await page.close();
             });
 
             test('should work with authenticated proxyUrl', async () => {
-                const proxyUrl = 'http://apify1234:password@10.10.10.0:8080';
+                const proxyUrl = `http://foo:bar@127.0.0.3:${(unprotectedProxy.address() as AddressInfo).port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
                 const context = plugin.createLaunchContext({ proxyUrl });
 
                 browser = await plugin.launch(context);
+                expect(context.launchOptions!.proxy!.server).toEqual(`http://127.0.0.3:${(unprotectedProxy.address() as AddressInfo).port}`);
+
+                const page = await browser.newPage();
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const text = await response!.text();
+
+                expect(text).toBe('127.0.0.3');
+
+                await page.close();
             });
 
             test('should use incognito context by option', async () => {
