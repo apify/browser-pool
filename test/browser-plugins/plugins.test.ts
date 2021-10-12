@@ -163,6 +163,9 @@ describe('Plugins', () => {
                 proxyUrl,
                 launchOptions: {
                     args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
                         '--proxy-bypass-list=<-loopback>',
                     ],
                 },
@@ -191,6 +194,9 @@ describe('Plugins', () => {
                 proxyUrl,
                 launchOptions: {
                     args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
                         '--proxy-bypass-list=<-loopback>',
                     ],
                 },
@@ -273,6 +279,9 @@ describe('Plugins', () => {
 
                 const launchOptions = browserName === 'chromium' ? {
                     args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
                         '--proxy-bypass-list=<-loopback>',
                     ],
                 } : undefined;
@@ -300,6 +309,9 @@ describe('Plugins', () => {
 
                 const launchOptions = browserName === 'chromium' ? {
                     args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
                         '--proxy-bypass-list=<-loopback>',
                     ],
                 } : undefined;
