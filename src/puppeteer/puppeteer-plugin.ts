@@ -1,4 +1,7 @@
+// eslint isn't compatible with `import type`
+/* eslint-disable import/no-duplicates */
 import type Puppeteer from 'puppeteer';
+import type { Browser, Credentials, Target } from 'puppeteer';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
@@ -9,7 +12,7 @@ import { PuppeteerController } from './puppeteer-controller';
 const PROXY_SERVER_ARG = '--proxy-server=';
 
 export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
-    protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Puppeteer.Browser> {
+    protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Browser> {
         const {
             launchOptions,
             userDataDir,
@@ -25,7 +28,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
 
         let browser = await this.library.launch(finalLaunchOptions);
 
-        browser.on('targetcreated', async (target: Puppeteer.Target) => {
+        browser.on('targetcreated', async (target: Target) => {
             try {
                 const page = await target.page();
 
@@ -59,7 +62,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                         }
 
                         if (proxyCredentials) {
-                            await page.authenticate(proxyCredentials as Puppeteer.Credentials);
+                            await page.authenticate(proxyCredentials as Credentials);
                         }
 
                         return page;
