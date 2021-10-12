@@ -89,8 +89,8 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
 
             if (url.username || url.password) {
                 launchContext.proxyCredentials = {
-                    username: url.username,
-                    password: url.password,
+                    username: decodeURIComponent(url.username),
+                    password: decodeURIComponent(url.password),
                 };
             }
 

@@ -52,8 +52,8 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
 
             launchOptions.proxy = {
                 server: url.origin,
-                username: url.username,
-                password: url.password,
+                username: decodeURIComponent(url.username),
+                password: decodeURIComponent(url.password),
             };
         }
     }
