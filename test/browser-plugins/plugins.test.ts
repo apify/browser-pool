@@ -2,7 +2,7 @@ import { AddressInfo } from 'net';
 import http from 'http';
 import { promisify } from 'util';
 
-import * as ProxyChain from 'proxy-chain';
+import { Server as ProxyChainServer } from 'proxy-chain';
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 
@@ -125,8 +125,8 @@ const runPluginTest = <
 
 describe('Plugins', () => {
     let target: http.Server;
-    let unprotectedProxy: ProxyChain.Server;
-    let protectedProxy: ProxyChain.Server;
+    let unprotectedProxy: ProxyChainServer;
+    let protectedProxy: ProxyChainServer;
 
     beforeAll(async () => {
         target = http.createServer((request, response) => {
