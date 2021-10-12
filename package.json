@@ -65,6 +65,7 @@
 		"jsdoc-to-markdown": "^7.0.1",
 		"markdown-toc": "^1.2.0",
 		"playwright": "^1.13.1",
+		"proxy-chain": "^2.0.0-beta.0",
 		"puppeteer": "^10.4.0",
 		"rimraf": "^3.0.2",
 		"ts-jest": "^27.0.4",

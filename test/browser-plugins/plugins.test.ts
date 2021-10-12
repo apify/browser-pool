@@ -2,6 +2,7 @@ import { AddressInfo } from 'net';
 import http from 'http';
 import { promisify } from 'util';
 
+import ProxyChain from 'proxy-chain';
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 
@@ -16,7 +17,6 @@ import { LaunchContext } from '../../src/launch-context';
 import { UnwrapPromise } from '../../src/utils';
 import { CommonLibrary } from '../../src/abstract-classes/browser-plugin';
 
-// TODO: make `proxy-chain` accept `localAddress`
 import { createProxyServer } from './create-proxy-server';
 
 jest.setTimeout(120000);
@@ -125,8 +125,8 @@ const runPluginTest = <
 
 describe('Plugins', () => {
     let target: http.Server;
-    let unprotectedProxy: http.Server;
-    let protectedProxy: http.Server;
+    let unprotectedProxy: ProxyChain.Server;
+    let protectedProxy: ProxyChain.Server;
 
     beforeAll(async () => {
         target = http.createServer((request, response) => {
@@ -135,16 +135,17 @@ describe('Plugins', () => {
         await promisify(target.listen.bind(target) as any)(0, '127.0.0.1');
 
         unprotectedProxy = createProxyServer('127.0.0.2', '', '');
-        await promisify(unprotectedProxy.listen.bind(unprotectedProxy) as any)(0, '127.0.0.2');
+        await unprotectedProxy.listen();
 
         protectedProxy = createProxyServer('127.0.0.3', 'foo', 'bar');
-        await promisify(protectedProxy.listen.bind(protectedProxy) as any)(0, '127.0.0.3');
+        await protectedProxy.listen();
     });
 
     afterAll(async () => {
         await promisify(target.close.bind(target))();
-        await promisify(unprotectedProxy.close.bind(unprotectedProxy))();
-        await promisify(protectedProxy.close.bind(protectedProxy))();
+
+        await unprotectedProxy.close(false);
+        await protectedProxy.close(false);
     });
 
     describe('Puppeteer specifics', () => {
@@ -155,7 +156,7 @@ describe('Plugins', () => {
         });
 
         test('should work with non authenticated proxyUrl', async () => {
-            const proxyUrl = `http://127.0.0.2:${(unprotectedProxy.address() as AddressInfo).port}`;
+            const proxyUrl = `http://127.0.0.2:${unprotectedProxy.port}`;
             const plugin = new PuppeteerPlugin(puppeteer);
 
             const context = plugin.createLaunchContext({
@@ -183,7 +184,7 @@ describe('Plugins', () => {
         });
 
         test('should work with authenticated proxyUrl', async () => {
-            const proxyUrl = `http://foo:bar@127.0.0.3:${(protectedProxy.address() as AddressInfo).port}`;
+            const proxyUrl = `http://foo:bar@127.0.0.3:${protectedProxy.port}`;
             const plugin = new PuppeteerPlugin(puppeteer);
 
             const context = plugin.createLaunchContext({
@@ -198,7 +199,7 @@ describe('Plugins', () => {
             browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
-            expect(argWithProxy?.includes(`http://127.0.0.3:${(protectedProxy.address() as AddressInfo).port}`)).toBeTruthy();
+            expect(argWithProxy?.includes(`http://127.0.0.3:${protectedProxy.port}`)).toBeTruthy();
 
             const page = await browser.newPage();
             const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
@@ -267,7 +268,7 @@ describe('Plugins', () => {
 
         describe.each(['chromium', 'firefox', 'webkit'] as const)('with %s', (browserName) => {
             test('should work with non authenticated proxyUrl', async () => {
-                const proxyUrl = `http://127.0.0.2:${(unprotectedProxy.address() as AddressInfo).port}`;
+                const proxyUrl = `http://127.0.0.2:${unprotectedProxy.port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
                 const launchOptions = browserName === 'chromium' ? {
@@ -294,7 +295,7 @@ describe('Plugins', () => {
             });
 
             test('should work with authenticated proxyUrl', async () => {
-                const proxyUrl = `http://foo:bar@127.0.0.3:${(protectedProxy.address() as AddressInfo).port}`;
+                const proxyUrl = `http://foo:bar@127.0.0.3:${protectedProxy.port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
                 const launchOptions = browserName === 'chromium' ? {
@@ -309,7 +310,7 @@ describe('Plugins', () => {
                 });
 
                 browser = await plugin.launch(context);
-                expect(context.launchOptions!.proxy!.server).toEqual(`http://127.0.0.3:${(protectedProxy.address() as AddressInfo).port}`);
+                expect(context.launchOptions!.proxy!.server).toEqual(`http://127.0.0.3:${protectedProxy.port}`);
 
                 const page = await browser.newPage();
                 const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
