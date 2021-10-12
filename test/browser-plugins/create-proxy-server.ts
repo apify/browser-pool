@@ -1,4 +1,4 @@
-import ProxyChain from 'proxy-chain';
+import * as ProxyChain from 'proxy-chain';
 
 // --proxy-bypass-list=<-loopback> for launching Chrome
 export const createProxyServer = (localAddress: string, username: string, password: string): ProxyChain.Server => {

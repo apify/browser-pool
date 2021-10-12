@@ -2,7 +2,7 @@ import { AddressInfo } from 'net';
 import http from 'http';
 import { promisify } from 'util';
 
-import ProxyChain from 'proxy-chain';
+import * as ProxyChain from 'proxy-chain';
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 
