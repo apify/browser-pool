@@ -266,17 +266,7 @@ describe('Plugins', () => {
             const plugin = new PuppeteerPlugin(puppeteer);
             const browserController = new PuppeteerController(plugin);
 
-            const launchContext = plugin.createLaunchContext({
-                useIncognitoPages: true,
-                launchOptions: {
-                    args: [
-                        // Exclude loopback interface from proxy bypass list,
-                        // so the request to localhost goes through proxy.
-                        // This way there's no need for a 3rd party server.
-                        '--proxy-bypass-list=<-loopback>',
-                    ],
-                },
-            });
+            const launchContext = plugin.createLaunchContext();
 
             browser = await plugin.launch(launchContext);
             browserController.assignBrowser(browser, launchContext);
@@ -286,6 +276,7 @@ describe('Plugins', () => {
                 proxyServer: `http://127.0.0.3:${protectedProxy.port}`,
                 proxyUsername: 'foo',
                 proxyPassword: 'bar',
+                proxyBypassList: ['<-loopback>'],
             } as any);
 
             const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
