@@ -261,6 +261,24 @@ describe('Plugins', () => {
             launchOptions.userDataDir = launchContext.userDataDir;
             expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
         });
+
+        test('proxyUsername and proxyPassword as newPage options', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer);
+            const controller = new PuppeteerController(plugin);
+
+            const page = await controller.newPage({
+                proxyUrl: `http://127.0.0.3:${protectedProxy.port}`,
+                proxyUsername: 'foo',
+                proxyPassword: 'bar',
+            } as any);
+
+            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+            const text = await response!.text();
+
+            expect(text).toBe('127.0.0.3');
+
+            await page.close();
+        });
     });
 
     runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer);

@@ -1,10 +1,40 @@
-import type * as Puppeteer from 'puppeteer';
+import type Puppeteer from 'puppeteer';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
+import { log } from '../logger';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
+interface ContextOptions extends Puppeteer.BrowserContextOptions {
+    proxyUsername?: string;
+    proxyPassword?: string;
+}
+
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
-    protected async _newPage(): Promise<Puppeteer.Page> {
+    protected async _newPage(contextOptions?: ContextOptions): Promise<Puppeteer.Page> {
+        if (contextOptions) {
+            const context = await this.browser.createIncognitoBrowserContext(contextOptions);
+            const page = await context.newPage();
+
+            if (contextOptions.proxyUsername || contextOptions.proxyPassword) {
+                await page.authenticate({
+                    username: contextOptions.proxyUsername ?? '',
+                    password: contextOptions.proxyPassword ?? '',
+                });
+            }
+
+            page.once('close', async () => {
+                this.activePages--;
+
+                try {
+                    await context.close();
+                } catch (error: any) {
+                    log.exception(error, 'Failed to close context.');
+                }
+            });
+
+            return page;
+        }
+
         const page = await this.browser.newPage();
 
         page.once('close', () => {
