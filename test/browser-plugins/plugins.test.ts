@@ -266,14 +266,24 @@ describe('Plugins', () => {
             const plugin = new PuppeteerPlugin(puppeteer);
             const browserController = new PuppeteerController(plugin);
 
-            const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
+            const launchContext = plugin.createLaunchContext({
+                useIncognitoPages: true,
+                launchOptions: {
+                    args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                },
+            });
 
             browser = await plugin.launch(launchContext);
             browserController.assignBrowser(browser, launchContext);
             browserController.activate();
 
             const page = await browserController.newPage({
-                proxyUrl: `http://127.0.0.3:${protectedProxy.port}`,
+                proxyServer: `http://127.0.0.3:${protectedProxy.port}`,
                 proxyUsername: 'foo',
                 proxyPassword: 'bar',
             } as any);
