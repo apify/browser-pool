@@ -278,6 +278,7 @@ describe('Plugins', () => {
             expect(text).toBe('127.0.0.3');
 
             await page.close();
+            await controller.close();
         });
     });
 
