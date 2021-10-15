@@ -264,9 +264,15 @@ describe('Plugins', () => {
 
         test('proxyUsername and proxyPassword as newPage options', async () => {
             const plugin = new PuppeteerPlugin(puppeteer);
-            const controller = new PuppeteerController(plugin);
+            const browserController = new PuppeteerController(plugin);
 
-            const page = await controller.newPage({
+            const launchContext = plugin.createLaunchContext({ useIncognitoPages: true });
+
+            browser = await plugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+            browserController.activate();
+
+            const page = await browserController.newPage({
                 proxyUrl: `http://127.0.0.3:${protectedProxy.port}`,
                 proxyUsername: 'foo',
                 proxyPassword: 'bar',
@@ -278,7 +284,6 @@ describe('Plugins', () => {
             expect(text).toBe('127.0.0.3');
 
             await page.close();
-            await controller.close();
         });
     });
 
