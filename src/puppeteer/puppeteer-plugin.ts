@@ -1,4 +1,7 @@
-import type * as Puppeteer from 'puppeteer';
+// eslint isn't compatible with `import type`
+/* eslint-disable import/no-duplicates */
+import type Puppeteer from 'puppeteer';
+import type { Browser, Credentials, Target } from 'puppeteer';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
@@ -9,15 +12,14 @@ import { PuppeteerController } from './puppeteer-controller';
 const PROXY_SERVER_ARG = '--proxy-server=';
 
 export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
-    protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Puppeteer.Browser> {
+    protected async _launch(launchContext: LaunchContext<typeof Puppeteer>): Promise<Browser> {
         const {
             launchOptions,
-            anonymizedProxyUrl,
             userDataDir,
             useIncognitoPages,
+            proxyCredentials,
+            proxyUrl,
         } = launchContext;
-
-        const typedAnonymizedProxyUrl = anonymizedProxyUrl as string | undefined;
 
         const finalLaunchOptions = {
             ...launchOptions,
@@ -26,7 +28,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
 
         let browser = await this.library.launch(finalLaunchOptions);
 
-        browser.on('targetcreated', async (target: Puppeteer.Target) => {
+        browser.on('targetcreated', async (target: Target) => {
             try {
                 const page = await target.page();
 
@@ -41,29 +43,35 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             }
         });
 
-        if (useIncognitoPages) {
-            browser = new Proxy(browser, {
-                get: (target, property: keyof typeof browser) => {
-                    if (property === 'newPage') {
-                        return (async (...args) => {
-                            const incognitoContext = await browser.createIncognitoBrowserContext({
-                                proxyServer: typedAnonymizedProxyUrl || launchContext.proxyUrl,
+        const newPage = browser.newPage.bind(browser);
+
+        browser = new Proxy(browser, {
+            get: (target, property: keyof typeof browser) => {
+                if (property === 'newPage') {
+                    return (async (...args) => {
+                        let page: Puppeteer.Page;
+
+                        if (useIncognitoPages) {
+                            const context = await browser.createIncognitoBrowserContext({
+                                proxyServer: proxyUrl,
                             });
 
-                            return incognitoContext.newPage(...args);
-                        }) as typeof browser.newPage;
-                    }
+                            page = await context.newPage(...args);
+                        } else {
+                            page = await newPage(...args);
+                        }
 
-                    return target[property];
-                },
-            });
-        }
+                        if (proxyCredentials) {
+                            await page.authenticate(proxyCredentials as Credentials);
+                        }
 
-        if (typedAnonymizedProxyUrl) {
-            browser.once('disconnected', () => {
-                this._closeAnonymizedProxy(typedAnonymizedProxyUrl);
-            });
-        }
+                        return page;
+                    }) as typeof browser.newPage;
+                }
+
+                return target[property];
+            },
+        });
 
         return browser;
     }
@@ -78,19 +86,24 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         launchContext.launchOptions ??= {};
 
         const { launchOptions, proxyUrl } = launchContext;
-        let finalProxyUrl = proxyUrl;
 
-        if (proxyUrl && this._shouldAnonymizeProxy(proxyUrl)) {
-            finalProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-            launchContext.anonymizedProxyUrl = finalProxyUrl;
-        }
+        if (proxyUrl) {
+            const url = new URL(proxyUrl);
 
-        const proxyArg = `${PROXY_SERVER_ARG}${finalProxyUrl}`;
+            if (url.username || url.password) {
+                launchContext.proxyCredentials = {
+                    username: decodeURIComponent(url.username),
+                    password: decodeURIComponent(url.password),
+                };
+            }
 
-        if (Array.isArray(launchOptions.args)) {
-            launchOptions.args.push(proxyArg);
-        } else {
-            launchOptions.args = [proxyArg];
+            const proxyArg = `${PROXY_SERVER_ARG}${url.origin}`;
+
+            if (Array.isArray(launchOptions.args)) {
+                launchOptions.args.push(proxyArg);
+            } else {
+                launchOptions.args = [proxyArg];
+            }
         }
     }
 }

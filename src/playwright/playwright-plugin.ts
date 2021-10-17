@@ -12,7 +12,6 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
     protected async _launch(launchContext: LaunchContext<BrowserType>): Promise<PlaywrightBrowser> {
         const {
             launchOptions,
-            anonymizedProxyUrl,
             useIncognitoPages,
             userDataDir,
         } = launchContext;
@@ -36,12 +35,6 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
             browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });
         }
 
-        if (anonymizedProxyUrl) {
-            browser.once('disconnected', () => {
-                this._closeAnonymizedProxy(anonymizedProxyUrl as string);
-            });
-        }
-
         return browser;
     }
 
@@ -55,13 +48,13 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
         const { launchOptions, proxyUrl } = launchContext;
 
         if (proxyUrl) {
-            if (this._shouldAnonymizeProxy(proxyUrl)) {
-                const anonymizedProxyUrl = await this._getAnonymizedProxyUrl(proxyUrl);
-                launchContext.anonymizedProxyUrl = anonymizedProxyUrl;
-                launchOptions.proxy = { server: anonymizedProxyUrl };
-            } else {
-                launchOptions.proxy = { server: proxyUrl };
-            }
+            const url = new URL(proxyUrl);
+
+            launchOptions.proxy = {
+                server: url.origin,
+                username: decodeURIComponent(url.username),
+                password: decodeURIComponent(url.password),
+            };
         }
     }
 }

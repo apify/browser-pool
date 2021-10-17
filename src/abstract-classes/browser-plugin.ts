@@ -1,12 +1,8 @@
 import merge from 'lodash.merge';
-import { log } from '../logger';
 import { LaunchContext, LaunchContextOptions } from '../launch-context';
 import { BrowserController } from './browser-controller';
 import { throwImplementationNeeded } from './utils';
 import { UnwrapPromise } from '../utils';
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires -- TODO: Type this module, and convert import
-const proxyChain = require('proxy-chain');
 
 /**
  * Each plugin expects an instance of the object with the `.launch()` property.
@@ -176,45 +172,5 @@ export abstract class BrowserPlugin<
     // eslint-disable-next-line space-before-function-paren
     protected abstract _createController(): BrowserController<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> {
         throwImplementationNeeded('_createController');
-    }
-
-    /**
-     * Starts proxy-chain server - https://www.npmjs.com/package/proxy-chain#anonymizeproxyproxyurl-callback
-     * @param proxyUrl Proxy URL with username and password.
-     * @return URL of the anonymization proxy server that needs to be closed after the proxy is not used anymore.
-     * @private
-     */
-    protected async _getAnonymizedProxyUrl(proxyUrl: string): Promise<string> {
-        try {
-            return await proxyChain.anonymizeProxy(proxyUrl);
-        } catch (e) {
-            throw new Error(`BrowserPool: Could not anonymize proxyUrl: ${proxyUrl}. Reason: ${(e as Error).message}.`);
-        }
-    }
-
-    /**
-     * @param proxyUrl Anonymized proxy URL of a running proxy server.
-     * @private
-     */
-    protected async _closeAnonymizedProxy(proxyUrl: string): Promise<boolean> {
-        return proxyChain.closeAnonymizedProxy(proxyUrl, true).catch((err: Error) => {
-            log.debug(`Could not close anonymized proxy server.\nCause:${err.message}`);
-        });
-    }
-
-    /**
-     * Checks if proxy URL should be anonymized.
-     * @private
-     */
-    protected _shouldAnonymizeProxy(proxyUrl: string): boolean {
-        const parsedProxyUrl = proxyChain.parseUrl(proxyUrl);
-        if (parsedProxyUrl.username || parsedProxyUrl.password) {
-            if (parsedProxyUrl.scheme !== 'http') {
-                throw new Error('Invalid "proxyUrl" option: authentication is only supported for HTTP proxy type.');
-            }
-            return true;
-        }
-
-        return false;
     }
 }

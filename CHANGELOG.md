@@ -1,3 +1,7 @@
+3.0.0 / 2021/10/17
+====================
+- fix: skip proxy-chain #53
+
 2.0.4 / 2021/10/05
 ====================
 - fix `proxyUrl` in incognito context (#51), closes apify/apify-js#1195

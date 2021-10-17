@@ -112,8 +112,6 @@ export abstract class BrowserController<
 
     isActive = false;
 
-    supportsPageOptions = false;
-
     activePages = 0;
 
     totalPages = 0;

@@ -1,3 +1,8 @@
+import { AddressInfo } from 'net';
+import http from 'http';
+import { promisify } from 'util';
+
+import { Server as ProxyChainServer } from 'proxy-chain';
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 
@@ -11,6 +16,8 @@ import { Browser } from '../../src/playwright/browser';
 import { LaunchContext } from '../../src/launch-context';
 import { UnwrapPromise } from '../../src/utils';
 import { CommonLibrary } from '../../src/abstract-classes/browser-plugin';
+
+import { createProxyServer } from './create-proxy-server';
 
 jest.setTimeout(120000);
 
@@ -83,8 +90,6 @@ const runPluginTest = <
                 userDataDir: 'test',
                 useIncognitoPages: true,
             });
-            // @ts-expect-error Private function
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
 
             const context = plugin.createLaunchContext();
 
@@ -115,10 +120,55 @@ const runPluginTest = <
             expect(cookies[0].name).toBe('TEST');
             expect(cookies[0].value).toBe('TESTER-COOKIE');
         });
+
+        test('newPage options cannot be used with persistent context', async () => {
+            const browserController = plugin.createController();
+
+            const context = plugin.createLaunchContext({
+                useIncognitoPages: false,
+            });
+
+            browser = await plugin.launch(context as never);
+            browserController.assignBrowser(browser as never, context as never);
+            browserController.activate();
+
+            try {
+                const page = await browserController.newPage({} as any);
+                await page.close();
+
+                expect(false).toBe(true);
+            } catch (error: any) {
+                expect(error.message).toBe('A new page can be created with provided context only when using incognito pages.');
+            }
+        });
     });
 };
 
 describe('Plugins', () => {
+    let target: http.Server;
+    let unprotectedProxy: ProxyChainServer;
+    let protectedProxy: ProxyChainServer;
+
+    beforeAll(async () => {
+        target = http.createServer((request, response) => {
+            response.end(request.socket.remoteAddress);
+        });
+        await promisify(target.listen.bind(target) as any)(0, '127.0.0.1');
+
+        unprotectedProxy = createProxyServer('127.0.0.2', '', '');
+        await unprotectedProxy.listen();
+
+        protectedProxy = createProxyServer('127.0.0.3', 'foo', 'bar');
+        await protectedProxy.listen();
+    });
+
+    afterAll(async () => {
+        await promisify(target.close.bind(target))();
+
+        await unprotectedProxy.close(false);
+        await protectedProxy.close(false);
+    });
+
     describe('Puppeteer specifics', () => {
         let browser: puppeteer.Browser;
 
@@ -127,35 +177,65 @@ describe('Plugins', () => {
         });
 
         test('should work with non authenticated proxyUrl', async () => {
-            const proxyUrl = 'http://10.10.10.0:8080';
+            const proxyUrl = `http://127.0.0.2:${unprotectedProxy.port}`;
             const plugin = new PuppeteerPlugin(puppeteer);
 
-            // @ts-expect-error Private function
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
-
-            const context = plugin.createLaunchContext({ proxyUrl });
+            const context = plugin.createLaunchContext({
+                proxyUrl,
+                launchOptions: {
+                    args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                },
+            });
 
             browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
             expect(argWithProxy?.includes(proxyUrl)).toBeTruthy();
-            expect(plugin['_getAnonymizedProxyUrl']).not.toBeCalled(); // eslint-disable-line
+
+            const page = await browser.newPage();
+            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+
+            const text = await response.text();
+
+            expect(text).toBe('127.0.0.2');
+
+            await page.close();
         });
 
         test('should work with authenticated proxyUrl', async () => {
-            const proxyUrl = 'http://apify1234@10.10.10.0:8080';
-
+            const proxyUrl = `http://foo:bar@127.0.0.3:${protectedProxy.port}`;
             const plugin = new PuppeteerPlugin(puppeteer);
-            // @ts-expect-error Private function
-            jest.spyOn(plugin, '_getAnonymizedProxyUrl');
 
-            const context = plugin.createLaunchContext({ proxyUrl });
+            const context = plugin.createLaunchContext({
+                proxyUrl,
+                launchOptions: {
+                    args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                },
+            });
 
             browser = await plugin.launch(context);
             const argWithProxy = context.launchOptions?.args?.find((arg) => arg.includes('--proxy-server='));
 
-            expect(argWithProxy?.includes(context.anonymizedProxyUrl as string)).toBeTruthy();
-            expect(plugin['_getAnonymizedProxyUrl']).toBeCalled(); // eslint-disable-line
+            expect(argWithProxy?.includes(`http://127.0.0.3:${protectedProxy.port}`)).toBeTruthy();
+
+            const page = await browser.newPage();
+            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+
+            const text = await response.text();
+
+            expect(text).toBe('127.0.0.3');
+
+            await page.close();
         });
 
         test('should use persistent context by default', async () => {
@@ -202,6 +282,35 @@ describe('Plugins', () => {
             launchOptions.userDataDir = launchContext.userDataDir;
             expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
         });
+
+        test('proxyUsername and proxyPassword as newPage options', async () => {
+            const plugin = new PuppeteerPlugin(puppeteer);
+            const browserController = new PuppeteerController(plugin);
+
+            const launchContext = plugin.createLaunchContext({
+                useIncognitoPages: true,
+            });
+
+            browser = await plugin.launch(launchContext);
+            browserController.assignBrowser(browser, launchContext);
+            browserController.activate();
+
+            const page = await browserController.newPage({
+                proxyServer: `http://127.0.0.3:${protectedProxy.port}`,
+                proxyUsername: 'foo',
+                proxyPassword: 'bar',
+                proxyBypassList: ['<-loopback>'],
+            } as any);
+
+            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+            const text = await response!.text();
+
+            // FAILING. It should give 127.0.0.3 for all platforms.
+            // See https://github.com/puppeteer/puppeteer/issues/7698
+            expect(text).toBe(process.platform === 'win32' ? '127.0.0.1' : '127.0.0.3');
+
+            await page.close();
+        });
     });
 
     runPluginTest(PuppeteerPlugin, PuppeteerController, puppeteer);
@@ -215,31 +324,63 @@ describe('Plugins', () => {
 
         describe.each(['chromium', 'firefox', 'webkit'] as const)('with %s', (browserName) => {
             test('should work with non authenticated proxyUrl', async () => {
-                const proxyUrl = 'http://10.10.10.0:8080';
+                const proxyUrl = `http://127.0.0.2:${unprotectedProxy.port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                // @ts-expect-error Private function
-                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+                const launchOptions = browserName === 'chromium' ? {
+                    args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                } : undefined;
 
-                const context = plugin.createLaunchContext({ proxyUrl });
+                const context = plugin.createLaunchContext({
+                    proxyUrl,
+                    launchOptions,
+                });
 
                 browser = await plugin.launch(context);
                 expect(context.launchOptions!.proxy!.server).toEqual(proxyUrl);
-                expect(plugin['_getAnonymizedProxyUrl']).not.toBeCalled(); // eslint-disable-line
+
+                const page = await browser.newPage();
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const text = await response!.text();
+
+                expect(text).toBe('127.0.0.2');
+
+                await page.close();
             });
 
             test('should work with authenticated proxyUrl', async () => {
-                const proxyUrl = 'http://apify1234:password@10.10.10.0:8080';
+                const proxyUrl = `http://foo:bar@127.0.0.3:${protectedProxy.port}`;
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                // @ts-expect-error Private function
-                jest.spyOn(plugin, '_getAnonymizedProxyUrl');
+                const launchOptions = browserName === 'chromium' ? {
+                    args: [
+                        // Exclude loopback interface from proxy bypass list,
+                        // so the request to localhost goes through proxy.
+                        // This way there's no need for a 3rd party server.
+                        '--proxy-bypass-list=<-loopback>',
+                    ],
+                } : undefined;
 
-                const context = plugin.createLaunchContext({ proxyUrl });
+                const context = plugin.createLaunchContext({
+                    proxyUrl,
+                    launchOptions,
+                });
 
                 browser = await plugin.launch(context);
-                expect(context.launchOptions!.proxy!.server).toEqual(context.anonymizedProxyUrl);
-                expect(plugin['_getAnonymizedProxyUrl']).toBeCalled(); // eslint-disable-line
+                expect(context.launchOptions!.proxy!.server).toEqual(`http://127.0.0.3:${protectedProxy.port}`);
+
+                const page = await browser.newPage();
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const text = await response!.text();
+
+                expect(text).toBe('127.0.0.3');
+
+                await page.close();
             });
 
             test('should use incognito context by option', async () => {
