@@ -375,7 +375,7 @@ describe('BrowserPool', () => {
                         browserPool.prePageCreateHooks,
                         pageId,
                         browserController,
-                        browserController.supportsPageOptions ? {} : undefined,
+                        browserController.launchContext.useIncognitoPages ? {} : undefined,
                     );
                 });
 
