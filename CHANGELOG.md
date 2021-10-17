@@ -2,6 +2,9 @@
 ====================
 - fix: skip proxy-chain #53
 
+The API remains the same, although it may be breaking. Proxies are handled entirely by puppeteer now.\
+Launching a browser does not create a proxy server anymore.
+
 2.0.4 / 2021/10/05
 ====================
 - fix `proxyUrl` in incognito context (#51), closes apify/apify-js#1195
