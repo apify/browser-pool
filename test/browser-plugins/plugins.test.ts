@@ -120,6 +120,27 @@ const runPluginTest = <
             expect(cookies[0].name).toBe('TEST');
             expect(cookies[0].value).toBe('TESTER-COOKIE');
         });
+
+        test('newPage options cannot be used with persistent context', async () => {
+            const browserController = plugin.createController();
+
+            const context = plugin.createLaunchContext({
+                useIncognitoPages: false,
+            });
+
+            browser = await plugin.launch(context as never);
+            browserController.assignBrowser(browser as never, context as never);
+            browserController.activate();
+
+            try {
+                const page = await browserController.newPage({} as any);
+                await page.close();
+
+                expect(false).toBe(true);
+            } catch (error: any) {
+                expect(error.message).toBe('A new page can be created with provided context only when using incognito pages.');
+            }
+        });
     });
 };
 
@@ -266,7 +287,9 @@ describe('Plugins', () => {
             const plugin = new PuppeteerPlugin(puppeteer);
             const browserController = new PuppeteerController(plugin);
 
-            const launchContext = plugin.createLaunchContext();
+            const launchContext = plugin.createLaunchContext({
+                useIncognitoPages: true,
+            });
 
             browser = await plugin.launch(launchContext);
             browserController.assignBrowser(browser, launchContext);

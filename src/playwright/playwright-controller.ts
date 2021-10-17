@@ -4,8 +4,12 @@ import { BrowserController, Cookie } from '../abstract-classes/browser-controlle
 export class PlaywrightController extends BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], Browser> {
     override supportsPageOptions = true;
 
-    protected async _newPage(pageOptions?: Parameters<Browser['newPage']>[0]): Promise<Page> {
-        const page = await this.browser.newPage(pageOptions);
+    protected async _newPage(contextOptions?: Parameters<Browser['newPage']>[0]): Promise<Page> {
+        if (contextOptions !== undefined && !this.launchContext.useIncognitoPages) {
+            throw new Error('A new page can be created with provided context only when using incognito pages.');
+        }
+
+        const page = await this.browser.newPage(contextOptions);
 
         page.once('close', () => {
             this.activePages--;

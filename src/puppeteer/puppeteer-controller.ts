@@ -11,7 +11,11 @@ interface ContextOptions extends Puppeteer.BrowserContextOptions {
 
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
     protected async _newPage(contextOptions?: ContextOptions): Promise<Puppeteer.Page> {
-        if (contextOptions) {
+        if (contextOptions !== undefined) {
+            if (!this.launchContext.useIncognitoPages) {
+                throw new Error('A new page can be created with provided context only when using incognito pages.');
+            }
+
             const context = await this.browser.createIncognitoBrowserContext(contextOptions);
             const page = await context.newPage();
 
