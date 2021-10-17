@@ -451,7 +451,7 @@ export class BrowserPool<
         // eslint-disable-next-line dot-notation -- accessing private property
         await browserController['isActivePromise'];
 
-        const finalPageOptions = browserController.supportsPageOptions ? pageOptions : undefined;
+        const finalPageOptions = browserController.launchContext.useIncognitoPages ? pageOptions : undefined;
         await this._executeHooks(this.prePageCreateHooks, pageId, browserController, finalPageOptions);
 
         let page: PageReturn;
