@@ -384,8 +384,11 @@ describe('BrowserPool', () => {
                     let options: Parameters<PlaywrightController['newPage']>[0];
 
                     const myAsyncHook: PrePageCreateHook<PlaywrightController> = (_pageId, controller, pageOptions) => {
-                        // @ts-expect-error Custom option test
-                        pageOptions!.customOption = 'TEST';
+                        if (pageOptions) {
+                            // @ts-expect-error Custom option test
+                            pageOptions.customOption = 'TEST';
+                        }
+
                         options = pageOptions;
 
                         jest.spyOn(controller, 'newPage');
