@@ -1,7 +1,7 @@
 // eslint isn't compatible with `import type`
 /* eslint-disable import/no-duplicates */
-import type Puppeteer from 'puppeteer';
-import type { Browser, Credentials, Target } from 'puppeteer';
+import type Puppeteer from './puppeteer-proxy-per-page';
+import type { Browser, Credentials, Target } from './puppeteer-proxy-per-page';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
@@ -48,7 +48,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         browser = new Proxy(browser, {
             get: (target, property: keyof typeof browser) => {
                 if (property === 'newPage') {
-                    return (async (...args) => {
+                    return (async () => {
                         let page: Puppeteer.Page;
 
                         if (useIncognitoPages) {
@@ -56,9 +56,9 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                                 proxyServer: proxyUrl,
                             });
 
-                            page = await context.newPage(...args);
+                            page = await context.newPage();
                         } else {
-                            page = await newPage(...args);
+                            page = await newPage();
                         }
 
                         if (proxyCredentials) {
