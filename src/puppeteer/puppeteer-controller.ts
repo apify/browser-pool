@@ -1,16 +1,11 @@
-import type Puppeteer from 'puppeteer';
+import type Puppeteer from './puppeteer-proxy-per-page';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 import { log } from '../logger';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
-interface ContextOptions extends Puppeteer.BrowserContextOptions {
-    proxyUsername?: string;
-    proxyPassword?: string;
-}
-
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
-    protected async _newPage(contextOptions?: ContextOptions): Promise<Puppeteer.Page> {
+    protected async _newPage(contextOptions?: Puppeteer.ContextOptions): Promise<Puppeteer.Page> {
         if (contextOptions !== undefined) {
             if (!this.launchContext.useIncognitoPages) {
                 throw new Error('A new page can be created with provided context only when using incognito pages.');

@@ -133,7 +133,7 @@ const runPluginTest = <
             browserController.activate();
 
             try {
-                const page = await browserController.newPage({} as any);
+                const page = await browserController.newPage({});
                 await page.close();
 
                 expect(false).toBe(true);
@@ -300,7 +300,7 @@ describe('Plugins', () => {
                 proxyUsername: 'foo',
                 proxyPassword: 'bar',
                 proxyBypassList: ['<-loopback>'],
-            } as any);
+            });
 
             const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
             const text = await response!.text();
