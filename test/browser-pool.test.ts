@@ -1,4 +1,7 @@
-/* eslint-disable dot-notation -- Accessing private properties */
+import { AddressInfo } from 'net';
+import http from 'http';
+import { promisify } from 'util';
+import { Server as ProxyChainServer } from 'proxy-chain';
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
 import { BrowserPool, PrePageCreateHook } from '../src/browser-pool';
@@ -7,6 +10,8 @@ import { PlaywrightPlugin } from '../src/playwright/playwright-plugin';
 import { BROWSER_POOL_EVENTS } from '../src/events';
 import { BrowserController } from '../src/abstract-classes/browser-controller';
 import { PlaywrightController } from '../src/playwright/playwright-controller';
+import { PuppeteerController } from '../src/puppeteer/puppeteer-controller';
+import { createProxyServer } from './browser-plugins/create-proxy-server';
 
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
@@ -24,6 +29,30 @@ describe('BrowserPool', () => {
 
     afterEach(async () => {
         await browserPool?.destroy();
+    });
+
+    let target: http.Server;
+    let unprotectedProxy: ProxyChainServer;
+    let protectedProxy: ProxyChainServer;
+
+    beforeAll(async () => {
+        target = http.createServer((request, response) => {
+            response.end(request.socket.remoteAddress);
+        });
+        await promisify(target.listen.bind(target) as any)(0, '127.0.0.1');
+
+        unprotectedProxy = createProxyServer('127.0.0.2', '', '');
+        await unprotectedProxy.listen();
+
+        protectedProxy = createProxyServer('127.0.0.3', 'foo', 'bar');
+        await protectedProxy.listen();
+    });
+
+    afterAll(async () => {
+        await promisify(target.close.bind(target))();
+
+        await unprotectedProxy.close(false);
+        await protectedProxy.close(false);
     });
 
     describe('Initialization & retirement', () => {
@@ -379,33 +408,68 @@ describe('BrowserPool', () => {
                     );
                 });
 
-                test('should allow changing pageOptions only when supported', async () => {
-                    let browserController!: PlaywrightController;
-                    let options: Parameters<PlaywrightController['newPage']>[0];
-
-                    const myAsyncHook: PrePageCreateHook<PlaywrightController> = (_pageId, controller, pageOptions) => {
-                        if (pageOptions) {
-                            // @ts-expect-error Custom option test
-                            pageOptions.customOption = 'TEST';
+                test('should allow changing pageOptions', async () => {
+                    const hook: PrePageCreateHook<PlaywrightController | PuppeteerController> = (_pageId, _controller, pageOptions) => {
+                        if (!pageOptions) {
+                            expect(false).toBe(true);
+                            return;
                         }
 
-                        options = pageOptions;
+                        const newOptions = {
+                            // Puppeteer options
+                            proxyServer: `http://127.0.0.3:${protectedProxy.port}`,
+                            proxyUsername: 'foo',
+                            proxyPassword: 'bar',
+                            proxyBypassList: ['<-loopback>'],
 
-                        jest.spyOn(controller, 'newPage');
+                            // Playwright options
+                            proxy: {
+                                server: `http://127.0.0.3:${protectedProxy.port}`,
+                                username: 'foo',
+                                password: 'bar',
+                            },
+                        };
 
-                        browserController = controller;
+                        Object.assign(pageOptions, newOptions);
                     };
 
-                    const testPool = new BrowserPool({
-                        browserPlugins: [new PlaywrightPlugin(playwright.chromium)] as const,
-                        prePageCreateHooks: [myAsyncHook],
+                    const pool = new BrowserPool({
+                        browserPlugins: [
+                            new PlaywrightPlugin(playwright.chromium, {
+                                useIncognitoPages: true,
+                                launchOptions: {
+                                    args: [
+                                        // Exclude loopback interface from proxy bypass list,
+                                        // so the request to localhost goes through proxy.
+                                        // This way there's no need for a 3rd party server.
+                                        '--proxy-bypass-list=<-loopback>',
+                                    ],
+                                },
+                            }),
+                            new PuppeteerPlugin(puppeteer, {
+                                useIncognitoPages: true,
+                            }),
+                        ],
+                        prePageCreateHooks: [
+                            hook,
+                        ],
                     });
 
-                    // @ts-expect-error Private function
-                    jest.spyOn(testPool, '_executeHooks');
+                    const pages = await pool.newPageWithEachPlugin();
+                    for (const page of pages) {
+                        try {
+                            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                            const content = await response!.text();
 
-                    await testPool.newPage();
-                    expect(browserController.newPage).toHaveBeenCalledWith(options);
+                            // Fails on Windows.
+                            // See https://github.com/puppeteer/puppeteer/issues/7698
+                            if (process.platform !== 'win32') {
+                                expect(content).toBe('127.0.0.3');
+                            }
+                        } finally {
+                            await page.close();
+                        }
+                    }
                 });
             });
 
