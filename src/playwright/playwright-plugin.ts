@@ -38,7 +38,7 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
             browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });
         }
 
-        browser = new Proxy(browser, {
+        return new Proxy(browser, {
             get: (target, property: keyof typeof browser) => {
                 if (property === 'newPage') {
                     return (async (pageOptions: Parameters<(typeof browser)['newPage']>[0]) => {
@@ -55,8 +55,6 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
                 return target[property];
             },
         });
-
-        return browser;
     }
 
     protected _createController(): BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
