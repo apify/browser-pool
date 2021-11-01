@@ -462,6 +462,7 @@ describe('Plugins', () => {
 
                             return false;
                         },
+                        // eslint-disable-next-line @typescript-eslint/no-empty-function
                         log: () => {},
                     },
                 };

@@ -1,3 +1,4 @@
+/* eslint-disable dot-notation -- Accessing private properties */
 import { AddressInfo } from 'net';
 import http from 'http';
 import { promisify } from 'util';
