@@ -455,26 +455,23 @@ describe('Plugins', () => {
             test('should pass launch options to browser', async () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                const userAgent = 'HelloWorld';
+                let ran = false;
 
                 const launchOptions = {
-                    args: [
-                        `--user-agent=${userAgent}`,
-                    ],
+                    logger: {
+                        isEnabled: () => {
+                            ran = true;
+
+                            return false;
+                        },
+                        log: () => {},
+                    },
                 };
 
                 const launchContext = plugin.createLaunchContext({ launchOptions });
                 browser = await plugin.launch(launchContext);
 
-                const page = await browser.newPage();
-
-                try {
-                    const response = await page.goto('https://httpbin.org/user-agent');
-                    const json = await response!.json();
-                    expect(json['user-agent']).toBe(userAgent);
-                } finally {
-                    await page.close();
-                }
+                expect(ran).toBe(true);
             });
 
             describe('Browser', () => {
