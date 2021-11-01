@@ -273,14 +273,18 @@ describe('Plugins', () => {
         test('should pass launch options to browser', async () => {
             const plugin = new PuppeteerPlugin(puppeteer);
 
-            jest.spyOn(plugin.library, 'launch');
-            const launchOptions: Record<string, unknown> = {
-                foo: 'bar',
+            const userAgent = 'HelloWorld';
+
+            const launchOptions = {
+                args: [
+                    `--user-agent=${userAgent}`,
+                ],
             };
+
             const launchContext = plugin.createLaunchContext({ launchOptions });
             browser = await plugin.launch(launchContext);
-            launchOptions.userDataDir = launchContext.userDataDir;
-            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
+
+            expect(await browser.userAgent()).toBe(userAgent);
         });
 
         test('proxyUsername and proxyPassword as newPage options', async () => {
@@ -451,13 +455,26 @@ describe('Plugins', () => {
             test('should pass launch options to browser', async () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                jest.spyOn(plugin.library, 'launch');
-                const launchOptions: Record<string, unknown> = {
-                    foo: 'bar',
+                const userAgent = 'HelloWorld';
+
+                const launchOptions = {
+                    args: [
+                        `--user-agent=${userAgent}`,
+                    ],
                 };
-                const launchContext = plugin.createLaunchContext({ launchOptions, useIncognitoPages: true });
+
+                const launchContext = plugin.createLaunchContext({ launchOptions });
                 browser = await plugin.launch(launchContext);
-                expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
+
+                const page = await browser.newPage();
+
+                try {
+                    const response = await page.goto('https://httpbin.org/user-agent');
+                    const json = await response!.json();
+                    expect(json['user-agent']).toBe(userAgent);
+                } finally {
+                    await page.close();
+                }
             });
 
             describe('Browser', () => {
