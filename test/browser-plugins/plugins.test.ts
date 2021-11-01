@@ -383,7 +383,7 @@ describe('Plugins', () => {
                 await page.close();
             });
 
-            test('proxy and proxyPassword as newPage options', async () => {
+            test('proxy as newPage option', async () => {
                 const plugin = new PlaywrightPlugin(playwright.chromium);
                 const browserController = new PlaywrightController(plugin);
 
