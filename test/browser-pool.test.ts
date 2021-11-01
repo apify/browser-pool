@@ -427,6 +427,7 @@ describe('BrowserPool', () => {
                                 server: `http://127.0.0.3:${protectedProxy.port}`,
                                 username: 'foo',
                                 password: 'bar',
+                                bypass: '<-loopback>',
                             },
                         };
 
@@ -455,20 +456,24 @@ describe('BrowserPool', () => {
                         ],
                     });
 
-                    const pages = await pool.newPageWithEachPlugin();
-                    for (const page of pages) {
-                        try {
-                            const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
-                            const content = await response!.text();
+                    try {
+                        const pages = await pool.newPageWithEachPlugin();
+                        for (const page of pages) {
+                            try {
+                                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                                const content = await response!.text();
 
-                            // Fails on Windows.
-                            // See https://github.com/puppeteer/puppeteer/issues/7698
-                            if (process.platform !== 'win32') {
-                                expect(content).toBe('127.0.0.3');
+                                // Fails on Windows.
+                                // See https://github.com/puppeteer/puppeteer/issues/7698
+                                if (process.platform !== 'win32') {
+                                    expect(content).toBe('127.0.0.3');
+                                }
+                            } finally {
+                                await page.close();
                             }
-                        } finally {
-                            await page.close();
                         }
+                    } finally {
+                        await pool.destroy();
                     }
                 });
             });

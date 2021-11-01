@@ -383,6 +383,37 @@ describe('Plugins', () => {
                 await page.close();
             });
 
+            test('proxy and proxyPassword as newPage options', async () => {
+                const plugin = new PlaywrightPlugin(playwright.chromium);
+                const browserController = new PlaywrightController(plugin);
+
+                const launchContext = plugin.createLaunchContext({
+                    useIncognitoPages: true,
+                });
+
+                browser = await plugin.launch(launchContext);
+                browserController.assignBrowser(browser, launchContext);
+                browserController.activate();
+
+                const page = await browserController.newPage({
+                    proxy: {
+                        server: `http://127.0.0.3:${protectedProxy.port}`,
+                        username: 'foo',
+                        password: 'bar',
+                        bypass: '<-loopback>',
+                    },
+                });
+
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const text = await response!.text();
+
+                // FAILING. It should give 127.0.0.3 for all platforms.
+                // See https://github.com/puppeteer/puppeteer/issues/7698
+                expect(text).toBe(process.platform === 'win32' ? '127.0.0.1' : '127.0.0.3');
+
+                await page.close();
+            });
+
             test('should use incognito context by option', async () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 const browserController = plugin.createController();
