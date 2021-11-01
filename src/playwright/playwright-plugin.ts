@@ -21,6 +21,7 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
         // Required for the `proxy` context option to work.
         launchOptions!.proxy = {
             server: await getLocalProxyAddress(),
+            ...launchOptions!.proxy,
         };
 
         if (useIncognitoPages) {
