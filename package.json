@@ -1,6 +1,6 @@
 {
 	"name": "browser-pool",
-	"version": "3.0.2",
+	"version": "3.0.3",
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
     "engines": {
         "node": ">=15.10.0"
@@ -48,6 +48,7 @@
 		"nanoid": "^3.1.25",
 		"ow": "^0.27.0",
 		"p-limit": "^3.1.0",
+		"proxy-chain": "^2.0.0-beta.0",
 		"tiny-typed-emitter": "^2.1.0",
 		"tslib": "^2.3.1"
 	},
@@ -68,7 +69,6 @@
 		"jsdoc-to-markdown": "^7.0.1",
 		"markdown-toc": "^1.2.0",
 		"playwright": "^1.13.1",
-		"proxy-chain": "^2.0.0-beta.0",
 		"puppeteer": "^10.4.0",
 		"rimraf": "^3.0.2",
 		"ts-jest": "^27.0.4",

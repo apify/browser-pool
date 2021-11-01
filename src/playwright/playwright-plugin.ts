@@ -5,6 +5,7 @@ import { BrowserController } from '../abstract-classes/browser-controller';
 import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
 import { log } from '../logger';
+import { getLocalProxyAddress } from '../proxy-server';
 
 export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
     private _browserVersion?: string;
@@ -16,6 +17,12 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
             userDataDir,
         } = launchContext;
         let browser: PlaywrightBrowser;
+
+        // Required for the `proxy` context option to work.
+        launchOptions!.proxy = {
+            server: await getLocalProxyAddress(),
+            ...launchOptions!.proxy,
+        };
 
         if (useIncognitoPages) {
             browser = await this.library.launch(launchOptions);

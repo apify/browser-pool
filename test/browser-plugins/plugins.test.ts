@@ -273,14 +273,18 @@ describe('Plugins', () => {
         test('should pass launch options to browser', async () => {
             const plugin = new PuppeteerPlugin(puppeteer);
 
-            jest.spyOn(plugin.library, 'launch');
-            const launchOptions: Record<string, unknown> = {
-                foo: 'bar',
+            const userAgent = 'HelloWorld';
+
+            const launchOptions = {
+                args: [
+                    `--user-agent=${userAgent}`,
+                ],
             };
+
             const launchContext = plugin.createLaunchContext({ launchOptions });
             browser = await plugin.launch(launchContext);
-            launchOptions.userDataDir = launchContext.userDataDir;
-            expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
+
+            expect(await browser.userAgent()).toBe(userAgent);
         });
 
         test('proxyUsername and proxyPassword as newPage options', async () => {
@@ -383,6 +387,35 @@ describe('Plugins', () => {
                 await page.close();
             });
 
+            test('proxy as newPage option', async () => {
+                const plugin = new PlaywrightPlugin(playwright.chromium);
+                const browserController = new PlaywrightController(plugin);
+
+                const launchContext = plugin.createLaunchContext({
+                    useIncognitoPages: true,
+                });
+
+                browser = await plugin.launch(launchContext);
+                browserController.assignBrowser(browser, launchContext);
+                browserController.activate();
+
+                const page = await browserController.newPage({
+                    proxy: {
+                        server: `http://127.0.0.3:${protectedProxy.port}`,
+                        username: 'foo',
+                        password: 'bar',
+                        bypass: '<-loopback>',
+                    },
+                });
+
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const text = await response!.text();
+
+                expect(text).toBe('127.0.0.3');
+
+                await page.close();
+            });
+
             test('should use incognito context by option', async () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
                 const browserController = plugin.createController();
@@ -420,13 +453,24 @@ describe('Plugins', () => {
             test('should pass launch options to browser', async () => {
                 const plugin = new PlaywrightPlugin(playwright[browserName]);
 
-                jest.spyOn(plugin.library, 'launch');
-                const launchOptions: Record<string, unknown> = {
-                    foo: 'bar',
+                let ran = false;
+
+                const launchOptions = {
+                    logger: {
+                        isEnabled: () => {
+                            ran = true;
+
+                            return false;
+                        },
+                        // eslint-disable-next-line @typescript-eslint/no-empty-function
+                        log: () => {},
+                    },
                 };
-                const launchContext = plugin.createLaunchContext({ launchOptions, useIncognitoPages: true });
+
+                const launchContext = plugin.createLaunchContext({ launchOptions });
                 browser = await plugin.launch(launchContext);
-                expect(plugin.library.launch).toHaveBeenCalledWith(launchOptions);
+
+                expect(ran).toBe(true);
             });
 
             describe('Browser', () => {
