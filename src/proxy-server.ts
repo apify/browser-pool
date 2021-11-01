@@ -1,6 +1,6 @@
-import ProxyChain from 'proxy-chain';
+import { Server as ProxyChainServer } from 'proxy-chain';
 
-const server = new ProxyChain.Server({
+const server = new ProxyChainServer({
     port: 0,
 });
 
