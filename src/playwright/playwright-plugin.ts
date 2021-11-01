@@ -17,6 +17,9 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
         } = launchContext;
         let browser: PlaywrightBrowser;
 
+        // https://github.com/microsoft/playwright/blob/2e4722d460b5142267e0e506ca7ea9a259556b5f/packages/playwright-core/src/server/browserContext.ts#L423-L427
+        launchOptions!.proxy = { server: 'http://per-context' };
+
         if (useIncognitoPages) {
             browser = await this.library.launch(launchOptions);
         } else {
@@ -34,6 +37,24 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
 
             browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });
         }
+
+        browser = new Proxy(browser, {
+            get: (target, property: keyof typeof browser) => {
+                if (property === 'newPage') {
+                    return (async (pageOptions: Parameters<(typeof browser)['newPage']>[0]) => {
+                        return browser.newPage({
+                            ...pageOptions,
+                            proxy: {
+                                server: '',
+                                ...pageOptions?.proxy,
+                            },
+                        });
+                    });
+                }
+
+                return target[property];
+            },
+        });
 
         return browser;
     }
