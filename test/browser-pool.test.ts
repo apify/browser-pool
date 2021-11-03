@@ -1,12 +1,14 @@
 /* eslint-disable dot-notation -- Accessing private properties */
 import puppeteer from 'puppeteer';
 import playwright from 'playwright';
+import log from '@apify/log';
 import { BrowserPool, PrePageCreateHook } from '../src/browser-pool';
 import { PuppeteerPlugin } from '../src/puppeteer/puppeteer-plugin';
 import { PlaywrightPlugin } from '../src/playwright/playwright-plugin';
 import { BROWSER_POOL_EVENTS } from '../src/events';
 import { BrowserController } from '../src/abstract-classes/browser-controller';
 import { PlaywrightController } from '../src/playwright/playwright-controller';
+import { BrowserName, OperatingSystemsName } from '../src/fingerprinting/types';
 
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
@@ -454,6 +456,210 @@ describe('BrowserPool', () => {
 
                     const browserController = browserPool.getBrowserControllerByPage(page);
                     expect(browserPool['_executeHooks']).toHaveBeenNthCalledWith(6, browserPool.postPageCloseHooks, pageId, browserController);
+                });
+            });
+
+            describe('fingerprinting', () => {
+                test('should override fingerprint with persistentContext', async () => {
+                    const browserPoolWithFP = new BrowserPool({
+                        browserPlugins: [new PlaywrightPlugin(
+                            playwright.chromium,
+                            {
+                                useIncognitoPages: false,
+                            },
+                        )],
+                        closeInactiveBrowserAfterSecs: 2,
+                        useFingerprints: true,
+                    });
+
+                    const page = await browserPoolWithFP.newPage();
+                    await page.goto(`file://${__dirname}/test.html`);
+                    const browserController = browserPoolWithFP.getBrowserControllerByPage(page);
+
+                    const data: { hardwareConcurrency: number; userAgent: string} = await page.evaluate(() => {
+                        return {
+                            hardwareConcurrency: navigator.hardwareConcurrency,
+                            userAgent: navigator.userAgent,
+                        };
+                    });
+                    // @ts-expect-error - I don't care that it can be undefined
+                    const { fingerprint } = browserController.launchContext;
+
+                    console.log(data, fingerprint);
+                    expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
+                    expect(data.userAgent).toBe(fingerprint?.userAgent);
+
+                    await page.close();
+                    await browserPoolWithFP.destroy();
+                });
+
+                test('should override fingerprint with incognitoPages', async () => {
+                    const browserPoolWithFP = new BrowserPool({
+                        browserPlugins: [new PlaywrightPlugin(
+                            playwright.chromium,
+                            {
+                                useIncognitoPages: true,
+                            },
+                        )],
+                        closeInactiveBrowserAfterSecs: 2,
+                        useFingerprints: true,
+                    });
+
+                    const page = await browserPoolWithFP.newPage();
+                    await page.goto(`file://${__dirname}/test.html`);
+                    const browserController = browserPoolWithFP.getBrowserControllerByPage(page);
+
+                    const data: { hardwareConcurrency: number; userAgent: string} = await page.evaluate(() => {
+                        return {
+                            hardwareConcurrency: navigator.hardwareConcurrency,
+                            userAgent: navigator.userAgent,
+                        };
+                    });
+                    // @ts-expect-error - I don't care that it can be undefined
+
+                    const { fingerprint } = browserController.launchContext;
+
+                    expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
+                    expect(data.userAgent).toBe(fingerprint?.userAgent);
+
+                    await page.close();
+                    await browserPoolWithFP.destroy();
+                });
+                describe('caching', () => {
+                    const commonOptions = {
+                        browserPlugins: [new PlaywrightPlugin(
+                            playwright.chromium,
+                            {
+                                useIncognitoPages: true,
+                            },
+                        )],
+                    };
+                    // @ts-expect-error - dont know how to fix this
+                    let browserPoolCache: BrowserPool;
+                    afterEach(async () => {
+                        await browserPoolCache.destroy();
+                    });
+                    test('should use fingerprint per proxy by default', async () => {
+                        browserPoolCache = new BrowserPool({
+                            ...commonOptions,
+                            useFingerprints: true,
+                        });
+
+                        expect(browserPoolCache.fingerprintCache).toBeDefined();
+                    });
+
+                    test('should turn off cache', async () => {
+                        browserPoolCache = new BrowserPool({
+                            ...commonOptions,
+                            useFingerprints: true,
+                            fingerprintsOptions: {
+                                useFingerprintPerProxyCache: false,
+                            },
+                        });
+
+                        expect(browserPoolCache.fingerprintCache).toBeUndefined();
+                    });
+
+                    test('should limit cache size', async () => {
+                        browserPoolCache = new BrowserPool({
+                            ...commonOptions,
+                            useFingerprints: true,
+                            fingerprintsOptions: {
+                                fingerprintPerProxyCacheSize: 1,
+                            },
+                        });
+
+                        expect(browserPoolCache.fingerprintCache.cache.maxSize).toBe(1);
+                    });
+
+                    test('should cache fingerprints', async () => {
+                        browserPoolCache = new BrowserPool({
+                            ...commonOptions,
+                            useFingerprints: true,
+                            preLaunchHooks: [
+                                (_pageId, launchContext) => {
+                                    // @ts-expect-error WTF
+                                    launchContext.extend({ proxyUrl: 'http://localhost:8080' });
+                                },
+                            ],
+                        });
+                        const mock = jest.fn();
+                        browserPoolCache.fingerprintInjector.attachFingerprintToPlaywright = mock;
+                        const page = await browserPoolCache.newPageInNewBrowser();
+                        expect(mock.mock.calls[0][1]).toBeDefined();
+                        const page2 = await browserPoolCache.newPageInNewBrowser();
+                        await page.close();
+                        await page2.close();
+                        // expect fingerprint parameter of the first call to equal fingerprint parameter of the second call
+                        expect(mock.mock.calls[0][1]).toBe(mock.mock.calls[1][1]);
+                    });
+                });
+            });
+            describe('generator configuration', () => {
+                const commonOptions = {
+                    browserPlugins: [new PlaywrightPlugin(
+                        playwright.firefox,
+                        {
+                            useIncognitoPages: true,
+                        },
+                    )],
+                };
+                // @ts-expect-error - dont know how to fix this
+                let browserPoolConfig: BrowserPool;
+                afterEach(async () => {
+                    await browserPoolConfig.destroy();
+                });
+                test('should use native os and browser', async () => {
+                    browserPoolConfig = new BrowserPool({
+                        ...commonOptions,
+                        useFingerprints: true,
+                    });
+                    const oldGet = browserPoolConfig.fingerprintGenerator.getFingerprint;
+                    const mock = jest.fn((options) => {
+                        return oldGet.bind(browserPoolConfig.fingerprintGenerator)(options);
+                    });
+                    browserPoolConfig.fingerprintGenerator.getFingerprint = mock;
+
+                    const page = await browserPoolConfig.newPage();
+                    await page.close();
+                    const defaultOptions = mock.mock.calls[0][0];
+                    console.log(defaultOptions);
+                    expect(defaultOptions.browsers.includes('firefox')).toBe(true);
+                    let os: string;
+                    switch (process.platform) {
+                        case 'darwin':
+                            os = 'macos';
+                            break;
+                        case 'win32':
+                            os = 'windows';
+                            break;
+                        default:
+                            os = 'linux';
+                    }
+                    expect(defaultOptions.operatingSystems.includes(os)).toBe(true);
+                });
+
+                test('should allow changing options', async () => {
+                    browserPoolConfig = new BrowserPool({
+                        ...commonOptions,
+                        useFingerprints: true,
+                        fingerprintsOptions: {
+                            fingerprintGeneratorOptions: {
+                                operatingSystems: [OperatingSystemsName.windows],
+                                browsers: [BrowserName.chrome],
+                            },
+                        },
+                    });
+                    const oldGet = browserPoolConfig.fingerprintGenerator.getFingerprint;
+                    const mock = jest.fn((options) => {
+                        return oldGet.bind(browserPoolConfig.fingerprintGenerator)(options);
+                    });
+                    browserPoolConfig.fingerprintGenerator.getFingerprint = mock;
+                    const page = await browserPoolConfig.newPageInNewBrowser();
+                    await page.close();
+                    const [options] = mock.mock.calls[0];
+                    expect(options.operatingSystems.includes('windows')).toBe(true);
+                    expect(options.browsers.includes('chrome')).toBe(true);
                 });
             });
         });

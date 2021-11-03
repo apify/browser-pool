@@ -2,9 +2,9 @@
 	"name": "browser-pool",
 	"version": "3.0.1",
 	"description": "Rotate multiple browsers using popular automation libraries such as Playwright or Puppeteer.",
-    "engines": {
-        "node": ">=15.10.0"
-    },
+	"engines": {
+		"node": ">=15.10.0"
+	},
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",
 	"types": "dist/index.d.ts",
@@ -44,10 +44,13 @@
 	},
 	"dependencies": {
 		"@apify/log": "^1.1.1",
+		"fingerprint-generator": "^1.0.0",
+		"fingerprint-injector": "^0.7.2",
 		"lodash.merge": "^4.6.2",
 		"nanoid": "^3.1.25",
 		"ow": "^0.27.0",
 		"p-limit": "^3.1.0",
+		"quick-lru": "^5.1.1",
 		"tiny-typed-emitter": "^2.1.0",
 		"tslib": "^2.3.1"
 	},
