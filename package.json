@@ -45,7 +45,7 @@
 	"dependencies": {
 		"@apify/log": "^1.1.1",
 		"fingerprint-generator": "^1.0.0",
-		"fingerprint-injector": "^0.7.2",
+		"fingerprint-injector": "^1.0.0",
 		"lodash.merge": "^4.6.2",
 		"nanoid": "^3.1.25",
 		"ow": "^0.27.0",
