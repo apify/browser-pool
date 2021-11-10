@@ -459,7 +459,9 @@ export class BrowserPool<
 
         const finalPageOptions = browserController.launchContext.useIncognitoPages ? pageOptions : undefined;
 
-        Object.assign(finalPageOptions, browserController.normalizeProxyOptions(proxyUrl, pageOptions));
+        if (finalPageOptions) {
+            Object.assign(finalPageOptions, browserController.normalizeProxyOptions(proxyUrl, pageOptions));
+        }
 
         await this._executeHooks(this.prePageCreateHooks, pageId, browserController, finalPageOptions);
 
