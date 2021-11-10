@@ -5,6 +5,23 @@ import { log } from '../logger';
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
 export class PuppeteerController extends BrowserController<typeof Puppeteer> {
+    normalizeProxyOptions(proxyUrl: string | undefined, pageOptions: any): Record<string, unknown> {
+        if (!proxyUrl) {
+            return {};
+        }
+
+        const url = new URL(proxyUrl);
+        const username = decodeURIComponent(url.username);
+        const password = decodeURIComponent(url.password);
+
+        return {
+            proxyServer: url.origin,
+            proxyUsernmae: username,
+            proxyPassword: password,
+            proxyBypassList: pageOptions?.proxyBypassList,
+        };
+    }
+
     protected async _newPage(contextOptions?: Puppeteer.ContextOptions): Promise<Puppeteer.Page> {
         if (contextOptions !== undefined) {
             if (!this.launchContext.useIncognitoPages) {
