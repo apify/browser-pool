@@ -16,7 +16,7 @@ export class PuppeteerController extends BrowserController<typeof Puppeteer> {
 
         return {
             proxyServer: url.origin,
-            proxyUsernmae: username,
+            proxyUsername: username,
             proxyPassword: password,
             proxyBypassList: pageOptions?.proxyBypassList,
         };
