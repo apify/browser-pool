@@ -263,4 +263,13 @@ export abstract class BrowserController<
     protected abstract async _getCookies(page: NewPageResult): Promise<Cookie[]> {
         throwImplementationNeeded('_getCookies');
     }
+
+    /**
+     * @private
+     */
+    // @ts-expect-error Give runtime error as well as compile time
+    // eslint-disable-next-line space-before-function-paren, @typescript-eslint/no-unused-vars
+    abstract normalizeProxyOptions(proxyUrl: string | undefined, pageOptions: any): Record<string, unknown> {
+        throwImplementationNeeded('_normalizeProxyOptions');
+    }
 }
