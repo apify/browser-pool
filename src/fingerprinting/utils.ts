@@ -21,8 +21,7 @@ const getBrowserName = (browserPlugin: BrowserPlugin, launchOptions: any): Brows
     let browserName;
 
     if (browserPlugin instanceof PlaywrightPlugin) {
-        // @ts-expect-error cannot be undefined for playwright
-        browserName = library.name();
+        browserName = library.name!();
     } if (browserPlugin instanceof PuppeteerPlugin) {
         browserName = launchOptions.product || library.product;
     }

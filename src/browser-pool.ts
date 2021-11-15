@@ -4,8 +4,8 @@ import ow from 'ow';
 import { TypedEmitter } from 'tiny-typed-emitter';
 import { FingerprintInjector } from 'fingerprint-injector';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore bypass unnecessary module declaration for tests
-import FingerprintGenerator from '../node_modules/fingerprint-generator';
+// @ts-expect-error no types for this package yet
+import FingerprintGenerator from 'fingerprint-generator';
 import { BrowserController } from './abstract-classes/browser-controller';
 import { BrowserPlugin } from './abstract-classes/browser-plugin';
 import { BROWSER_POOL_EVENTS } from './events';
@@ -774,8 +774,7 @@ export class BrowserPool<
             ...this.prePageCreateHooks,
         ];
         this.postPageCreateHooks = [
-            // @ts-expect-error nope it is not undefined because we initialize before we call this fce.
-            createPostPageCreateHook(this.fingerprintInjector),
+            createPostPageCreateHook(this.fingerprintInjector!),
         ];
     }
 }

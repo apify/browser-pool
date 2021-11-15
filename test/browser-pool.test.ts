@@ -594,10 +594,8 @@ describe('BrowserPool', () => {
                             userAgent: navigator.userAgent,
                         };
                     });
-                    // @ts-expect-error - I don't care that it can be undefined
-                    const { fingerprint } = browserController.launchContext;
+                    const { fingerprint } = browserController.launchContext!;
 
-                    console.log(data, fingerprint);
                     expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
                     expect(data.userAgent).toBe(fingerprint?.userAgent);
 
@@ -627,9 +625,8 @@ describe('BrowserPool', () => {
                             userAgent: navigator.userAgent,
                         };
                     });
-                    // @ts-expect-error - I don't care that it can be undefined
 
-                    const { fingerprint } = browserController.launchContext;
+                    const { fingerprint } = browserController.launchContext!;
 
                     expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
                     expect(data.userAgent).toBe(fingerprint?.userAgent);
@@ -696,7 +693,7 @@ describe('BrowserPool', () => {
                             ],
                         });
                         const mock = jest.fn();
-                        browserPoolCache.fingerprintInjector.attachFingerprintToPlaywright = mock;
+                        browserPoolCache.fingerprintInjector!.attachFingerprintToPlaywright = mock;
                         const page = await browserPoolCache.newPageInNewBrowser();
                         expect(mock.mock.calls[0][1]).toBeDefined();
                         const page2 = await browserPoolCache.newPageInNewBrowser();

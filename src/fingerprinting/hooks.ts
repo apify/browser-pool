@@ -46,8 +46,7 @@ export const createFingerprintPreLaunchHook = (browserPool: BrowserPool) => {
 export const createPrePageCreateHook = () => {
     return (_pageId: string, browserController: BrowserController, pageOptions: any): void => {
         const { launchContext, browserPlugin } = browserController;
-        // @ts-expect-error can't be undefined since it si set in previous webhook
-        const { fingerprint } : { fingerprint: Fingerprint } = launchContext;
+        const fingerprint = launchContext.fingerprint!;
 
         if (launchContext.useIncognitoPages && browserPlugin instanceof PlaywrightPlugin && pageOptions) {
             pageOptions.userAgent = fingerprint.userAgent;
@@ -62,8 +61,7 @@ export const createPrePageCreateHook = () => {
 export const createPostPageCreateHook = (fingerprintInjector: FingerprintInjector) => {
     return async (page: any, browserController: BrowserController): Promise<void> => {
         const { browserPlugin, launchContext } = browserController;
-        // @ts-expect-error can't be undefined since it si set in previous webhook
-        const { fingerprint }: { fingerprint: Fingerprint } = launchContext;
+        const fingerprint = launchContext.fingerprint!;
 
         if (browserPlugin instanceof PlaywrightPlugin) {
             const { useIncognitoPages, isFingerprintInjected } = launchContext;
