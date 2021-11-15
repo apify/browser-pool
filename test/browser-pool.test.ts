@@ -89,6 +89,49 @@ describe('BrowserPool', () => {
             expect(page.close).toBeDefined();
         });
 
+        test('proxy sugar syntax', async () => {
+            const pool = new BrowserPool({
+                browserPlugins: [
+                    new PuppeteerPlugin(puppeteer, {
+                        useIncognitoPages: true,
+                    }),
+                    new PlaywrightPlugin(playwright.chromium, {
+                        useIncognitoPages: true,
+                    }),
+                ],
+            });
+
+            const options = {
+                proxyUrl: `http://foo:bar@127.0.0.3:${protectedProxy.port}`,
+                pageOptions: {
+                    proxy: {
+                        bypass: '<-loopback>',
+                    },
+                    proxyBypassList: ['<-loopback>'],
+                },
+            };
+
+            const pages = await pool.newPageWithEachPlugin([
+                options,
+                options,
+            ]);
+
+            for (const page of pages) {
+                const response = await page.goto(`http://127.0.0.1:${(target.address() as AddressInfo).port}`);
+                const content = await response!.text();
+
+                // Fails on Windows.
+                // See https://github.com/puppeteer/puppeteer/issues/7698
+                if (process.platform !== 'win32') {
+                    expect(content).toBe('127.0.0.3');
+                }
+
+                await page.close();
+            }
+
+            await pool.destroy();
+        });
+
         test('should open new page in incognito context', async () => {
             const browserPoolIncognito = new BrowserPool({
                 browserPlugins: [new PlaywrightPlugin(playwright.chromium, { useIncognitoPages: true })] as const,

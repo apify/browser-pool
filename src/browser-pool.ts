@@ -378,6 +378,7 @@ export class BrowserPool<
             id = nanoid(),
             pageOptions,
             browserPlugin = this._pickBrowserPlugin(),
+            proxyUrl,
         } = options;
 
         if (this.pages.has(id)) {
@@ -393,7 +394,7 @@ export class BrowserPool<
             let browserController = this._pickBrowserWithFreeCapacity(browserPlugin);
             if (!browserController) browserController = await this._launchBrowser(id, { browserPlugin });
 
-            return this._createPageForBrowser(id, browserController, pageOptions);
+            return this._createPageForBrowser(id, browserController, pageOptions, proxyUrl);
         });
     }
 
@@ -489,13 +490,23 @@ export class BrowserPool<
         return this.pageIds.get(page);
     }
 
-    private async _createPageForBrowser(pageId: string, browserController: BrowserControllerReturn, pageOptions: PageOptions = {} as PageOptions) {
+    private async _createPageForBrowser(
+        pageId: string,
+        browserController: BrowserControllerReturn,
+        pageOptions: PageOptions = {} as PageOptions,
+        proxyUrl?: string,
+    ) {
         // TODO This is needed for concurrent newPage calls to wait for the browser launch.
         // It's not ideal though, we need to come up with a better API.
         // eslint-disable-next-line dot-notation -- accessing private property
         await browserController['isActivePromise'];
 
         const finalPageOptions = browserController.launchContext.useIncognitoPages ? pageOptions : undefined;
+
+        if (finalPageOptions) {
+            Object.assign(finalPageOptions, browserController.normalizeProxyOptions(proxyUrl, pageOptions));
+        }
+
         await this._executeHooks(this.prePageCreateHooks, pageId, browserController, finalPageOptions);
 
         let page: PageReturn;
@@ -789,6 +800,10 @@ export interface BrowserPoolNewPageOptions<PageOptions extends unknown, BP exten
      * see the `newPageInNewBrowser` function.
      */
     browserPlugin?: BP;
+    /**
+     * Proxy URL.
+     */
+    proxyUrl?: string;
 }
 
 export interface BrowserPoolNewPageInNewBrowserOptions<PageOptions extends unknown, BP extends BrowserPlugin> {

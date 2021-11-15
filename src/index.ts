@@ -25,3 +25,20 @@
 export * from './browser-pool';
 export * from './playwright/playwright-plugin';
 export * from './puppeteer/puppeteer-plugin';
+export * from './events';
+
+// Type exports
+export type {
+    BrowserController,
+    BrowserControllerEvents,
+    Cookie,
+} from './abstract-classes/browser-controller';
+export type {
+    BrowserPlugin,
+    BrowserPluginOptions,
+    CreateLaunchContextOptions,
+} from './abstract-classes/browser-plugin';
+export type {
+    LaunchContext,
+    LaunchContextOptions,
+} from './launch-context';
