@@ -4,7 +4,7 @@ import { BrowserController } from '../abstract-classes/browser-controller';
 import { LaunchContext } from '../launch-context';
 import { getGeneratorDefaultOptions } from './utils';
 
-export const createFingerprintPreLaunchHook = (browserPool: BrowserPool<any,any,any,any,any>) => {
+export const createFingerprintPreLaunchHook = (browserPool: BrowserPool<any, any, any, any, any>) => {
     const {
         fingerprintGenerator,
         fingerprintCache,
