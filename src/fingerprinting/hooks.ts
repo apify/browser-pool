@@ -1,11 +1,10 @@
-import { Fingerprint, FingerprintInjector } from 'fingerprint-injector';
+import { FingerprintInjector } from 'fingerprint-injector';
 import { BrowserPool, PlaywrightPlugin, PuppeteerPlugin } from '..';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { LaunchContext } from '../launch-context';
 import { getGeneratorDefaultOptions } from './utils';
 
-// @ts-expect-error I need help how to fix this :/
-export const createFingerprintPreLaunchHook = (browserPool: BrowserPool) => {
+export const createFingerprintPreLaunchHook = (browserPool: BrowserPool<any,any,any,any,any>) => {
     const {
         fingerprintGenerator,
         fingerprintCache,
@@ -22,9 +21,11 @@ export const createFingerprintPreLaunchHook = (browserPool: BrowserPool) => {
 
         if (proxyUrl && fingerprintCache?.has(proxyUrl)) {
             fingerprint = fingerprintCache.get(proxyUrl);
-        } else {
+        } else if (proxyUrl) {
             fingerprint = fingerprintGenerator.getFingerprint(fingerprintGeneratorFinalOptions).fingerprint;
             fingerprintCache?.set(proxyUrl, fingerprint);
+        } else {
+            fingerprint = fingerprintGenerator.getFingerprint(fingerprintGeneratorFinalOptions).fingerprint;
         }
 
         launchContext.extend({ fingerprint });

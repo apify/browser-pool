@@ -1,7 +1,7 @@
 import { Fingerprint } from 'fingerprint-injector';
 import QuickLRU from 'quick-lru';
 
-export default class FingerprintToProxyCache {
+export class FingerprintToProxyCache {
     cache: QuickLRU<string, Fingerprint>;
 
     constructor({ maxSize = 1000 }: { maxSize: number }) {

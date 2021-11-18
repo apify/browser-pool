@@ -3,7 +3,7 @@ import { AddressInfo } from 'net';
 import http from 'http';
 import { promisify } from 'util';
 import { Server as ProxyChainServer } from 'proxy-chain';
-import puppeteer from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import playwright from 'playwright';
 import { BrowserPool, PrePageCreateHook } from '../src/browser-pool';
 import { PuppeteerPlugin } from '../src/puppeteer/puppeteer-plugin';
@@ -594,7 +594,7 @@ describe('BrowserPool', () => {
                             userAgent: navigator.userAgent,
                         };
                     });
-                    const { fingerprint } = browserController.launchContext!;
+                    const { fingerprint } = browserController!.launchContext!;
 
                     expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
                     expect(data.userAgent).toBe(fingerprint?.userAgent);
@@ -626,7 +626,7 @@ describe('BrowserPool', () => {
                         };
                     });
 
-                    const { fingerprint } = browserController.launchContext!;
+                    const { fingerprint } = browserController!.launchContext!;
 
                     expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
                     expect(data.userAgent).toBe(fingerprint?.userAgent);
@@ -643,8 +643,8 @@ describe('BrowserPool', () => {
                             },
                         )],
                     };
-                    // @ts-expect-error - dont know how to fix this
                     let browserPoolCache: BrowserPool;
+
                     afterEach(async () => {
                         await browserPoolCache.destroy();
                     });
@@ -677,8 +677,9 @@ describe('BrowserPool', () => {
                                 fingerprintPerProxyCacheSize: 1,
                             },
                         });
-
-                        expect(browserPoolCache.fingerprintCache.cache.maxSize).toBe(1);
+                        // cast to any type in order to acces the maxSize property for testing purposes.
+                        const { cache } : {cache: any} = browserPoolCache!.fingerprintCache!;
+                        expect(cache.maxSize).toBe(1);
                     });
 
                     test('should cache fingerprints', async () => {
@@ -687,16 +688,16 @@ describe('BrowserPool', () => {
                             useFingerprints: true,
                             preLaunchHooks: [
                                 (_pageId, launchContext) => {
-                                    // @ts-expect-error WTF
+                                    // @ts-expect-error issue caused by generics
                                     launchContext.extend({ proxyUrl: 'http://localhost:8080' });
                                 },
                             ],
                         });
                         const mock = jest.fn();
                         browserPoolCache.fingerprintInjector!.attachFingerprintToPlaywright = mock;
-                        const page = await browserPoolCache.newPageInNewBrowser();
+                        const page: Page = await browserPoolCache.newPageInNewBrowser();
                         expect(mock.mock.calls[0][1]).toBeDefined();
-                        const page2 = await browserPoolCache.newPageInNewBrowser();
+                        const page2: Page = await browserPoolCache.newPageInNewBrowser();
                         await page.close();
                         await page2.close();
                         // expect fingerprint parameter of the first call to equal fingerprint parameter of the second call
@@ -713,7 +714,6 @@ describe('BrowserPool', () => {
                         },
                     )],
                 };
-                // @ts-expect-error - dont know how to fix this
                 let browserPoolConfig: BrowserPool;
                 afterEach(async () => {
                     await browserPoolConfig.destroy();
@@ -729,11 +729,12 @@ describe('BrowserPool', () => {
                     });
                     browserPoolConfig.fingerprintGenerator.getFingerprint = mock;
 
-                    const page = await browserPoolConfig.newPage();
+                    const page: Page = await browserPoolConfig.newPage();
                     await page.close();
                     const defaultOptions = mock.mock.calls[0][0];
-                    console.log(defaultOptions);
+
                     expect(defaultOptions.browsers.includes('firefox')).toBe(true);
+
                     let os: string;
                     switch (process.platform) {
                         case 'darwin':
@@ -764,7 +765,7 @@ describe('BrowserPool', () => {
                         return oldGet.bind(browserPoolConfig.fingerprintGenerator)(options);
                     });
                     browserPoolConfig.fingerprintGenerator.getFingerprint = mock;
-                    const page = await browserPoolConfig.newPageInNewBrowser();
+                    const page: Page = await browserPoolConfig.newPageInNewBrowser();
                     await page.close();
                     const [options] = mock.mock.calls[0];
                     expect(options.operatingSystems.includes('windows')).toBe(true);

@@ -14,7 +14,7 @@ import { log } from './logger';
 import { addTimeoutToPromise, InferBrowserPluginArray, UnwrapPromise } from './utils';
 import { createFingerprintPreLaunchHook, createPrePageCreateHook, createPostPageCreateHook } from './fingerprinting/hooks';
 import { FingerprintGeneratorOptions } from './fingerprinting/types';
-import FingerprintToProxyCache from './fingerprinting/proxy-to-fingerpint-cache';
+import { FingerprintToProxyCache } from './fingerprinting/proxy-to-fingerprint-cache';
 
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
@@ -76,7 +76,6 @@ export interface BrowserPoolOptions<Plugin extends BrowserPlugin = BrowserPlugin
      */
     closeInactiveBrowserAfterSecs?: number;
     /**
-     *
      * @default false
      */
     useFingerprints?: boolean;
@@ -253,7 +252,7 @@ export interface BrowserPoolHooks<
  * ```
  */
 export class BrowserPool<
-    Options extends BrowserPoolOptions,
+    Options extends BrowserPoolOptions = BrowserPoolOptions,
     BrowserPlugins extends BrowserPlugin[] = InferBrowserPluginArray<Options['browserPlugins']>,
     BrowserControllerReturn extends BrowserController = ReturnType<BrowserPlugins[number]['createController']>,
     LaunchContextReturn extends LaunchContext = ReturnType<BrowserPlugins[number]['createLaunchContext']>,
@@ -766,6 +765,7 @@ export class BrowserPool<
             ...this.preLaunchHooks,
             // This is flipped because of the fingerprint cache.
             // It is usual to generate proxy per browser and we want to know the proxyUrl for the caching.
+
             createFingerprintPreLaunchHook(this),
 
         ];
