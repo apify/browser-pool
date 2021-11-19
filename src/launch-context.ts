@@ -65,7 +65,7 @@ export class LaunchContext<
 
     private readonly _reservedFieldNames = [...Reflect.ownKeys(this), 'extend'];
 
-    fingerprint?: Fingerprint
+    fingerprint?: Fingerprint;
 
     // TODO: change this to PropertyKey when TypeScript 4.4 releases
     [K: string]: unknown;

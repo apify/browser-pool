@@ -5,7 +5,7 @@ export type FingerprintGenerator = {
 }
 
 export type GetFingerprintReturn = {
-    fingerprint: Fingerprint
+    fingerprint: Fingerprint;
 }
 
 export type FingerprintGeneratorOptions = {
@@ -19,22 +19,22 @@ export type FingerprintGeneratorOptions = {
 export enum BrowserName {
     chrome = 'chrome',
     firefox = 'firefox',
-    safari = 'safari'
+    safari = 'safari',
 }
 
 type BrowserSpecification = {
     name: BrowserName;
     minVersion?: number;
-    maxVersion?: number
+    maxVersion?: number;
 }
 
 export enum OperatingSystemsName {
     linux = 'linux',
     macos = 'macos',
-    windows = 'windows'
+    windows = 'windows',
 }
 
 export enum DeviceCategory {
     mobile = 'mobile',
-    desktop = 'desktop'
+    desktop = 'desktop',
 }
