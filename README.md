@@ -346,8 +346,8 @@ it will be killed after a timeout to prevent hanging browser processes.
 Changing browser fingerprints is beneficial for avoiding getting blocked and simulating real user browsers.
 With Browser Pool, you can do this otherwise complicated technique by enabling the `useFingerprints` option.
 The fingerprints are by default tight to the respective proxy urls to not use the same unique fingerprint from various IP addresses.
-You can disable this behavior in the `fingerprintsOptions` LINK. In the `fingerprintsOptions`, You can also control which fingerprints are generated.
-You can control parameters as browser, operating system, and browser versions. LINK.
+You can disable this behavior in the [`fingerprintOptions`](#new_BrowserPool_new). In the `fingerprintsOptions`, You can also control which fingerprints are generated.
+You can control parameters as browser, operating system, and browser versions.
 
 ### (UNSTABLE) Extensibility with plugins
 A new super cool browser automation library appears? No problem, we add
@@ -479,6 +479,12 @@ const browserPool = new BrowserPool({
 | [options.postPageCreateHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-page-create hooks are called right after a new page is created  and all internal actions of Browser Pool are completed. This is the  place to make changes to a page that you would like to apply to all  pages. Such as injecting a JavaScript library into all pages.  The hooks are called with two arguments:  `page`: `Page` and `browserController`: [BrowserController](#BrowserController) |
 | [options.prePageCloseHooks] | <code>Array.&lt;function()&gt;</code> |  | Pre-page-close hooks give you the opportunity to make last second changes  in a page that's about to be closed, such as saving a snapshot or updating  state.  The hooks are called with two arguments:  `page`: `Page` and `browserController`: [BrowserController](#BrowserController) |
 | [options.postPageCloseHooks] | <code>Array.&lt;function()&gt;</code> |  | Post-page-close hooks allow you to do page related clean up.  The hooks are called with two arguments:  `pageId`: `string` and `browserController`: [BrowserController](#BrowserController) |
+|[options.useFingerprints] | <code>boolean</code> | <code>false</code> | If true the Browser pool will automatically generate and inject fingerprints to browsers.|
+| [options.fingerprintsOptions] | <code>FingerprintOptions </code> | | Fingerprints options that allows customizing the fingerprinting behavior. |
+| [options.fingerprintsOptions.fingerprintGeneratorOptions] | | | See the [Fingerprint generator]("https://github.com/apify/fingerprint-generator#headergeneratoroptions") documentation. |
+| [options.fingerprintsOptions.useFingerprintPerProxyCache] | <code>boolean</code> | <code>true</code>| Fingerprints are autimatically assigned to an IP address so 1 IP equals 1 fingerprint. You can disable this behavior by settings this property to false. |
+| [options.fingerprintsOptions.fingerprintPerProxyCacheSize] | <code>number</code> | <code>10000</code> | Maximum number of IP to fingerprint pairs.
+
 
 
 * * *
