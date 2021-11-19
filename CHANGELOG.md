@@ -1,3 +1,7 @@
+3.1.0 / 2021/11/19
+====================
+- feature: Added fingerprinting logic.
+  
 3.0.0 / 2021/10/17
 ====================
 - fix: skip proxy-chain #53
