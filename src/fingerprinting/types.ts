@@ -1,6 +1,6 @@
 import { Fingerprint } from 'fingerprint-injector';
 
-export type FingerprintGenerator = {
+export interface FingerprintGenerator {
     getFingerprint: (fingerprintGeneratorOptions?: FingerprintGeneratorOptions) => GetFingerprintReturn;
 }
 

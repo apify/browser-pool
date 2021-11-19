@@ -2,10 +2,11 @@ import pLimit from 'p-limit';
 import { nanoid } from 'nanoid';
 import ow from 'ow';
 import { TypedEmitter } from 'tiny-typed-emitter';
-import { FingerprintInjector } from 'fingerprint-injector';
+import { Fingerprint, FingerprintInjector } from 'fingerprint-injector';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error no types for this package yet
 import FingerprintGenerator from 'fingerprint-generator';
+import QuickLRU from 'quick-lru';
 import { BrowserController } from './abstract-classes/browser-controller';
 import { BrowserPlugin } from './abstract-classes/browser-plugin';
 import { BROWSER_POOL_EVENTS } from './events';
@@ -14,7 +15,6 @@ import { log } from './logger';
 import { addTimeoutToPromise, InferBrowserPluginArray, UnwrapPromise } from './utils';
 import { createFingerprintPreLaunchHook, createPrePageCreateHook, createPostPageCreateHook } from './fingerprinting/hooks';
 import { FingerprintGeneratorOptions } from './fingerprinting/types';
-import { FingerprintToProxyCache } from './fingerprinting/proxy-to-fingerprint-cache';
 
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
@@ -25,7 +25,8 @@ export interface BrowserPoolEvents<BC extends BrowserController, Page> {
     [BROWSER_POOL_EVENTS.BROWSER_RETIRED]: (browserController: BC) => void | Promise<void>;
     [BROWSER_POOL_EVENTS.BROWSER_LAUNCHED]: (browserController: BC) => void | Promise<void>;
 }
-export type FingerprintsOptions = {
+
+export interface FingerprintsOptions{
     fingerprintGeneratorOptions?: FingerprintGeneratorOptions;
     /**
      * @default true
@@ -36,6 +37,7 @@ export type FingerprintsOptions = {
     */
     fingerprintPerProxyCacheSize?: number;
 }
+
 export interface BrowserPoolOptions<Plugin extends BrowserPlugin = BrowserPlugin> {
     /**
      * Browser plugins are wrappers of browser automation libraries that
@@ -301,7 +303,7 @@ export class BrowserPool<
 
     fingerprintGenerator?: FingerprintGenerator;
 
-    fingerprintCache?: FingerprintToProxyCache;
+    fingerprintCache?: QuickLRU<string, Fingerprint>;
 
     private browserKillerInterval? = setInterval(
         () => this._closeInactiveRetiredBrowsers(),
@@ -754,7 +756,7 @@ export class BrowserPool<
         this.fingerprintInjector = new FingerprintInjector();
 
         if (useFingerprintPerProxyCache) {
-            this.fingerprintCache = new FingerprintToProxyCache({ maxSize: fingerprintPerProxyCacheSize });
+            this.fingerprintCache = new QuickLRU({ maxSize: fingerprintPerProxyCacheSize });
         }
 
         this._addFingerprintHooks();

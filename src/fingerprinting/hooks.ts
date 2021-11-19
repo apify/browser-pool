@@ -4,7 +4,7 @@ import { BrowserController } from '../abstract-classes/browser-controller';
 import { LaunchContext } from '../launch-context';
 import { getGeneratorDefaultOptions } from './utils';
 
-export const createFingerprintPreLaunchHook = (browserPool: BrowserPool<any, any, any, any, any>) => {
+export function createFingerprintPreLaunchHook(browserPool: BrowserPool<any, any, any, any, any>) {
     const {
         fingerprintGenerator,
         fingerprintCache,
@@ -44,7 +44,7 @@ export const createFingerprintPreLaunchHook = (browserPool: BrowserPool<any, any
     };
 };
 
-export const createPrePageCreateHook = () => {
+export function createPrePageCreateHook() {
     return (_pageId: string, browserController: BrowserController, pageOptions: any): void => {
         const { launchContext, browserPlugin } = browserController;
         const fingerprint = launchContext.fingerprint!;
@@ -59,7 +59,7 @@ export const createPrePageCreateHook = () => {
     };
 };
 
-export const createPostPageCreateHook = (fingerprintInjector: FingerprintInjector) => {
+export function createPostPageCreateHook(fingerprintInjector: FingerprintInjector) {
     return async (page: any, browserController: BrowserController): Promise<void> => {
         const { browserPlugin, launchContext } = browserController;
         const fingerprint = launchContext.fingerprint!;

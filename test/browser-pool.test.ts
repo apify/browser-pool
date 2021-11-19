@@ -678,7 +678,7 @@ describe('BrowserPool', () => {
                             },
                         });
                         // cast to any type in order to acces the maxSize property for testing purposes.
-                        const { cache } : {cache: any} = browserPoolCache!.fingerprintCache!;
+                        const cache: any = browserPoolCache!.fingerprintCache!;
                         expect(cache.maxSize).toBe(1);
                     });
 
