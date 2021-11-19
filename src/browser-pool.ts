@@ -2,12 +2,19 @@ import pLimit from 'p-limit';
 import { nanoid } from 'nanoid';
 import ow from 'ow';
 import { TypedEmitter } from 'tiny-typed-emitter';
+import { Fingerprint, FingerprintInjector } from 'fingerprint-injector';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error no types for this package yet
+import FingerprintGenerator from 'fingerprint-generator';
+import QuickLRU from 'quick-lru';
 import { BrowserController } from './abstract-classes/browser-controller';
 import { BrowserPlugin } from './abstract-classes/browser-plugin';
 import { BROWSER_POOL_EVENTS } from './events';
 import { LaunchContext } from './launch-context';
 import { log } from './logger';
 import { addTimeoutToPromise, InferBrowserPluginArray, UnwrapPromise } from './utils';
+import { createFingerprintPreLaunchHook, createPrePageCreateHook, createPostPageCreateHook } from './fingerprinting/hooks';
+import { FingerprintGeneratorOptions } from './fingerprinting/types';
 
 const PAGE_CLOSE_KILL_TIMEOUT_MILLIS = 1000;
 const BROWSER_KILLER_INTERVAL_MILLIS = 10 * 1000;
@@ -17,6 +24,18 @@ export interface BrowserPoolEvents<BC extends BrowserController, Page> {
     [BROWSER_POOL_EVENTS.PAGE_CLOSED]: (page: Page) => void | Promise<void>;
     [BROWSER_POOL_EVENTS.BROWSER_RETIRED]: (browserController: BC) => void | Promise<void>;
     [BROWSER_POOL_EVENTS.BROWSER_LAUNCHED]: (browserController: BC) => void | Promise<void>;
+}
+
+export interface FingerprintsOptions{
+    fingerprintGeneratorOptions?: FingerprintGeneratorOptions;
+    /**
+     * @default true
+     */
+    useFingerprintPerProxyCache?: boolean;
+    /**
+    * @default 10000
+    */
+    fingerprintPerProxyCacheSize?: number;
 }
 
 export interface BrowserPoolOptions<Plugin extends BrowserPlugin = BrowserPlugin> {
@@ -58,6 +77,11 @@ export interface BrowserPoolOptions<Plugin extends BrowserPlugin = BrowserPlugin
      * @default 300
      */
     closeInactiveBrowserAfterSecs?: number;
+    /**
+     * @default false
+     */
+    useFingerprints?: boolean;
+    fingerprintsOptions?: FingerprintsOptions;
 }
 
 /**
@@ -230,7 +254,7 @@ export interface BrowserPoolHooks<
  * ```
  */
 export class BrowserPool<
-    Options extends BrowserPoolOptions,
+    Options extends BrowserPoolOptions = BrowserPoolOptions,
     BrowserPlugins extends BrowserPlugin[] = InferBrowserPluginArray<Options['browserPlugins']>,
     BrowserControllerReturn extends BrowserController = ReturnType<BrowserPlugins[number]['createController']>,
     LaunchContextReturn extends LaunchContext = ReturnType<BrowserPlugins[number]['createLaunchContext']>,
@@ -246,6 +270,10 @@ export class BrowserPool<
     operationTimeoutMillis: number;
 
     closeInactiveBrowserAfterMillis: number;
+
+    useFingerprints?: boolean;
+
+    fingerprintsOptions: FingerprintsOptions;
 
     preLaunchHooks: PreLaunchHook<LaunchContextReturn>[];
 
@@ -271,6 +299,12 @@ export class BrowserPool<
 
     pageToBrowserController = new WeakMap<PageReturn, BrowserControllerReturn>();
 
+    fingerprintInjector?: FingerprintInjector;
+
+    fingerprintGenerator?: FingerprintGenerator;
+
+    fingerprintCache?: QuickLRU<string, Fingerprint>;
+
     private browserKillerInterval? = setInterval(
         () => this._closeInactiveRetiredBrowsers(),
         BROWSER_KILLER_INTERVAL_MILLIS,
@@ -293,6 +327,8 @@ export class BrowserPool<
             postPageCreateHooks: ow.optional.array,
             prePageCloseHooks: ow.optional.array,
             postPageCloseHooks: ow.optional.array,
+            useFingerprints: ow.optional.boolean,
+            fingerprintsOptions: ow.optional.object,
         }));
 
         const {
@@ -307,6 +343,8 @@ export class BrowserPool<
             postPageCreateHooks = [],
             prePageCloseHooks = [],
             postPageCloseHooks = [],
+            useFingerprints = false,
+            fingerprintsOptions = {},
         } = options;
 
         this.browserPlugins = browserPlugins as unknown as BrowserPlugins;
@@ -314,6 +352,8 @@ export class BrowserPool<
         this.retireBrowserAfterPageCount = retireBrowserAfterPageCount;
         this.operationTimeoutMillis = operationTimeoutSecs * 1000;
         this.closeInactiveBrowserAfterMillis = closeInactiveBrowserAfterSecs * 1000;
+        this.useFingerprints = useFingerprints;
+        this.fingerprintsOptions = fingerprintsOptions;
 
         // hooks
         this.preLaunchHooks = preLaunchHooks;
@@ -322,6 +362,11 @@ export class BrowserPool<
         this.postPageCreateHooks = postPageCreateHooks;
         this.prePageCloseHooks = prePageCloseHooks;
         this.postPageCloseHooks = postPageCloseHooks;
+
+        // fingerprinting
+        if (this.useFingerprints) {
+            this._initializeFingerprinting();
+        }
     }
 
     /**
@@ -703,6 +748,36 @@ export class BrowserPool<
                 this.retiredBrowserControllers.delete(browserController);
             }, PAGE_CLOSE_KILL_TIMEOUT_MILLIS);
         }
+    }
+
+    private _initializeFingerprinting(): void {
+        const { useFingerprintPerProxyCache = true, fingerprintPerProxyCacheSize = 10_000 } = this.fingerprintsOptions;
+        this.fingerprintGenerator = new FingerprintGenerator(this.fingerprintsOptions.fingerprintGeneratorOptions);
+        this.fingerprintInjector = new FingerprintInjector();
+
+        if (useFingerprintPerProxyCache) {
+            this.fingerprintCache = new QuickLRU({ maxSize: fingerprintPerProxyCacheSize });
+        }
+
+        this._addFingerprintHooks();
+    }
+
+    private _addFingerprintHooks() {
+        this.preLaunchHooks = [
+            ...this.preLaunchHooks,
+            // This is flipped because of the fingerprint cache.
+            // It is usual to generate proxy per browser and we want to know the proxyUrl for the caching.
+
+            createFingerprintPreLaunchHook(this),
+
+        ];
+        this.prePageCreateHooks = [
+            createPrePageCreateHook(),
+            ...this.prePageCreateHooks,
+        ];
+        this.postPageCreateHooks = [
+            createPostPageCreateHook(this.fingerprintInjector!),
+        ];
     }
 }
 

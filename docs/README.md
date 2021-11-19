@@ -15,18 +15,20 @@ to hear about your use cases in the [Discussions](https://github.com/apify/brows
 
 <!-- toc -->
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Launching multiple browsers](#launching-multiple-browsers)
-- [Features](#features)
-  * [Simple configuration](#simple-configuration)
-  * [Proxy management](#proxy-management)
-  * [Lifecycle management with hooks](#lifecycle-management-with-hooks)
-  * [Manipulating playwright context using `pageOptions` or `launchOptions`](#manipulating-playwright-context-using-pageoptions-or-launchoptions)
-  * [Single API for common operations](#single-api-for-common-operations)
-  * [Graceful browser closing](#graceful-browser-closing)
-  * [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
-- [API Reference](#api-reference)
+- [Browser Pool - the headless browser manager](#browser-pool---the-headless-browser-manager)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Launching multiple browsers](#launching-multiple-browsers)
+  - [Features](#features)
+    - [Simple configuration](#simple-configuration)
+    - [Proxy management](#proxy-management)
+    - [Lifecycle management with hooks](#lifecycle-management-with-hooks)
+    - [Manipulating playwright context using `pageOptions` or `launchOptions`](#manipulating-playwright-context-using-pageoptions-or-launchoptions)
+    - [Single API for common operations](#single-api-for-common-operations)
+    - [Graceful browser closing](#graceful-browser-closing)
+    - [Changing browser fingerprints a.k.a. browser signatures](#changing-browser-fingerprints-aka-browser-signatures)
+    - [(UNSTABLE) Extensibility with plugins](#unstable-extensibility-with-plugins)
+  - [API Reference](#api-reference)
 
 <!-- tocstop -->
 
@@ -340,6 +342,13 @@ With Browser Pool, browsers are not closed, but retired. A retired browser
 will no longer open new pages, but it will wait until the open pages are closed,
 allowing your running tasks to finish. If a browser gets stuck in limbo,
 it will be killed after a timeout to prevent hanging browser processes.
+
+### Changing browser fingerprints a.k.a. browser signatures
+Changing browser fingerprints is beneficial for avoiding getting blocked and simulating real user browsers.
+With Browser Pool, you can do this otherwise complicated technique by enabling the `useFingerprints` option.
+The fingerprints are by default tight to the respective proxy urls to not use the same unique fingerprint from various IP addresses.
+You can disable this behavior in the [`fingerprintOptions`](#new_BrowserPool_new). In the `fingerprintsOptions`, You can also control which fingerprints are generated.
+You can control parameters as browser, operating system, and browser versions.
 
 ### (UNSTABLE) Extensibility with plugins
 A new super cool browser automation library appears? No problem, we add

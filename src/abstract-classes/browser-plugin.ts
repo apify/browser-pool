@@ -12,6 +12,7 @@ import { UnwrapPromise } from '../utils';
  * or fork of the library. It also keeps `browser-pool` installation small.
  */
 export interface CommonLibrary {
+    product?: string;
     launch(...args: unknown[]): Promise<CommonBrowser>;
     name?: () => string;
 }
