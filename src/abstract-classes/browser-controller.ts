@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { TypedEmitter } from 'tiny-typed-emitter';
+import { tryCancel } from '@apify/timeout';
 import { BROWSER_CONTROLLER_EVENTS } from '../events';
 import { LaunchContext } from '../launch-context';
 import { log } from '../logger';
@@ -207,7 +208,9 @@ export abstract class BrowserController<
         this.totalPages++;
         await this.isActivePromise;
         const page = await this._newPage(pageOptions);
+        tryCancel();
         this.lastPageOpenedAt = Date.now();
+
         return page;
     }
 

@@ -1,3 +1,4 @@
+import { tryCancel } from '@apify/timeout';
 import type Puppeteer from './puppeteer-proxy-per-page';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 import { log } from '../logger';
@@ -29,13 +30,16 @@ export class PuppeteerController extends BrowserController<typeof Puppeteer> {
             }
 
             const context = await this.browser.createIncognitoBrowserContext(contextOptions);
+            tryCancel();
             const page = await context.newPage();
+            tryCancel();
 
             if (contextOptions.proxyUsername || contextOptions.proxyPassword) {
                 await page.authenticate({
                     username: contextOptions.proxyUsername ?? '',
                     password: contextOptions.proxyPassword ?? '',
                 });
+                tryCancel();
             }
 
             page.once('close', async () => {
@@ -46,12 +50,14 @@ export class PuppeteerController extends BrowserController<typeof Puppeteer> {
                 } catch (error: any) {
                     log.exception(error, 'Failed to close context.');
                 }
+                tryCancel();
             });
 
             return page;
         }
 
         const page = await this.browser.newPage();
+        tryCancel();
 
         page.once('close', () => {
             this.activePages--;

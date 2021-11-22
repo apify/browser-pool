@@ -1,4 +1,5 @@
 import type { Browser, BrowserType, Page } from 'playwright';
+import { tryCancel } from '@apify/timeout';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 
 export class PlaywrightController extends BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], Browser> {
@@ -27,6 +28,7 @@ export class PlaywrightController extends BrowserController<BrowserType, Paramet
         }
 
         const page = await this.browser.newPage(contextOptions);
+        tryCancel();
 
         page.once('close', () => {
             this.activePages--;

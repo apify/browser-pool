@@ -2,6 +2,7 @@ import pLimit from 'p-limit';
 import { nanoid } from 'nanoid';
 import ow from 'ow';
 import { TypedEmitter } from 'tiny-typed-emitter';
+import { addTimeoutToPromise, tryCancel } from '@apify/timeout';
 import { Fingerprint, FingerprintInjector } from 'fingerprint-injector';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error no types for this package yet
@@ -12,7 +13,7 @@ import { BrowserPlugin } from './abstract-classes/browser-plugin';
 import { BROWSER_POOL_EVENTS } from './events';
 import { LaunchContext } from './launch-context';
 import { log } from './logger';
-import { addTimeoutToPromise, InferBrowserPluginArray, UnwrapPromise } from './utils';
+import { InferBrowserPluginArray, UnwrapPromise } from './utils';
 import { createFingerprintPreLaunchHook, createPrePageCreateHook, createPostPageCreateHook } from './fingerprinting/hooks';
 import { FingerprintGeneratorOptions } from './fingerprinting/types';
 
@@ -394,6 +395,7 @@ export class BrowserPool<
         return this.limiter(async () => {
             let browserController = this._pickBrowserWithFreeCapacity(browserPlugin);
             if (!browserController) browserController = await this._launchBrowser(id, { browserPlugin });
+            tryCancel();
 
             return this._createPageForBrowser(id, browserController, pageOptions, proxyUrl);
         });
@@ -417,6 +419,7 @@ export class BrowserPool<
         }
 
         const browserController = await this._launchBrowser(id, { launchOptions, browserPlugin });
+        tryCancel();
         return this._createPageForBrowser(id, browserController, pageOptions);
     }
 
@@ -501,6 +504,7 @@ export class BrowserPool<
         // It's not ideal though, we need to come up with a better API.
         // eslint-disable-next-line dot-notation -- accessing private property
         await browserController['isActivePromise'];
+        tryCancel();
 
         const finalPageOptions = browserController.launchContext.useIncognitoPages ? pageOptions : undefined;
 
@@ -509,15 +513,17 @@ export class BrowserPool<
         }
 
         await this._executeHooks(this.prePageCreateHooks, pageId, browserController, finalPageOptions);
+        tryCancel();
 
         let page: PageReturn;
 
         try {
             page = await addTimeoutToPromise(
-                browserController.newPage(finalPageOptions),
+                () => browserController.newPage(finalPageOptions),
                 this.operationTimeoutMillis,
                 'browserController.newPage() timed out.',
             ) as PageReturn;
+            tryCancel();
 
             this.pages.set(pageId, page);
             this.pageIds.set(page, pageId);
@@ -536,6 +542,7 @@ export class BrowserPool<
         }
 
         await this._executeHooks(this.postPageCreateHooks, page, browserController);
+        tryCancel();
 
         this.emit(BROWSER_POOL_EVENTS.PAGE_CREATED, page); // @TODO: CONSIDER renaming this event.
 
@@ -632,7 +639,9 @@ export class BrowserPool<
             // If the hooks or the launch fails, we need to delete the controller,
             // because otherwise it would be stuck in limbo without a browser.
             await this._executeHooks(this.preLaunchHooks, pageId, launchContext);
+            tryCancel();
             const browser = await browserPlugin.launch(launchContext);
+            tryCancel();
             browserController.assignBrowser(browser, launchContext);
         } catch (err) {
             this.activeBrowserControllers.delete(browserController);
@@ -656,6 +665,7 @@ export class BrowserPool<
             throw err;
         }
 
+        tryCancel();
         browserController.activate();
         this.emit(BROWSER_POOL_EVENTS.BROWSER_LAUNCHED, browserController);
 
