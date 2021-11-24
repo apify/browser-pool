@@ -588,12 +588,9 @@ export class BrowserPool<
      */
     async closeAllBrowsers(): Promise<void> {
         const controllers = this._getAllBrowserControllers();
-
-        const promises: Promise<void>[] = [];
-
-        controllers.forEach((controller) => {
-            promises.push(controller.close());
-        });
+        const promises = [...controllers]
+            .filter((controller) => controller.isActive)
+            .map((controller) => controller.close());
 
         await Promise.all(promises);
     }

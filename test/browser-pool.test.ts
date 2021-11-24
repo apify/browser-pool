@@ -91,10 +91,14 @@ describe('BrowserPool', () => {
         });
 
         test('should allow early aborting in case of outer timeout', async () => {
-            console.log(1);
+            const timeout = browserPool.operationTimeoutMillis;
             browserPool.operationTimeoutMillis = 500;
             // @ts-expect-error mocking private method
             const spy = jest.spyOn(BrowserPool.prototype, '_executeHooks');
+
+            await browserPool.newPage();
+            expect(spy).toBeCalledTimes(4);
+            spy.mockReset();
 
             await expect(addTimeoutToPromise(
                 () => browserPool.newPage(),
@@ -107,7 +111,10 @@ describe('BrowserPool', () => {
             // inside `addTimeoutToPromise()`, this would not work and we would get
             // 4 calls instead of just one.
             expect(spy).toBeCalledTimes(1);
+
             spy.mockRestore();
+            browserPool.operationTimeoutMillis = timeout;
+            browserPool.retireAllBrowsers();
         });
 
         test('proxy sugar syntax', async () => {
