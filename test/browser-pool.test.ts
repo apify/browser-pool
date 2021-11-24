@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { Server as ProxyChainServer } from 'proxy-chain';
 import puppeteer, { Page } from 'puppeteer';
 import playwright from 'playwright';
+import { addTimeoutToPromise } from '@apify/timeout';
 import { BrowserPool, PrePageCreateHook } from '../src/browser-pool';
 import { PuppeteerPlugin } from '../src/puppeteer/puppeteer-plugin';
 import { PlaywrightPlugin } from '../src/playwright/playwright-plugin';
@@ -87,6 +88,26 @@ describe('BrowserPool', () => {
 
             expect(page.goto).toBeDefined();
             expect(page.close).toBeDefined();
+        });
+
+        test('should allow early aborting in case of outer timeout', async () => {
+            console.log(1);
+            browserPool.operationTimeoutMillis = 500;
+            // @ts-expect-error mocking private method
+            const spy = jest.spyOn(BrowserPool.prototype, '_executeHooks');
+
+            await expect(addTimeoutToPromise(
+                () => browserPool.newPage(),
+                10,
+                'opening new page timed out',
+            )).rejects.toThrowError('opening new page timed out');
+
+            // We terminated early enough so only preLaunchHooks were not executed,
+            // thanks to `tryCancel()` calls after each await. If we did not run
+            // inside `addTimeoutToPromise()`, this would not work and we would get
+            // 4 calls instead of just one.
+            expect(spy).toBeCalledTimes(1);
+            spy.mockRestore();
         });
 
         test('proxy sugar syntax', async () => {
