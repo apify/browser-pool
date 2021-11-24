@@ -26,6 +26,11 @@ export * from './browser-pool';
 export * from './playwright/playwright-plugin';
 export * from './puppeteer/puppeteer-plugin';
 export * from './events';
+export {
+    BrowserName,
+    DeviceCategory,
+    OperatingSystemsName,
+} from './fingerprinting/types';
 
 // Type exports
 export type {
@@ -42,3 +47,9 @@ export type {
     LaunchContext,
     LaunchContextOptions,
 } from './launch-context';
+export type {
+    BrowserSpecification,
+    FingerprintGenerator,
+    FingerprintGeneratorOptions,
+    GetFingerprintReturn,
+} from './fingerprinting/types';

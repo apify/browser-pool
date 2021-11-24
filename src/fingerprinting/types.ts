@@ -16,25 +16,25 @@ export type FingerprintGeneratorOptions = {
 
 }
 
-export enum BrowserName {
+export const enum BrowserName {
     chrome = 'chrome',
     firefox = 'firefox',
     safari = 'safari',
 }
 
-type BrowserSpecification = {
+export type BrowserSpecification = {
     name: BrowserName;
     minVersion?: number;
     maxVersion?: number;
 }
 
-export enum OperatingSystemsName {
+export const enum OperatingSystemsName {
     linux = 'linux',
     macos = 'macos',
     windows = 'windows',
 }
 
-export enum DeviceCategory {
+export const enum DeviceCategory {
     mobile = 'mobile',
     desktop = 'desktop',
 }
