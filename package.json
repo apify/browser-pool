@@ -44,7 +44,7 @@
 	},
 	"dependencies": {
 		"@apify/log": "^1.1.1",
-        "@apify/timeout": "^0.2.0",
+		"@apify/timeout": "^0.2.0",
 		"fingerprint-generator": "^1.0.0",
 		"fingerprint-injector": "^1.0.0",
 		"lodash.merge": "^4.6.2",
