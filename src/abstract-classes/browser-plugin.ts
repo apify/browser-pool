@@ -25,6 +25,7 @@ export interface CommonBrowser {
 /** @internal */
 export interface CommonPage {
     close(...args: unknown[]): Promise<unknown>;
+    url(...args: unknown[]): Promise<string>;
 }
 
 export interface BrowserPluginOptions<LibraryOptions> {
