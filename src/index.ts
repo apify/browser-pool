@@ -39,6 +39,7 @@ export type {
     Cookie,
 } from './abstract-classes/browser-controller';
 export type {
+    CommonPage,
     BrowserPlugin,
     BrowserPluginOptions,
     CreateLaunchContextOptions,
@@ -53,3 +54,4 @@ export type {
     FingerprintGeneratorOptions,
     GetFingerprintReturn,
 } from './fingerprinting/types';
+export type { InferBrowserPluginArray } from './utils';
