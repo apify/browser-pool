@@ -345,7 +345,7 @@ it will be killed after a timeout to prevent hanging browser processes.
 ### Changing browser fingerprints a.k.a. browser signatures
 Changing browser fingerprints is beneficial for avoiding getting blocked and simulating real user browsers.
 With Browser Pool, you can do this otherwise complicated technique by enabling the `useFingerprints` option.
-The fingerprints are by default tight to the respective proxy urls to not use the same unique fingerprint from various IP addresses.
+The fingerprints are by default tied to the respective proxy urls to not use the same unique fingerprint from various IP addresses.
 You can disable this behavior in the [`fingerprintOptions`](#new_BrowserPool_new). In the `fingerprintsOptions`, You can also control which fingerprints are generated.
 You can control parameters as browser, operating system, and browser versions.
 
