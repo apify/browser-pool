@@ -16,6 +16,44 @@ import { BrowserName, OperatingSystemsName } from '../src/fingerprinting/types';
 import { PuppeteerController } from '../src/puppeteer/puppeteer-controller';
 import { createProxyServer } from './browser-plugins/create-proxy-server';
 
+const fingerprintingMatrix: [string, PlaywrightPlugin | PuppeteerPlugin][] = [
+    [
+        'Playwright - persistent',
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: false,
+            },
+        ),
+    ],
+    [
+        'Playwright - Incognito',
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: true,
+            },
+        ),
+    ],
+    [
+        'Puppeteer - Persistent',
+        new PuppeteerPlugin(
+            puppeteer,
+            {
+                useIncognitoPages: false,
+            },
+        ),
+    ],
+    [
+        'Puppeteer - Incognito',
+        new PuppeteerPlugin(
+            puppeteer,
+            {
+                useIncognitoPages: true,
+            },
+        ),
+    ],
+];
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
     const puppeteerPlugin = new PuppeteerPlugin(puppeteer);
@@ -600,44 +638,7 @@ describe('BrowserPool', () => {
             });
 
             describe('fingerprinting', () => {
-                describe.each([
-                    [
-                        'Playwright - persistent',
-                        new PlaywrightPlugin(
-                            playwright.chromium,
-                            {
-                                useIncognitoPages: false,
-                            },
-                        ),
-                    ],
-                    [
-                        'Playwright - Incognito',
-                        new PlaywrightPlugin(
-                            playwright.chromium,
-                            {
-                                useIncognitoPages: true,
-                            },
-                        ),
-                    ],
-                    [
-                        'Puppeteer - Persistent',
-                        new PuppeteerPlugin(
-                            puppeteer,
-                            {
-                                useIncognitoPages: false,
-                            },
-                        ),
-                    ],
-                    [
-                        'Puppeteer - Incognito',
-                        new PuppeteerPlugin(
-                            puppeteer,
-                            {
-                                useIncognitoPages: true,
-                            },
-                        ),
-                    ],
-                ])('%s', (_name, plugin) => {
+                describe.each(fingerprintingMatrix)('%s', (_name, plugin) => {
                     let browserPoolWithFP: BrowserPool;
                     let page: any;
 
