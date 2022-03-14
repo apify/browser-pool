@@ -16,6 +16,25 @@ export const getGeneratorDefaultOptions = (launchContext: LaunchContext): Finger
     return options;
 };
 
+export const mergeArgsToHideWebdriver = (originalArgs: string[]): string[] => {
+    if (originalArgs && originalArgs.length) {
+        const argumentIndex = originalArgs.findIndex((arg: string) => arg.startsWith('--disable-blink-features='));
+        const hasArgument = argumentIndex !== -1;
+
+        if (hasArgument) {
+            const arg = originalArgs[argumentIndex];
+            // Append our argument.
+            originalArgs[argumentIndex] = `${arg},AutomationControlled`;
+        } else {
+            originalArgs.push('--disable-blink-features=AutomationControlled');
+        }
+
+        return originalArgs;
+    }
+
+    return ['--disable-blink-features=AutomationControlled'];
+};
+
 const getBrowserName = (browserPlugin: BrowserPlugin, launchOptions: any): BrowserName => {
     const { library } = browserPlugin;
     let browserName;
