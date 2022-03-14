@@ -50,7 +50,6 @@ export class PuppeteerController extends BrowserController<typeof Puppeteer> {
                 } catch (error: any) {
                     log.exception(error, 'Failed to close context.');
                 }
-                tryCancel();
             });
 
             return page;
