@@ -32,7 +32,6 @@ export function createFingerprintPreLaunchHook(browserPool: BrowserPool<any, any
 
         launchContext.extend({ fingerprint });
         // hide webdriver with arg.
-        // IMHO we could do this by default not only with fingerprinting.
         launchOptions.args = mergeArgsToHideWebdriver(launchOptions.args);
 
         if (useIncognitoPages) {
