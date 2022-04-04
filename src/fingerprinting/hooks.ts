@@ -2,7 +2,7 @@ import { FingerprintInjector } from 'fingerprint-injector';
 import { BrowserPool, PlaywrightPlugin, PuppeteerPlugin } from '..';
 import { BrowserController } from '../abstract-classes/browser-controller';
 import { LaunchContext } from '../launch-context';
-import { getGeneratorDefaultOptions } from './utils';
+import { getGeneratorDefaultOptions, mergeArgsToHideWebdriver } from './utils';
 
 export function createFingerprintPreLaunchHook(browserPool: BrowserPool<any, any, any, any, any>) {
     const {
@@ -14,7 +14,9 @@ export function createFingerprintPreLaunchHook(browserPool: BrowserPool<any, any
     } = browserPool;
 
     return (_pageId: string, launchContext: LaunchContext) => {
-        const { useIncognitoPages, launchOptions, proxyUrl } = launchContext;
+        const { useIncognitoPages, proxyUrl } = launchContext;
+        // @TODO: Fix the typings so they are easier to work with.
+        const { launchOptions }: { launchOptions: any } = launchContext;
         // If no options are passed we try to pass best default options as possible to match browser and OS.
         const fingerprintGeneratorFinalOptions = fingerprintGeneratorOptions || getGeneratorDefaultOptions(launchContext);
         let fingerprint;
@@ -29,14 +31,16 @@ export function createFingerprintPreLaunchHook(browserPool: BrowserPool<any, any
         }
 
         launchContext.extend({ fingerprint });
+        // hide webdriver with arg.
+        launchOptions.args = mergeArgsToHideWebdriver(launchOptions.args);
 
         if (useIncognitoPages) {
             return;
         }
         const { userAgent, screen } = fingerprint;
-        // @ts-expect-error I have no idea why I cannot assign property to unknown object.
+
         launchOptions.userAgent = userAgent;
-        // @ts-expect-error Same as above.
+
         launchOptions.viewport = {
             width: screen.width,
             height: screen.height,

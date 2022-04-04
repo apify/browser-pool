@@ -16,6 +16,44 @@ import { BrowserName, OperatingSystemsName } from '../src/fingerprinting/types';
 import { PuppeteerController } from '../src/puppeteer/puppeteer-controller';
 import { createProxyServer } from './browser-plugins/create-proxy-server';
 
+const fingerprintingMatrix: [string, PlaywrightPlugin | PuppeteerPlugin][] = [
+    [
+        'Playwright - persistent',
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: false,
+            },
+        ),
+    ],
+    [
+        'Playwright - Incognito',
+        new PlaywrightPlugin(
+            playwright.chromium,
+            {
+                useIncognitoPages: true,
+            },
+        ),
+    ],
+    [
+        'Puppeteer - Persistent',
+        new PuppeteerPlugin(
+            puppeteer,
+            {
+                useIncognitoPages: false,
+            },
+        ),
+    ],
+    [
+        'Puppeteer - Incognito',
+        new PuppeteerPlugin(
+            puppeteer,
+            {
+                useIncognitoPages: true,
+            },
+        ),
+    ],
+];
 // Tests could be generated from this blueprint for each plugin
 describe('BrowserPool', () => {
     const puppeteerPlugin = new PuppeteerPlugin(puppeteer);
@@ -600,68 +638,53 @@ describe('BrowserPool', () => {
             });
 
             describe('fingerprinting', () => {
-                test('should override fingerprint with persistentContext', async () => {
-                    const browserPoolWithFP = new BrowserPool({
-                        browserPlugins: [new PlaywrightPlugin(
-                            playwright.chromium,
-                            {
-                                useIncognitoPages: false,
-                            },
-                        )],
-                        closeInactiveBrowserAfterSecs: 2,
-                        useFingerprints: true,
+                describe.each(fingerprintingMatrix)('%s', (_name, plugin) => {
+                    let browserPoolWithFP: BrowserPool;
+                    let page: any;
+
+                    beforeEach(async () => {
+                        browserPoolWithFP = new BrowserPool({
+                            browserPlugins: [plugin],
+                            closeInactiveBrowserAfterSecs: 2,
+                            useFingerprints: true,
+                        });
+                        page = await browserPoolWithFP.newPage();
                     });
 
-                    const page = await browserPoolWithFP.newPage();
-                    await page.goto(`file://${__dirname}/test.html`);
-                    const browserController = browserPoolWithFP.getBrowserControllerByPage(page);
+                    afterEach(async () => {
+                        if (page) await page.close();
 
-                    const data: { hardwareConcurrency: number; userAgent: string} = await page.evaluate(() => {
-                        return {
-                            hardwareConcurrency: navigator.hardwareConcurrency,
-                            userAgent: navigator.userAgent,
-                        };
+                        await browserPoolWithFP.destroy();
                     });
-                    const { fingerprint } = browserController!.launchContext!;
 
-                    expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
-                    expect(data.userAgent).toBe(fingerprint?.userAgent);
+                    test('should override fingerprint', async () => {
+                        await page.goto(`file://${__dirname}/test.html`);
+                        // @ts-expect-error mistypings
+                        const browserController = browserPoolWithFP.getBrowserControllerByPage(page);
 
-                    await page.close();
-                    await browserPoolWithFP.destroy();
+                        const data: { hardwareConcurrency: number; userAgent: string } = await page.evaluate(() => {
+                            return {
+                                hardwareConcurrency: navigator.hardwareConcurrency,
+                                userAgent: navigator.userAgent,
+                            };
+                        });
+                        // @ts-expect-error mistypings
+                        const { fingerprint } = browserController!.launchContext!;
+
+                        expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
+                        expect(data.userAgent).toBe(fingerprint?.userAgent);
+                    });
+
+                    test('should hide webdriver', async () => {
+                        await page.goto(`file://${__dirname}/test.html`);
+                        const webdriver = await page.evaluate(() => {
+                            return navigator.webdriver;
+                        });
+                        // Can be undefined or false, depending on the chrome version.
+                        expect(webdriver).toBeFalsy();
+                    });
                 });
 
-                test('should override fingerprint with incognitoPages', async () => {
-                    const browserPoolWithFP = new BrowserPool({
-                        browserPlugins: [new PlaywrightPlugin(
-                            playwright.chromium,
-                            {
-                                useIncognitoPages: true,
-                            },
-                        )],
-                        closeInactiveBrowserAfterSecs: 2,
-                        useFingerprints: true,
-                    });
-
-                    const page = await browserPoolWithFP.newPage();
-                    await page.goto(`file://${__dirname}/test.html`);
-                    const browserController = browserPoolWithFP.getBrowserControllerByPage(page);
-
-                    const data: { hardwareConcurrency: number; userAgent: string} = await page.evaluate(() => {
-                        return {
-                            hardwareConcurrency: navigator.hardwareConcurrency,
-                            userAgent: navigator.userAgent,
-                        };
-                    });
-
-                    const { fingerprint } = browserController!.launchContext!;
-
-                    expect(data.hardwareConcurrency).toBe(fingerprint?.navigator.hardwareConcurrency);
-                    expect(data.userAgent).toBe(fingerprint?.userAgent);
-
-                    await page.close();
-                    await browserPoolWithFP.destroy();
-                });
                 describe('caching', () => {
                     const commonOptions = {
                         browserPlugins: [new PlaywrightPlugin(
