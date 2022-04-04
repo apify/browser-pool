@@ -22,7 +22,7 @@
 	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/apify/browser-pool-js"
+		"url": "https://github.com/apify/browser-pool.git"
 	},
 	"bugs": {
 		"url": "https://github.com/apify/browser-pool/issues"
