@@ -316,6 +316,8 @@ export class BrowserPool<
     constructor(options: Options & BrowserPoolHooks<BrowserControllerReturn, LaunchContextReturn, PageReturn>) {
         super();
 
+        this.browserKillerInterval!.unref();
+
         ow(options, ow.object.exactShape({
             browserPlugins: ow.array.minLength(1),
             maxOpenPagesPerBrowser: ow.optional.number,

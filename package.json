@@ -35,7 +35,7 @@
 		"postbuild": "gen-esm-wrapper dist/index.js dist/index.mjs",
 		"prepublishOnly": "npm run build",
 		"clean": "rimraf dist",
-		"test": "jest --detectOpenHandles",
+		"test": "jest",
 		"lint": "eslint src test --ext js,jsx,mjs,ts",
 		"lint:fix": "eslint src test --ext js,jsx,mjs,ts --fix",
 		"build:watch": "tsc -w",
