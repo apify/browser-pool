@@ -40,6 +40,12 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
 
             try {
                 browser = await this.library.launch(launchOptions);
+
+                if (anonymizedProxyUrl) {
+                    browser.on('disconnected', async () => {
+                        await close();
+                    });
+                }
             } catch (error) {
                 await close();
 
