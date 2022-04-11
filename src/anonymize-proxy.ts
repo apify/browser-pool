@@ -27,7 +27,7 @@ export const anonymizeProxySugar = async (
         }
 
         return [
-            url.href,
+            undefined,
             // eslint-disable-next-line @typescript-eslint/no-empty-function
             async () => {},
         ];

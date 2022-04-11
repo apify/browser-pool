@@ -36,7 +36,7 @@ export class PuppeteerController extends BrowserController<typeof Puppeteer> {
                 const [anonymizedProxyUrl, closeProxy] = await anonymizeProxySugar(
                     contextOptions.proxyServer,
                     contextOptions.proxyUsername,
-                    contextOptions.proxyUsername,
+                    contextOptions.proxyPassword,
                 );
 
                 if (anonymizedProxyUrl) {

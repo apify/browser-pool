@@ -21,28 +21,25 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             proxyUrl,
         } = launchContext;
 
+        launchOptions!.userDataDir = launchOptions!.userDataDir ?? userDataDir;
+
         let browser: Puppeteer.Browser;
 
         {
             const [anonymizedProxyUrl, close] = await anonymizeProxySugar(proxyUrl);
 
-            const finalLaunchOptions = {
-                ...launchOptions,
-                userDataDir: launchOptions?.userDataDir ?? userDataDir,
-            };
-
             if (proxyUrl) {
                 const proxyArg = `${PROXY_SERVER_ARG}${anonymizedProxyUrl ?? proxyUrl}`;
 
-                if (Array.isArray(finalLaunchOptions.args)) {
-                    finalLaunchOptions.args.push(proxyArg);
+                if (Array.isArray(launchOptions!.args)) {
+                    launchOptions!.args.push(proxyArg);
                 } else {
-                    finalLaunchOptions.args = [proxyArg];
+                    launchOptions!.args = [proxyArg];
                 }
             }
 
             try {
-                browser = await this.library.launch(finalLaunchOptions);
+                browser = await this.library.launch(launchOptions);
             } catch (error) {
                 await close();
 
