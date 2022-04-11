@@ -6,6 +6,7 @@ import { BrowserPlugin } from '../abstract-classes/browser-plugin';
 import { LaunchContext } from '../launch-context';
 import { log } from '../logger';
 import { getLocalProxyAddress } from '../proxy-server';
+import { anonymizeProxySugar } from '../anonymize-proxy';
 
 export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
     private _browserVersion?: string;
@@ -15,6 +16,7 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
             launchOptions,
             useIncognitoPages,
             userDataDir,
+            proxyUrl,
         } = launchContext;
         let browser: PlaywrightBrowser;
 
@@ -24,22 +26,48 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
             ...launchOptions!.proxy,
         };
 
-        if (useIncognitoPages) {
-            browser = await this.library.launch(launchOptions);
-        } else {
-            const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
+        const [anonymizedProxyUrl, close] = await anonymizeProxySugar(proxyUrl);
+        if (anonymizedProxyUrl) {
+            launchOptions!.proxy = {
+                server: anonymizedProxyUrl,
+                bypass: launchOptions!.proxy.bypass,
+            };
+        }
 
-            if (!this._browserVersion) {
-                // Launches unused browser just to get the browser version.
-                const inactiveBrowser = await this.library.launch(launchOptions);
-                this._browserVersion = inactiveBrowser.version();
+        try {
+            if (useIncognitoPages) {
+                browser = await this.library.launch(launchOptions);
 
-                inactiveBrowser.close().catch((error) => {
-                    log.exception(error, 'Failed to close browser.');
-                });
+                if (anonymizedProxyUrl) {
+                    browser.on('disconnected', async () => {
+                        await close();
+                    });
+                }
+            } else {
+                const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
+
+                if (anonymizedProxyUrl) {
+                    browserContext.on('close', async () => {
+                        await close();
+                    });
+                }
+
+                if (!this._browserVersion) {
+                    // Launches unused browser just to get the browser version.
+                    const inactiveBrowser = await this.library.launch(launchOptions);
+                    this._browserVersion = inactiveBrowser.version();
+
+                    inactiveBrowser.close().catch((error) => {
+                        log.exception(error, 'Failed to close browser.');
+                    });
+                }
+
+                browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });
             }
+        } catch (error) {
+            await close();
 
-            browser = new PlaywrightBrowserWithPersistentContext({ browserContext, version: this._browserVersion });
+            throw error;
         }
 
         return browser;
