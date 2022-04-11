@@ -8,7 +8,7 @@ import { LaunchContext } from '../launch-context';
 import { log } from '../logger';
 import { noop } from '../utils';
 import { PuppeteerController } from './puppeteer-controller';
-import { normalizeProxyUrl } from '../anonymize-proxy';
+import { anonymizeProxySugar } from '../anonymize-proxy';
 
 const PROXY_SERVER_ARG = '--proxy-server=';
 
@@ -24,7 +24,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         let browser: Puppeteer.Browser;
 
         {
-            const [anonymizedProxyUrl, close] = await normalizeProxyUrl(proxyUrl);
+            const [anonymizedProxyUrl, close] = await anonymizeProxySugar(proxyUrl);
 
             const finalLaunchOptions = {
                 ...launchOptions,
@@ -74,7 +74,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                         let page: Puppeteer.Page;
 
                         if (useIncognitoPages) {
-                            const [anonymizedProxyUrl, close] = await normalizeProxyUrl(proxyUrl);
+                            const [anonymizedProxyUrl, close] = await anonymizeProxySugar(proxyUrl);
 
                             try {
                                 const context = await browser.createIncognitoBrowserContext({
