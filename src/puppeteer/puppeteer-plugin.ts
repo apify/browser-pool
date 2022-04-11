@@ -130,9 +130,10 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
     }
 
     protected async _addProxyToLaunchOptions(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         launchContext: LaunchContext<typeof Puppeteer>,
     ): Promise<void> {
+        launchContext as unknown;
+
         /*
         // DO NOT USE YET! DOING SO DISABLES CACHE WHICH IS 50% PERFORMANCE HIT!
         launchContext.launchOptions ??= {};
