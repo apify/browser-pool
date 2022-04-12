@@ -2,6 +2,7 @@ import { tryCancel } from '@apify/timeout';
 import type Puppeteer from './puppeteer-proxy-per-page';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 import { log } from '../logger';
+import { anonymizeProxySugar } from '../anonymize-proxy';
 
 const PROCESS_KILL_TIMEOUT_MILLIS = 5000;
 
@@ -29,30 +30,59 @@ export class PuppeteerController extends BrowserController<typeof Puppeteer> {
                 throw new Error('A new page can be created with provided context only when using incognito pages.');
             }
 
-            const context = await this.browser.createIncognitoBrowserContext(contextOptions);
-            tryCancel();
-            const page = await context.newPage();
-            tryCancel();
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            let close = async () => {};
+            if (contextOptions.proxyServer) {
+                const [anonymizedProxyUrl, closeProxy] = await anonymizeProxySugar(
+                    contextOptions.proxyServer,
+                    contextOptions.proxyUsername,
+                    contextOptions.proxyPassword,
+                );
 
-            if (contextOptions.proxyUsername || contextOptions.proxyPassword) {
-                await page.authenticate({
-                    username: contextOptions.proxyUsername ?? '',
-                    password: contextOptions.proxyPassword ?? '',
-                });
-                tryCancel();
+                if (anonymizedProxyUrl) {
+                    contextOptions.proxyServer = anonymizedProxyUrl;
+                    delete contextOptions.proxyUsername;
+                    delete contextOptions.proxyPassword;
+                }
+
+                close = closeProxy;
             }
 
-            page.once('close', async () => {
-                this.activePages--;
+            try {
+                const context = await this.browser.createIncognitoBrowserContext(contextOptions);
+                tryCancel();
+                const page = await context.newPage();
+                tryCancel();
 
-                try {
-                    await context.close();
-                } catch (error: any) {
-                    log.exception(error, 'Failed to close context.');
+                /*
+                // DO NOT USE YET! DOING SO DISABLES CACHE WHICH IS 50% PERFORMANCE HIT!
+                if (contextOptions.proxyUsername || contextOptions.proxyPassword) {
+                    await page.authenticate({
+                        username: contextOptions.proxyUsername ?? '',
+                        password: contextOptions.proxyPassword ?? '',
+                    });
+                    tryCancel();
                 }
-            });
+                */
 
-            return page;
+                page.once('close', async () => {
+                    this.activePages--;
+
+                    try {
+                        await context.close();
+                    } catch (error: any) {
+                        log.exception(error, 'Failed to close context.');
+                    } finally {
+                        await close();
+                    }
+                });
+
+                return page;
+            } catch (error) {
+                await close();
+
+                throw error;
+            }
         }
 
         const page = await this.browser.newPage();

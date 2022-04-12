@@ -1,6 +1,7 @@
 import type { Browser, BrowserType, Page } from 'playwright';
 import { tryCancel } from '@apify/timeout';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
+import { anonymizeProxySugar } from '../anonymize-proxy';
 
 export class PlaywrightController extends BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], Browser> {
     normalizeProxyOptions(proxyUrl: string | undefined, pageOptions: any): Record<string, unknown> {
@@ -27,14 +28,41 @@ export class PlaywrightController extends BrowserController<BrowserType, Paramet
             throw new Error('A new page can be created with provided context only when using incognito pages.');
         }
 
-        const page = await this.browser.newPage(contextOptions);
-        tryCancel();
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        let close = async () => {};
+        if (contextOptions?.proxy) {
+            const [anonymizedProxyUrl, closeProxy] = await anonymizeProxySugar(
+                contextOptions.proxy.server,
+                contextOptions.proxy.username,
+                contextOptions.proxy.password,
+            );
 
-        page.once('close', () => {
-            this.activePages--;
-        });
+            if (anonymizedProxyUrl) {
+                contextOptions.proxy = {
+                    server: anonymizedProxyUrl,
+                    bypass: contextOptions.proxy.bypass,
+                };
+            }
 
-        return page;
+            close = closeProxy;
+        }
+
+        try {
+            const page = await this.browser.newPage(contextOptions);
+            tryCancel();
+
+            page.once('close', async () => {
+                this.activePages--;
+
+                await close();
+            });
+
+            return page;
+        } catch (error) {
+            await close();
+
+            throw error;
+        }
     }
 
     protected async _close(): Promise<void> {
