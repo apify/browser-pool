@@ -259,7 +259,7 @@ export class BrowserPool<
     BrowserPlugins extends BrowserPlugin[] = InferBrowserPluginArray<Options['browserPlugins']>,
     BrowserControllerReturn extends BrowserController = ReturnType<BrowserPlugins[number]['createController']>,
     LaunchContextReturn extends LaunchContext = ReturnType<BrowserPlugins[number]['createLaunchContext']>,
-    PageOptions extends unknown = Parameters<BrowserControllerReturn['newPage']>[0],
+    PageOptions = Parameters<BrowserControllerReturn['newPage']>[0],
     PageReturn extends UnwrapPromise<ReturnType<BrowserControllerReturn['newPage']>> = UnwrapPromise<ReturnType<BrowserControllerReturn['newPage']>>,
 > extends TypedEmitter<BrowserPoolEvents<BrowserControllerReturn, PageReturn>> {
     browserPlugins: BrowserPlugins;
@@ -790,7 +790,7 @@ export class BrowserPool<
     }
 }
 
-export interface BrowserPoolNewPageOptions<PageOptions extends unknown, BP extends BrowserPlugin> {
+export interface BrowserPoolNewPageOptions<PageOptions, BP extends BrowserPlugin> {
     /**
      * Assign a custom ID to the page. If you don't a random string ID
      * will be generated.
@@ -816,7 +816,7 @@ export interface BrowserPoolNewPageOptions<PageOptions extends unknown, BP exten
     proxyUrl?: string;
 }
 
-export interface BrowserPoolNewPageInNewBrowserOptions<PageOptions extends unknown, BP extends BrowserPlugin> {
+export interface BrowserPoolNewPageInNewBrowserOptions<PageOptions, BP extends BrowserPlugin> {
     /**
      * Assign a custom ID to the page. If you don't a random string ID
      * will be generated.

@@ -57,7 +57,7 @@ export interface BrowserPluginOptions<LibraryOptions> {
 
 export type CreateLaunchContextOptions<
     Library extends CommonLibrary,
-    LibraryOptions extends unknown = Parameters<Library['launch']>[0],
+    LibraryOptions = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
     NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
@@ -71,7 +71,7 @@ export type CreateLaunchContextOptions<
  */
 export abstract class BrowserPlugin<
     Library extends CommonLibrary = CommonLibrary,
-    LibraryOptions extends unknown = Parameters<Library['launch']>[0],
+    LibraryOptions = Parameters<Library['launch']>[0],
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
     NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
