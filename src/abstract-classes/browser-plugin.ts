@@ -140,7 +140,7 @@ export abstract class BrowserPlugin<
     async launch(
         launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = this.createLaunchContext(),
     ): Promise<LaunchResult> {
-        const { proxyUrl, launchOptions }: { proxyUrl?: string, launchOptions: any } = launchContext;
+        const { proxyUrl, launchOptions }: { proxyUrl?: string; launchOptions: Record<string, any> } = launchContext;
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
@@ -154,11 +154,6 @@ export abstract class BrowserPlugin<
         return this._launch(launchContext);
     }
 
-    /**
-     * @private
-     * @param originalArgs
-     * @returns
-     */
     private _mergeArgsToHideWebdriver(originalArgs: string[]): string[] {
         if (!originalArgs?.length) {
             return ['--disable-blink-features=AutomationControlled'];
