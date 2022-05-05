@@ -3,7 +3,6 @@ import { LaunchContext, LaunchContextOptions } from '../launch-context';
 import { BrowserController } from './browser-controller';
 import { throwImplementationNeeded } from './utils';
 import { UnwrapPromise } from '../utils';
-import { mergeArgsToHideWebdriver } from '../fingerprinting/utils';
 
 /**
  * Each plugin expects an instance of the object with the `.launch()` property.
@@ -147,10 +146,31 @@ export abstract class BrowserPlugin<
             await this._addProxyToLaunchOptions(launchContext);
         }
         // This will set the args for chromium based browsers to hide the webdriver.
-        launchOptions.args = mergeArgsToHideWebdriver(launchOptions.args);
+        launchOptions.args = this._mergeArgsToHideWebdriver(launchOptions.args);
 
         return this._launch(launchContext);
     }
+
+    /**
+     * @private
+     * @param originalArgs
+     * @returns
+     */
+    private _mergeArgsToHideWebdriver(originalArgs: string[]): string[] {
+        if (!originalArgs?.length) {
+            return ['--disable-blink-features=AutomationControlled'];
+        }
+
+        const argumentIndex = originalArgs.findIndex((arg: string) => arg.startsWith('--disable-blink-features='));
+
+        if (argumentIndex !== -1) {
+            originalArgs[argumentIndex] += ',AutomationControlled';
+        } else {
+            originalArgs.push('--disable-blink-features=AutomationControlled');
+        }
+
+        return originalArgs;
+    };
 
     /**
      * @private
