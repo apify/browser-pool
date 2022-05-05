@@ -92,4 +92,9 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
             };
         }
     }
+
+    protected _isChromiumBasedBrowser(): boolean {
+        const name = this.library.name();
+        return name === 'chromium';
+    }
 }

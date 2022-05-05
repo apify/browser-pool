@@ -140,14 +140,35 @@ export abstract class BrowserPlugin<
     async launch(
         launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = this.createLaunchContext(),
     ): Promise<LaunchResult> {
-        const { proxyUrl } = launchContext;
+        const { proxyUrl, launchOptions }: { proxyUrl?: string; launchOptions: Record<string, any> } = launchContext;
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
         }
 
+        if (this._isChromiumBasedBrowser(launchContext)) {
+            // This will set the args for chromium based browsers to hide the webdriver.
+            launchOptions.args = this._mergeArgsToHideWebdriver(launchOptions.args);
+        }
+
         return this._launch(launchContext);
     }
+
+    private _mergeArgsToHideWebdriver(originalArgs: string[]): string[] {
+        if (!originalArgs?.length) {
+            return ['--disable-blink-features=AutomationControlled'];
+        }
+
+        const argumentIndex = originalArgs.findIndex((arg: string) => arg.startsWith('--disable-blink-features='));
+
+        if (argumentIndex !== -1) {
+            originalArgs[argumentIndex] += ',AutomationControlled';
+        } else {
+            originalArgs.push('--disable-blink-features=AutomationControlled');
+        }
+
+        return originalArgs;
+    };
 
     /**
      * @private
@@ -156,6 +177,12 @@ export abstract class BrowserPlugin<
     // eslint-disable-next-line space-before-function-paren, @typescript-eslint/no-unused-vars, max-len
     protected abstract _addProxyToLaunchOptions(launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>): Promise<void> {
         throwImplementationNeeded('_addProxyToLaunchOptions');
+    }
+
+    // @ts-expect-error Give runtime error as well as compile time
+    // eslint-disable-next-line space-before-function-paren, @typescript-eslint/no-unused-vars, max-len
+    protected abstract _isChromiumBasedBrowser(launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>): boolean {
+        throwImplementationNeeded('_isChromiumBasedBrowser');
     }
 
     /**
