@@ -61,7 +61,7 @@ export type CreateLaunchContextOptions<
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
     NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
-> = Partial<Omit<LaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>, 'browserPlugin'>>;
+    > = Partial<Omit<LaunchContextOptions<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>, 'browserPlugin'>>;
 
 /**
  * The `BrowserPlugin` serves two purposes. First, it is the base class that
@@ -75,7 +75,7 @@ export abstract class BrowserPlugin<
     LaunchResult extends CommonBrowser = UnwrapPromise<ReturnType<Library['launch']>>,
     NewPageOptions = Parameters<LaunchResult['newPage']>[0],
     NewPageResult = UnwrapPromise<ReturnType<LaunchResult['newPage']>>,
-> {
+    > {
     name = this.constructor.name;
 
     library: Library;
@@ -140,13 +140,16 @@ export abstract class BrowserPlugin<
     async launch(
         launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = this.createLaunchContext(),
     ): Promise<LaunchResult> {
-        const { proxyUrl, launchOptions }: {proxyUrl?: string, launchOptions: any} = launchContext;
+        const { proxyUrl, launchOptions }: { proxyUrl?: string, launchOptions: any } = launchContext;
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
         }
-        // This will set the args for chromium based browsers to hide the webdriver.
-        launchOptions.args = this._mergeArgsToHideWebdriver(launchOptions.args);
+
+        if (this._isChromiumBasedBrowser(launchContext)) {
+            // This will set the args for chromium based browsers to hide the webdriver.
+            launchOptions.args = this._mergeArgsToHideWebdriver(launchOptions.args);
+        }
 
         return this._launch(launchContext);
     }
@@ -179,6 +182,15 @@ export abstract class BrowserPlugin<
     // eslint-disable-next-line space-before-function-paren, @typescript-eslint/no-unused-vars, max-len
     protected abstract _addProxyToLaunchOptions(launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>): Promise<void> {
         throwImplementationNeeded('_addProxyToLaunchOptions');
+    }
+
+    /**
+    * @private
+    */
+    // @ts-expect-error Give runtime error as well as compile time
+    // eslint-disable-next-line space-before-function-paren, @typescript-eslint/no-unused-vars, max-len
+    protected abstract _isChromiumBasedBrowser(launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult>): boolean {
+        throwImplementationNeeded('_isChromiumBasedBrowser');
     }
 
     /**

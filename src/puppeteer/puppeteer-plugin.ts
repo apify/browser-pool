@@ -163,4 +163,11 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
         }
         */
     }
+
+    protected _isChromiumBasedBrowser(launchContext: LaunchContext<any, unknown, any, unknown, any>): boolean {
+        const { launchOptions } = launchContext as any;
+        // @ts-expect-error cannot find .product on this.library
+        const browserName = launchOptions.product || this.library.product!;
+        return browserName === 'chrome';
+    }
 }
