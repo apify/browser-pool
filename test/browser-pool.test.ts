@@ -637,6 +637,36 @@ describe('BrowserPool', () => {
                 });
             });
 
+            describe('default browser automation masking', () => {
+                describe.each(fingerprintingMatrix)('%s', (_name, plugin) => {
+                    let browserPoolWithFP: BrowserPool;
+                    let page: any;
+
+                    beforeEach(async () => {
+                        browserPoolWithFP = new BrowserPool({
+                            browserPlugins: [plugin],
+                            closeInactiveBrowserAfterSecs: 2,
+                        });
+                        page = await browserPoolWithFP.newPage();
+                    });
+
+                    afterEach(async () => {
+                        if (page) await page.close();
+
+                        await browserPoolWithFP.destroy();
+                    });
+
+                    test('should hide webdriver', async () => {
+                        await page.goto(`file://${__dirname}/test.html`);
+                        const webdriver = await page.evaluate(() => {
+                            return navigator.webdriver;
+                        });
+                        // Can be undefined or false, depending on the chrome version.
+                        expect(webdriver).toBeFalsy();
+                    });
+                });
+            });
+
             describe('fingerprinting', () => {
                 describe.each(fingerprintingMatrix)('%s', (_name, plugin) => {
                     let browserPoolWithFP: BrowserPool;

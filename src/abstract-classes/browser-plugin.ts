@@ -3,6 +3,7 @@ import { LaunchContext, LaunchContextOptions } from '../launch-context';
 import { BrowserController } from './browser-controller';
 import { throwImplementationNeeded } from './utils';
 import { UnwrapPromise } from '../utils';
+import { mergeArgsToHideWebdriver } from '../fingerprinting/utils';
 
 /**
  * Each plugin expects an instance of the object with the `.launch()` property.
@@ -140,11 +141,13 @@ export abstract class BrowserPlugin<
     async launch(
         launchContext: LaunchContext<Library, LibraryOptions, LaunchResult, NewPageOptions, NewPageResult> = this.createLaunchContext(),
     ): Promise<LaunchResult> {
-        const { proxyUrl } = launchContext;
+        const { proxyUrl, launchOptions }: {proxyUrl?: string, launchOptions: any} = launchContext;
 
         if (proxyUrl) {
             await this._addProxyToLaunchOptions(launchContext);
         }
+        // This will set the args for chromium based browsers to hide the webdriver.
+        launchOptions.args = mergeArgsToHideWebdriver(launchOptions.args);
 
         return this._launch(launchContext);
     }
