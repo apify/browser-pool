@@ -66,7 +66,7 @@ const runPluginTest = <
                 id,
                 launchOptions,
                 browserPlugin: plugin,
-                _proxyUrl: proxyUrl,
+                _proxyUrl: proxyUrl.slice(0, -1),
                 one: 1,
                 useIncognitoPages: false,
             };
