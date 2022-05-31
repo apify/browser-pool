@@ -111,7 +111,17 @@ export class LaunchContext<
      * Use `undefined` to unset existing proxy URL.
      */
     set proxyUrl(url: string | undefined) {
-        this._proxyUrl = url && new URL(url).href;
+        if (!url) {
+            return;
+        }
+
+        const urlInstance = new URL(url);
+        urlInstance.pathname = '/';
+        urlInstance.search = '';
+        urlInstance.hash = '';
+
+        // https://www.chromium.org/developers/design-documents/network-settings/#command-line-options-for-proxy-settings
+        this._proxyUrl = urlInstance.href.slice(0, -1);
     }
 
     /**
