@@ -68,10 +68,14 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
             }
         });
 
-        const newPage = browser.newPage.bind(browser);
+        const boundMethods = (['newPage', 'close', 'userAgent', 'createIncognitoBrowserContext', 'version'] as const)
+            .reduce((map, method) => {
+                map[method] = browser[method]?.bind(browser);
+                return map;
+            }, {} as Record<string, any>);
 
         browser = new Proxy(browser, {
-            get: (target, property: keyof typeof browser) => {
+            get: (target, property: keyof typeof browser, receiver) => {
                 if (property === 'newPage') {
                     return (async (...args: Parameters<BrowserContext['newPage']>) => {
                         let page: Puppeteer.Page;
@@ -97,7 +101,7 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                                 throw error;
                             }
                         } else {
-                            page = await newPage(...args);
+                            page = await boundMethods.newPage(...args);
                         }
 
                         /*
@@ -121,7 +125,11 @@ export class PuppeteerPlugin extends BrowserPlugin<typeof Puppeteer> {
                     });
                 }
 
-                return target[property];
+                if (property in boundMethods) {
+                    return boundMethods[property];
+                }
+
+                return Reflect.get(target, property, receiver);
             },
         });
 
