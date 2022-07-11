@@ -366,7 +366,7 @@ try {
         Storage: {
 			value: FakeStorage,
 			configurable: true,
-			enumreable: false,
+			enumerable: false,
 			writable: true,
 		},
 		localStorage: {
