@@ -29,7 +29,7 @@
 	},
 	"files": [
 		"dist",
-        "tab-as-a-container"
+		"tab-as-a-container"
 	],
 	"scripts": {
 		"build": "tsc && node copy-definitions.js",
