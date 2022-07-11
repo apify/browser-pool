@@ -28,7 +28,8 @@
 		"url": "https://github.com/apify/browser-pool/issues"
 	},
 	"files": [
-		"dist"
+		"dist",
+        "tab-as-a-container"
 	],
 	"scripts": {
 		"build": "tsc && node copy-definitions.js",

@@ -118,6 +118,7 @@ export abstract class BrowserPlugin<
             proxyUrl = this.proxyUrl,
             useIncognitoPages = this.useIncognitoPages,
             userDataDir = this.userDataDir,
+            experimentalContainers,
         } = options;
 
         return new LaunchContext({
@@ -127,6 +128,7 @@ export abstract class BrowserPlugin<
             proxyUrl,
             useIncognitoPages,
             userDataDir,
+            experimentalContainers,
         });
     }
 

@@ -1,4 +1,5 @@
 import type { Browser as PlaywrightBrowser, BrowserType } from 'playwright';
+import path from 'path';
 import { Browser as PlaywrightBrowserWithPersistentContext } from './browser';
 import { PlaywrightController } from './playwright-controller';
 import { BrowserController } from '../abstract-classes/browser-controller';
@@ -7,6 +8,9 @@ import { LaunchContext } from '../launch-context';
 import { log } from '../logger';
 import { getLocalProxyAddress } from '../proxy-server';
 import { anonymizeProxySugar } from '../anonymize-proxy';
+
+// __dirname = browser-pool/dist/playwright
+const taacPath = path.join(__dirname, '..', '..', 'tab-as-a-container');
 
 export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<BrowserType['launch']>[0], PlaywrightBrowser> {
     private _browserVersion?: string;
@@ -44,7 +48,31 @@ export class PlaywrightPlugin extends BrowserPlugin<BrowserType, Parameters<Brow
                     });
                 }
             } else {
+                if (launchContext.experimentalContainers) {
+                    launchOptions!.args = [
+                        ...(launchOptions!.args ?? []),
+                    ];
+
+                    // Use native headless mode so we can load an extension
+                    if (launchOptions!.headless) {
+                        launchOptions!.args.push('--headless=chrome');
+                    }
+
+                    launchOptions!.args.push(`--disable-extensions-except=${taacPath}`, `--load-extension=${taacPath}`);
+                }
+
                 const browserContext = await this.library.launchPersistentContext(userDataDir, launchOptions);
+
+                if (launchContext.experimentalContainers) {
+                    // Wait for the extension to load.
+                    let [backgroundPage] = browserContext.backgroundPages();
+                    if (!backgroundPage) {
+                        backgroundPage = await browserContext.waitForEvent('backgroundpage');
+                    }
+
+                    // @ts-expect-error loading is defined inside background script
+                    await backgroundPage.evaluate(() => loading);
+                }
 
                 if (anonymizedProxyUrl) {
                     browserContext.on('close', async () => {

@@ -3,6 +3,8 @@ import { tryCancel } from '@apify/timeout';
 import { BrowserController, Cookie } from '../abstract-classes/browser-controller';
 import { anonymizeProxySugar } from '../anonymize-proxy';
 
+const tabIds = new WeakMap<Page, number>();
+
 export class PlaywrightController extends BrowserController<BrowserType, Parameters<BrowserType['launch']>[0], Browser> {
     normalizeProxyOptions(proxyUrl: string | undefined, pageOptions: any): Record<string, unknown> {
         if (!proxyUrl) {
@@ -49,13 +51,22 @@ export class PlaywrightController extends BrowserController<BrowserType, Paramet
 
         try {
             const page = await this.browser.newPage(contextOptions);
-            tryCancel();
 
             page.once('close', async () => {
                 this.activePages--;
 
                 await close();
             });
+
+            if (this.launchContext.experimentalContainers) {
+                await page.goto('data:text/plain,tabid');
+                await page.waitForNavigation();
+                const { tabid } = JSON.parse(decodeURIComponent(page.url().slice('about:blank#'.length)));
+
+                tabIds.set(page, tabid);
+            }
+
+            tryCancel();
 
             return page;
         } catch (error) {
@@ -74,13 +85,36 @@ export class PlaywrightController extends BrowserController<BrowserType, Paramet
         await this.browser.close(); // Playwright does not have the browser child process attached to normal browser server
     }
 
-    protected _getCookies(page: Page): Promise<Cookie[]> {
+    protected async _getCookies(page: Page): Promise<Cookie[]> {
         const context = page.context();
-        return context.cookies();
+        const cookies = await context.cookies();
+
+        if (this.launchContext.experimentalContainers) {
+            const key = `${tabIds.get(page)}.`;
+
+            return cookies
+                .filter((cookie) => cookie.name.startsWith(key))
+                .map((cookie) => ({
+                    ...cookie,
+                    name: cookie.name.slice(key.length),
+                }));
+        }
+
+        return cookies;
     }
 
     protected _setCookies(page: Page, cookies: Cookie[]): Promise<void> {
         const context = page.context();
+
+        if (this.launchContext.experimentalContainers) {
+            const key = `${tabIds.get(page)}.`;
+
+            cookies = cookies.map((cookie) => ({
+                ...cookie,
+                name: `${key}${cookie.name}`,
+            }));
+        }
+
         return context.addCookies(cookies);
     }
 }
