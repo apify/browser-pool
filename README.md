@@ -1,4 +1,9 @@
-# Browser Pool - the headless browser manager
+# (DEPRECATED) Browser Pool - the headless browser manager
+
+> **DEPRECATED!** 
+>
+> The Browser Pool package now lives in the [`crawlee`](https://github.com/apify/crawlee) repository - submit all your issues and PRs there. This repository is no longer actively maintained!
+
 Browser Pool is a small, but powerful and extensible library, that allows you to seamlessly
 control multiple headless browsers at the same time with only a little configuration, and a
 single function call. Currently it supports [Puppeteer](https://github.com/puppeteer/puppeteer),
