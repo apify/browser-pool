@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { BrowserContext, Browser as PlaywrightBrowser } from 'playwright';
+import type { BrowserContext, BrowserType, Browser as PlaywrightBrowser } from 'playwright';
 
 export interface BrowserOptions {
     browserContext: BrowserContext;
@@ -15,6 +15,7 @@ export class Browser extends EventEmitter implements PlaywrightBrowser {
     private _version: string;
 
     private _isConnected = true;
+    private _browserType?: BrowserType;
 
     constructor(options: BrowserOptions) {
         super();
@@ -44,6 +45,15 @@ export class Browser extends EventEmitter implements PlaywrightBrowser {
 
     version(): string {
         return this._version;
+    }
+
+    /** @internal */
+    _setBrowserType(browserType: BrowserType): void {
+        this._browserType = browserType;
+    }
+
+    browserType(): BrowserType {
+        return this._browserType!;
     }
 
     async newPage(...args: Parameters<BrowserContext['newPage']>): ReturnType<BrowserContext['newPage']> {
